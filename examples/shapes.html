@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>Ammo.js + Three.js Demo</title>
+	<script type="text/javascript" src="js/ThreeDebug.js"></script>
+	<script type="text/javascript" src="js/tween.js"></script>
+	<script type="text/javascript" src="js/stats.js"></script>
+	<script type="text/javascript" src="js/ammo.js"></script>
+	<script type="text/javascript" src="../physi.js"></script>
+	
+	<script type="text/javascript">
+	
+	'use strict';
+	
+	// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+	// shim layer with setTimeout fallback
+	window['requestAnimFrame'] = (function(){
+	  return  window.requestAnimationFrame       || 
+	          window.webkitRequestAnimationFrame || 
+	          window.mozRequestAnimationFrame    || 
+	          window.oRequestAnimationFrame      || 
+	          window.msRequestAnimationFrame     || 
+	          function(/* function */ callback, /* DOMElement */ element){
+	            window.setTimeout(callback, 1000 / 60);
+	          };
+	})();
+	
+	Physijs.scripts.worker = '../physijs_worker.js';
+	Physijs.scripts.ammo = 'examples/js/ammo.js';
+	
+	var initScene, render, createShape,
+		renderer, stats, scene, light, camera;
+	
+	initScene = function() {
+		TWEEN.start();
+		
+		renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.shadowMapEnabled = true;
+		renderer.shadowMapSoft = true;
+		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
+		
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		
+		scene = new Physijs.Scene;
+		scene.setGravity({ x: 0, y: -30, z: 0 });
+		
+		camera = new THREE.PerspectiveCamera(
+			35,
+			window.innerWidth / window.innerHeight,
+			1,
+			1000
+		);
+		camera.position.set( 60, 50, 60 );
+		camera.lookAt( scene.position );
+		scene.add( camera );
+		
+		// Light
+		light = new THREE.DirectionalLight( 0xFFFFFF );
+		light.position.set( 40, 60, 25 );
+		light.target.position.copy( scene.position );
+		light.castShadow = true;
+		light.shadowCameraLeft = -30;
+		light.shadowCameraTop = -30;
+		light.shadowCameraRight = 30;
+		light.shadowCameraBottom = 30;
+		light.shadowBias = -.0001
+		scene.add( light );
+		window.light = light;
+		
+		// Ground
+		var ground = new Physijs.PlaneMesh(
+			//new THREE.CubeGeometry(50, 1, 50),
+			new THREE.PlaneGeometry(50, 50),
+			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
+			0, // mass
+			{ restitution: .2, friction: .8 }
+		);
+		ground.position.y = .5;
+		ground.rotation.x = -Math.PI / 2;
+		ground.receiveShadow = true;
+		scene.add( ground );
+		
+		// Bumpers
+		var bumper,
+			bumper_geom = new THREE.CubeGeometry(2, 1, 50),
+			bumper_mat = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
+		
+		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper.position.y = 1;
+		bumper.position.x = -24;
+		bumper.receiveShadow = true;
+		bumper.castShadow = true;
+		scene.add( bumper );
+		
+		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper.position.y = 1;
+		bumper.position.x = 24;
+		bumper.receiveShadow = true;
+		bumper.castShadow = true;
+		scene.add( bumper );
+		
+		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper.position.y = 1;
+		bumper.position.z = -24;
+		bumper.rotation.y = Math.PI / 2;
+		bumper.receiveShadow = true;
+		bumper.castShadow = true;
+		scene.add( bumper );
+		
+		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper.position.y = 1;
+		bumper.position.z = 24;
+		bumper.rotation.y = Math.PI / 2;
+		bumper.receiveShadow = true;
+		bumper.castShadow = true;
+		scene.add( bumper );
+		
+		requestAnimFrame( render );
+		
+		setInterval( createShape, 250 );
+	};
+	
+	render = function() {
+		scene.simulate(undefined, 2);
+		renderer.render( scene, camera);
+		stats.update();
+		requestAnimFrame( render );
+	};
+	
+	createShape = (function() {
+		var shapes = 0,
+			box_geometry = new THREE.CubeGeometry( 3, 3, 3 ),
+			sphere_geometry = new THREE.SphereGeometry( 1.5, 32, 32 ),
+			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 );
+			
+		return function() {
+			var shape, material = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true });
+			
+			switch ( Math.floor(Math.random() * 3) ) {
+				case 0:
+					shape = new Physijs.BoxMesh(
+						box_geometry,
+						material
+					);
+					break;
+				
+				case 1:
+					shape = new Physijs.SphereMesh(
+						sphere_geometry,
+						material,
+						undefined,
+						{ restitution: Math.random() * 1.5 }
+					);
+					break;
+				
+				case 2:
+					shape = new Physijs.CylinderMesh(
+						cylinder_geometry,
+						material
+					);
+					break;
+				
+				default:
+					// wtf?
+					return;
+					break;
+			}
+				
+			shape.material.color.setRGB( Math.random() * 100 / 100, Math.random() * 100 / 100, Math.random() * 100 / 100 );
+			shape.castShadow = true;
+			shape.receiveShadow = true;
+			
+			shape.position.set(
+				Math.random() * 30 - 15,
+				20,
+				Math.random() * 30 - 15
+			);
+			
+			shape.rotation.set(
+				Math.random() * Math.PI,
+				Math.random() * Math.PI,
+				Math.random() * Math.PI
+			);
+			
+			scene.add( shape );
+			
+			new TWEEN.Tween(shape.material).to({opacity: 1}, 500).start();
+			
+			document.getElementById('shapecount').textContent = (++shapes) + ' shapes';
+		};
+	})();
+	
+	window.onload = initScene;
+	
+	</script>
+	
+	<style type="text/css">
+		html, body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+		p {
+			font-family: Verdana;
+			font-size: 10pt;
+			text-align: center;
+			position: absolute;
+			top: 0;
+			width: 100%;
+		}
+		p a {
+			color: #4488ff;
+		}
+	</style>
+</head>
+
+<body>
+	<p>
+		Example showing the shape primatives in <strong>Physijs</strong> by <a href="http://chandler.prallfamily.com">Chandler Prall</a>.
+		<span id="shapecount"></span>
+	</p>
+	<div id="viewport"></div>
+</body>
+
+</html>
