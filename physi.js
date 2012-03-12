@@ -6,6 +6,90 @@ var Physijs = (function() {
 	
 	Physijs.scripts = {};
 	
+	THREE.GeometryUtils.triangulateQuads = THREE.GeometryUtils.triangulateQuads || function ( geometry ) {
+
+		for ( var i = geometry.faces.length - 1; i >= 0; i -- ) {
+
+			var face = geometry.faces[ i ];
+
+			if ( face instanceof THREE.Face4 ) {
+
+				var a = face.a;
+				var b = face.b;
+				var c = face.c;
+				var d = face.d;
+
+				var triA = new THREE.Face3( a, b, d );
+				var triB = new THREE.Face3( b, c, d );
+
+				triA.materialIndex = triB.materialIndex = face.materialIndex;
+
+				triA.color.copy( face.color );
+				triB.color.copy( face.color );
+
+				if ( face.vertexColors.length === 4 ) {
+
+					var cA = face.vertexColors[ 0 ];
+					var cB = face.vertexColors[ 1 ];
+					var cC = face.vertexColors[ 2 ];
+					var cD = face.vertexColors[ 3 ];
+
+					triA.vertexColors[ 0 ] = cA.clone();
+					triA.vertexColors[ 1 ] = cB.clone();
+					triA.vertexColors[ 2 ] = cD.clone();
+
+					triB.vertexColors[ 0 ] = cB.clone();
+					triB.vertexColors[ 1 ] = cC.clone();
+					triB.vertexColors[ 2 ] = cD.clone();
+
+				}
+
+				geometry.faces.splice( i, 1, triA, triB );
+
+				for ( var j = 0; j < geometry.faceVertexUvs.length; j ++ ) {
+
+					if ( geometry.faceVertexUvs[ j ].length ) {
+
+						var faceVertexUvs = geometry.faceVertexUvs[ j ][ i ];
+
+						var uvA = faceVertexUvs[ 0 ];
+						var uvB = faceVertexUvs[ 1 ];
+						var uvC = faceVertexUvs[ 2 ];
+						var uvD = faceVertexUvs[ 3 ];
+
+						var uvsTriA = [ uvA.clone(), uvB.clone(), uvD.clone() ];
+						var uvsTriB = [ uvB.clone(), uvC.clone(), uvD.clone() ];
+
+						geometry.faceVertexUvs[ j ].splice( i, 1, uvsTriA, uvsTriB );
+
+					}
+
+				}
+
+				for ( var j = 0; j < geometry.faceUvs.length; j ++ ) {
+
+					if ( geometry.faceUvs[ j ].length ) {
+
+						var faceUv = geometry.faceUvs[ j ][ i ];
+
+						geometry.faceUvs[ j ].splice( i, 1, faceUv, faceUv );
+
+					}
+
+				}
+
+			}
+
+		}
+
+		geometry.computeCentroids();
+		geometry.computeFaceNormals();
+		geometry.computeVertexNormals();
+
+		if ( geometry.hasTangents ) geometry.computeTangents();
+
+	};
+	
 	getEulerXYZFromQuaternion = function ( x, y, z, w ) {
 		return new THREE.Vector3(
 			Math.atan2( 2 * ( x * w - y * z ), ( w * w - x * x - y * y + z * z ) ),
@@ -60,7 +144,6 @@ var Physijs = (function() {
 				case 'update':
 					for ( i = 0; i < event.data.params.objects.length; i++ ) {
 						obj = event.data.params.objects[i];
-						//sceneObj = self.getByPhysijsId( obj.id );
 						sceneObj = self._objects[obj.id];
 						
 						sceneObj.position.set( obj.pos_x, obj.pos_y, obj.pos_z );
@@ -87,23 +170,6 @@ var Physijs = (function() {
 	};
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
-	
-	Physijs.Scene.prototype.getByPhysijsId = function getByPhysijsId( id ) {
-		var i, child, found_in_children;
-		
-		for ( i = 0; i < this.children.length; i++ ) {
-			child = this.children[i];
-			if ( child._physijs && child._physijs.id === id ) {
-				return child;
-			}
-			
-			if ( found_in_children = getByPhysijsId.call( child, id ) ) {
-				return found_in_children;
-			}
-		}
-		
-		return undefined;
-	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });
@@ -242,9 +308,6 @@ var Physijs = (function() {
 			z: this._physijs.normal.z
 		};
 		this._physijs.mass = (typeof mass === 'undefined') ? width * height : mass;
-		
-		//console.debug(this._physijs.normal);
-		//throw 'done';
 	};
 	Physijs.PlaneMesh.prototype = new Physijs.Mesh;
 	Physijs.PlaneMesh.prototype.constructor = Physijs.PlaneMesh;
@@ -318,6 +381,121 @@ var Physijs = (function() {
 	};
 	Physijs.CylinderMesh.prototype = new Physijs.Mesh;
 	Physijs.CylinderMesh.prototype.constructor = Physijs.CylinderMesh;
+	
+	
+	// Physijs.ConeMesh
+	Physijs.ConeMesh = function( geometry, material, mass, params ) {
+		var width, height, depth;
+		
+		Physijs.Mesh.call( this, geometry, material, mass, params );
+		
+		params = params || {};
+		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
+		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+		
+		this._physijs.type = 'cone';
+		this._physijs.radius = width / 2;
+		this._physijs.height = height;
+		this._physijs.mass = (typeof mass === 'undefined') ? width * height : mass;
+	};
+	Physijs.ConeMesh.prototype = new Physijs.Mesh;
+	Physijs.ConeMesh.prototype.constructor = Physijs.ConeMesh;
+	
+	// Physijs.CustomMesh
+	Physijs.CustomMesh = function( geometry, material, mass, params ) {
+		var i,
+			width, height, depth,
+			triangles = [];
+		
+		Physijs.Mesh.call( this, geometry, material, mass, params );
+		
+		params = params || {};
+		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
+		for ( i = 0; i < geometry.faces.length; i++ ) {
+			if ( geometry.faces[i] instanceof THREE.Face3 ) {
+				triangles.push([
+					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ]
+				]);
+			} else {
+				triangles.push([
+					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
+				]);
+				triangles.push([
+					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ],
+					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
+				]);
+			}
+		}
+		
+		
+		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+		
+		this._physijs.type = 'custom';
+		this._physijs.triangles = triangles;
+		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
+	};
+	Physijs.CustomMesh.prototype = new Physijs.Mesh;
+	Physijs.CustomMesh.prototype.constructor = Physijs.CustomMesh;
+	
+	
+	// Physijs.HeightfieldMesh
+	Physijs.HeightfieldMesh = function( geometry, material, mass, params ) {
+		var i, j, vertex,
+			width, length, heightfield = [], maxheight = 0;
+		
+		Physijs.Mesh.call( this, geometry, material, mass, params );
+		
+		params = params || {};
+		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
+		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		length = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+		
+		for ( i = 0; i < params.width; i++ ) {
+			for ( j = 0; j < params.length; j++ ) {
+				vertex = geometry.vertices[ i + j * (params.length) ];
+				heightfield.push([
+					vertex.position.x,
+					vertex.position.z,
+					vertex.position.y
+				]);
+				
+				if ( Math.abs( vertex.position.z ) > maxheight ) {
+					maxheight = Math.abs( vertex.position.z );
+				}
+			}
+		}
+		
+		this._physijs.type = 'heightfield';
+		this._physijs.width = width;
+		this._physijs.length = length;
+		this._physijs.datapoints_x = params.width;
+		this._physijs.datapoints_y = params.length;
+		this._physijs.mass = (typeof mass === 'undefined') ? width * height * length : mass;
+		this._physijs.heightfield = heightfield;
+		this._physijs.maxheight = maxheight;
+	};
+	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
+	Physijs.HeightfieldMesh.prototype.constructor = Physijs.CylinderMesh;
 	
 	
 	return Physijs;

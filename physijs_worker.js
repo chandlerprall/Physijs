@@ -73,9 +73,46 @@ addObject = function( description ) {
 			shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
 			break;
 		
+		case 'cone':
+			shape = new Ammo.btConeShape( description.radius, description.height );
+			break;
+		
+		case 'custom':
+			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
+			for ( i = 0; i < description.triangles.length; i++ ) {
+				triangle = description.triangles[i];
+				triangle_mesh.addTriangle(
+					new Ammo.btVector3( triangle[0][0], triangle[0][1], triangle[0][2] ),
+					new Ammo.btVector3( triangle[1][0], triangle[1][1], triangle[1][2] ),
+					new Ammo.btVector3( triangle[2][0], triangle[2][1], triangle[2][2] ),
+					true
+				);
+			}
+			shape = new Ammo.btConvexTriangleMeshShape(
+				triangle_mesh,
+				true
+			);
+			break;
+		
+		case 'heightfield':
+			var ptr = Ammo.allocate( description.heightfield.length*4, "float", Ammo.ALLOC_NORMAL );
+			for ( var f = 0; f < description.heightfield.length; f++ ) {
+				//Ammo.setValue(ptr+(f<<2), description.heightfield[f][1], 'float');
+				Ammo.setValue(ptr+(f<<2), Math.random() * 5, 'float');
+			}
+			
+			shape = new Ammo.btHeightfieldTerrainShape( description.datapoints_x, description.datapoints_y, ptr, 1, -20, 20, 1, 0, false );
+			//shape.setUseDiamondSubdivision( true );
+			
+			var localScaling = new Ammo.btVector3( description.width / (description.datapoints_x - 1), 1, description.length / (description.datapoints_y - 1) );
+			shape.setLocalScaling(localScaling);
+			
+			break;
+		
 		default:
 			// Not recognized
 			return;
+			break;
 	}
 	
 	shape.calculateLocalInertia( description.mass, localInertia );

@@ -49,7 +49,7 @@
 		document.getElementById( 'viewport' ).appendChild( stats.domElement );
 		
 		scene = new Physijs.Scene;
-		scene.setGravity({ x: 0, y: -30, z: 0 });
+		scene.setGravity({ x: 0, y: -10, z: 0 });
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -75,14 +75,23 @@
 		window.light = light;
 		
 		// Ground
+		/** THERE BE SHARKS WHEN TRYING TO USE HeightfieldMesh **/
+		/** Just using PlaneMesh until things are resolved ... **/
+		var ground_geometry = new THREE.PlaneGeometry(50, 50, 9, 9);
+		for ( var i = 0; i < ground_geometry.vertices.length; i++ ) {
+			//ground_geometry.vertices[i].position.z = Math.random() * 3;
+			//ground_geometry.vertices[i].position.z = 2;
+		}
+		ground_geometry.computeFaceNormals();
+		ground_geometry.computeVertexNormals();
+		
 		var ground = new Physijs.PlaneMesh(
 			//new THREE.CubeGeometry(50, 1, 50),
-			new THREE.PlaneGeometry(50, 50),
+			ground_geometry,
 			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
 			0, // mass
-			{ restitution: .2, friction: .8 }
+			{ restitution: .2, friction: .8, width: 10, length: 10 }
 		);
-		ground.position.y = .5;
 		ground.rotation.x = -Math.PI / 2;
 		ground.receiveShadow = true;
 		scene.add( ground );
@@ -93,21 +102,21 @@
 			bumper_mat = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
 		
 		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = 1;
+		bumper.position.y = .5;
 		bumper.position.x = -24;
 		bumper.receiveShadow = true;
 		bumper.castShadow = true;
 		scene.add( bumper );
 		
 		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = 1;
+		bumper.position.y = .5;
 		bumper.position.x = 24;
 		bumper.receiveShadow = true;
 		bumper.castShadow = true;
 		scene.add( bumper );
 		
 		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = 1;
+		bumper.position.y = .5;
 		bumper.position.z = -24;
 		bumper.rotation.y = Math.PI / 2;
 		bumper.receiveShadow = true;
@@ -115,7 +124,7 @@
 		scene.add( bumper );
 		
 		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = 1;
+		bumper.position.y = .5;
 		bumper.position.z = 24;
 		bumper.rotation.y = Math.PI / 2;
 		bumper.receiveShadow = true;
@@ -123,6 +132,28 @@
 		scene.add( bumper );
 		
 		requestAnimFrame( render );
+		/*
+		var sphere = new Physijs.SphereMesh(
+			new THREE.SphereGeometry( 1.5, 16, 16 ),
+			new THREE.MeshNormalMaterial
+		);
+		sphere.position.set( 20, 10, 20 );
+		scene.add( sphere );
+		window.sphere = sphere;
+		sphere.castShadow = true;
+		*/
+		
+		/*
+		var sphere = new Physijs.CustomMesh(
+			new THREE.SphereGeometry( 2, 16, 16 ),
+			new THREE.MeshNormalMaterial
+		);
+		sphere.position.y = 10;
+		sphere.rotation.z = .4;
+		sphere.rotation.x = .4;
+		scene.add( sphere );
+		sphere.castShadow = true;
+		*/
 		
 		setInterval( createShape, 250 );
 	};
@@ -138,12 +169,13 @@
 		var shapes = 0,
 			box_geometry = new THREE.CubeGeometry( 3, 3, 3 ),
 			sphere_geometry = new THREE.SphereGeometry( 1.5, 32, 32 ),
-			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 );
+			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 ),
+			cone_geometry = new THREE.CylinderGeometry( 0, 2, 4, 32 );
 			
 		return function() {
 			var shape, material = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true });
 			
-			switch ( Math.floor(Math.random() * 3) ) {
+			switch ( Math.floor(Math.random() * 4) ) {
 				case 0:
 					shape = new Physijs.BoxMesh(
 						box_geometry,
@@ -163,6 +195,13 @@
 				case 2:
 					shape = new Physijs.CylinderMesh(
 						cylinder_geometry,
+						material
+					);
+					break;
+				
+				case 3:
+					shape = new Physijs.ConeMesh(
+						cone_geometry,
 						material
 					);
 					break;
