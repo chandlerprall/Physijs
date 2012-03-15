@@ -287,6 +287,20 @@ var Physijs = (function() {
 		}
 	};
 	
+	// Physijs.Mesh.applyImpulse
+	Physijs.Mesh.prototype.applyImpulse = function ( force, offset ) {
+		if ( this.world ) {
+			this.world.execute( 'applyImpulse', { id: this._physijs.id, impulse_x: force.x, impulse_y: force.y, impulse_z: force.z, x: offset.x, y: offset.y, z: offset.z } );
+		}
+	};
+	
+	// Physijs.Mesh.setAngularVelocity
+	Physijs.Mesh.prototype.setAngularVelocity = function ( velocity ) {
+		if ( this.world ) {
+			this.world.execute( 'setAngularVelocity', { id: this._physijs.id, x: velocity.x, y: velocity.y, z: velocity.z } );
+		}
+	};
+	
 	
 	// Physijs.PlaneMesh
 	Physijs.PlaneMesh = function ( geometry, material, mass, params ) {

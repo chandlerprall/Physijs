@@ -17,6 +17,8 @@ var	// temp variables
 	updateTransform,
 	updateMass,
 	applyCentralImpulse,
+	applyImpulse,
+	setAngularVelocity,
 	
 	
 	// world variables
@@ -165,6 +167,26 @@ updateMass = function( details ) {
 applyCentralImpulse = function ( details ) {
 	if ( details.id && _objects[details.id] ) {
 		_objects[details.id].applyCentralImpulse(new Ammo.btVector3( details.x, details.y, details.z ));
+		_objects[details.id].activate();
+	}
+};
+
+applyImpulse = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].applyImpulse(
+			new Ammo.btVector3( details.impulse_x, details.impulse_y, details.impulse_z ),
+			new Ammo.btVector3( details.x, details.y, details.z )
+		);
+		_objects[details.id].activate();
+	}
+};
+
+setAngularVelocity = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setAngularVelocity(
+			new Ammo.btVector3( details.x, details.y, details.z )
+		);
+		_objects[details.id].activate();
 	}
 };
 
@@ -256,6 +278,18 @@ self.onmessage = function( event ) {
 		case 'applyCentralImpulse':
 			if ( event.data.params ) {
 				applyCentralImpulse( event.data.params );
+			}
+			break;
+		
+		case 'applyImpulse':
+			if ( event.data.params ) {
+				applyImpulse( event.data.params );
+			}
+			break;
+		
+		case 'setAngularVelocity':
+			if ( event.data.params ) {
+				setAngularVelocity( event.data.params );
 			}
 			break;
 		
