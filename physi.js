@@ -301,6 +301,13 @@ var Physijs = (function() {
 		}
 	};
 	
+	// Physijs.Mesh.setLinearVelocity
+	Physijs.Mesh.prototype.setLinearVelocity = function ( velocity ) {
+		if ( this.world ) {
+			this.world.execute( 'setLinearVelocity', { id: this._physijs.id, x: velocity.x, y: velocity.y, z: velocity.z } );
+		}
+	};
+	
 	
 	// Physijs.PlaneMesh
 	Physijs.PlaneMesh = function ( geometry, material, mass, params ) {

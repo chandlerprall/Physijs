@@ -19,6 +19,7 @@ var	// temp variables
 	applyCentralImpulse,
 	applyImpulse,
 	setAngularVelocity,
+	setLinearVelocity,
 	
 	
 	// world variables
@@ -126,6 +127,11 @@ addObject = function( description ) {
 	if ( typeof description.restitution !== 'undefined' ) rbInfo.set_m_restitution( description.restitution );
 	
 	body = new Ammo.btRigidBody( rbInfo );
+	
+	if ( typeof description.collision_flags !== 'undefined' ) {
+		body.setCollisionFlags( description.collision_flags );
+	}
+	
 	world.addRigidBody( body );
 	
 	body.id = description.id;
@@ -184,6 +190,15 @@ applyImpulse = function ( details ) {
 setAngularVelocity = function ( details ) {
 	if ( details.id && _objects[details.id] ) {
 		_objects[details.id].setAngularVelocity(
+			new Ammo.btVector3( details.x, details.y, details.z )
+		);
+		_objects[details.id].activate();
+	}
+};
+
+setLinearVelocity = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setLinearVelocity(
 			new Ammo.btVector3( details.x, details.y, details.z )
 		);
 		_objects[details.id].activate();
@@ -288,6 +303,12 @@ self.onmessage = function( event ) {
 			break;
 		
 		case 'setAngularVelocity':
+			if ( event.data.params ) {
+				setAngularVelocity( event.data.params );
+			}
+			break;
+		
+		case 'setLinearVelocity':
 			if ( event.data.params ) {
 				setAngularVelocity( event.data.params );
 			}
