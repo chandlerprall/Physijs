@@ -3,7 +3,7 @@
 <html>
 
 <head>
-	<title>Rigid body - Physijs</title>
+	<title>Collisions - Physijs</title>
 	<script type="text/javascript" src="js/ThreeDebug.js"></script>
 	<script type="text/javascript" src="js/tween.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
@@ -29,8 +29,8 @@
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
-	var initScene, render, applyForce, setMousePosition, mouse_position,
-		projector, renderer, stats, scene, light, camera, box;
+	var initScene, render, _boxes = [], spawnBox, total_collisions = 0,
+		projector, renderer, stats, scene, light, camera;
 	
 	initScene = function() {
 		TWEEN.start();
@@ -51,6 +51,11 @@
 		
 		scene = new Physijs.Scene;
 		scene.setGravity({ x: 0, y: -10, z: 0 });
+		
+		scene.addEventListener('update', function( details ) {
+			total_collisions += details.collisions.length;
+			document.getElementById( 'info' ).textContent = total_collisions + ' collisions';
+		});
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -85,49 +90,71 @@
 		ground.receiveShadow = true;
 		scene.add( ground );
 		
+		spawnBox();
+		
 		requestAnimFrame( render );
-		
-		box = new Physijs.BoxMesh(
-			new THREE.CubeGeometry( 4, 4, 4 ),
-			new THREE.MeshLambertMaterial({ color: 0xdd7755 })
-		);
-		box.position.y = 10;
-		box.castShadow = true;
-		scene.add( box );
-		
-		renderer.domElement.addEventListener( 'mousemove', setMousePosition );
 	};
 	
+	spawnBox = (function() {
+		var box_geometry = new THREE.CubeGeometry( 4, 4, 4 ),
+			handleCollision = function() {
+				switch ( ++this.collisions ) {
+					
+					case 1:
+						this.material.color.setHex(0xcc8855);
+						break;
+					
+					case 2:
+						this.material.color.setHex(0xbb9955);
+						break;
+					
+					case 3:
+						this.material.color.setHex(0xaaaa55);
+						break;
+					
+					case 4:
+						this.material.color.setHex(0x99bb55);
+						break;
+					
+					case 5:
+						this.material.color.setHex(0x88cc55);
+						break;
+					
+					case 6:
+						this.material.color.setHex(0x77dd55);
+						break;
+				}
+			};
+		
+		return function() {
+			var box = new Physijs.BoxMesh(
+				box_geometry,
+				new THREE.MeshLambertMaterial({ color: 0xdd7755 }) // Not shared because of color changes
+			);
+			box.collisions = 0;
+			box.position.set(
+				Math.random() * 15 - 7.5,
+				25,
+				Math.random() * 15 - 7.5
+			);
+			box.rotation.set(
+				Math.random() * Math.PI,
+				Math.random() * Math.PI,
+				Math.random() * Math.PI
+			);
+			box.castShadow = true;
+			box.addEventListener( 'collision', handleCollision );
+			scene.add( box );
+			
+			setTimeout( spawnBox, 1000 );
+		}
+	})();
+	
 	render = function() {
-		applyForce();
 		scene.simulate(undefined, 2);
 		renderer.render( scene, camera);
 		stats.update();
 		requestAnimFrame( render );
-	};
-	
-	setMousePosition = function( evt ) {
-		// Find where mouse cursor intersects the ground plane
-		var vector = new THREE.Vector3(
-			( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1,
-			-( ( evt.clientY / renderer.domElement.clientHeight ) * 2 - 1 ),
-			.5
-		);
-		projector.unprojectVector( vector, camera );
-		vector.subSelf( camera.position ).normalize();
-		
-		var coefficient = (box.position.y - camera.position.y) / vector.y
-		mouse_position = camera.position.clone().addSelf( vector.multiplyScalar( coefficient ) );
-	};
-	
-	applyForce = function() {
-		if (!mouse_position) return;
-		var strength = 28,
-			distance = mouse_position.distanceTo( box.position ),
-			effect = mouse_position.clone().subSelf( box.position ).normalize().multiplyScalar( strength / distance ).negate(),
-			offset = mouse_position.clone().subSelf( box.position );
-		
-		box.applyImpulse( effect, offset );
 	};
 	
 	window.onload = initScene;
@@ -156,7 +183,7 @@
 
 <body>
 	<p>
-		Interacting with a rigid body - move your cursor near the box to push it.
+		Demonstrating the collision callbacks<br /><span id="info"></span>
 	</p>
 	<div id="viewport"></div>
 </body>

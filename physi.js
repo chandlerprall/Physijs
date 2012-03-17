@@ -2,9 +2,46 @@
 
 var Physijs = (function() {
 	var _matrix = new THREE.Matrix4, _is_simulating = false,
-		Physijs = {}, getObjectId, getEulerXYZFromQuaternion;
+		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion;
 	
 	Physijs.scripts = {};
+	
+	Eventable = function() {
+		this._eventListeners = {};
+	};
+	Eventable.prototype.addEventListener = function( event_name, callback ) {
+		if ( !this._eventListeners.hasOwnProperty( event_name ) ) {
+			this._eventListeners[event_name] = [];
+		}
+		this._eventListeners[event_name].push( callback );
+	};
+	Eventable.prototype.removeEventListener = function( event_name, callback ) {
+		var index;
+		
+		if ( !this._eventListeners.hasOwnProperty( event_name ) ) return false;
+		
+		if ( (index = this._eventListeners[event_name].indexOf( callback )) >= 0 ) {
+			this._eventListeners[event_name].splice( index, 1 );
+			return true;
+		}
+		
+		return false;
+	};
+	Eventable.prototype.dispatchEvent = function( event_name ) {
+		var i,
+			parameters = Array.prototype.splice.call( arguments, 1 );
+		
+		if ( this._eventListeners.hasOwnProperty( event_name ) ) {
+			for ( i = 0; i < this._eventListeners[event_name].length; i++ ) {
+				this._eventListeners[event_name][i].apply( this, parameters );
+			}
+		}
+	};
+	Eventable.make = function( obj ) {
+		obj.prototype.addEventListener = Eventable.prototype.addEventListener;
+		obj.prototype.removeEventListener = Eventable.prototype.removeEventListener;
+		obj.prototype.dispatchEvent = Eventable.prototype.dispatchEvent;
+	};
 	
 	THREE.GeometryUtils.triangulateQuads = THREE.GeometryUtils.triangulateQuads || function ( geometry ) {
 
@@ -131,20 +168,26 @@ var Physijs = (function() {
 	Physijs.Scene = function() {
 		var self = this;
 		
+		Eventable.call( this );
 		THREE.Scene.call( this );
 		
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 		this._objects = [];
 		
 		this._worker.onmessage = function ( event ) {
-			var i, obj, sceneObj;
+			var i, index, obj_id, obj, sceneObj, collisionObj, collided_with = [],
+				update_details = {
+					collisions: []
+				};
 			
 			switch ( event.data.cmd ) {
 				
 				case 'update':
-					for ( i = 0; i < event.data.params.objects.length; i++ ) {
-						obj = event.data.params.objects[i];
-						sceneObj = self._objects[obj.id];
+					for ( obj_id in event.data.params.objects ) {
+						if ( !event.data.params.objects.hasOwnProperty( obj_id ) ) continue;
+						
+						obj = event.data.params.objects[obj_id];
+						sceneObj = self._objects[obj_id];
 						
 						sceneObj.position.set( obj.pos_x, obj.pos_y, obj.pos_z );
 						if ( sceneObj.useQuaternion) {
@@ -152,9 +195,41 @@ var Physijs = (function() {
 						} else {
 							sceneObj.rotation = getEulerXYZFromQuaternion( obj.quat_x, obj.quat_y, obj.quat_z, obj.quat_w );
 						};
+						
+						collided_with.length = 0;
+						
+						if ( obj.collisions.length > 0 ) {
+							
+							for ( i = 0; i < obj.collisions.length; i++ ) {
+								collisionObj = self._objects[obj.collisions[i]];
+								
+								if ( sceneObj._physijs.touches.indexOf( collisionObj._physijs.id ) === -1 ) {
+									sceneObj._physijs.touches.push( collisionObj._physijs.id );
+									sceneObj.dispatchEvent( 'collision', collisionObj );
+									collisionObj.dispatchEvent( 'collision', sceneObj );
+									
+									update_details.collisions.push([ sceneObj, collisionObj ]);
+								}
+								
+								collided_with.push( collisionObj._physijs.id );
+							}
+							
+							for ( i = 0; i < sceneObj._physijs.touches.length; i++ ) {
+								if ( collided_with.indexOf( sceneObj._physijs.touches[i] ) === -1 ) {
+									sceneObj._physijs.touches.splice( i--, 1 );
+								}
+							}
+							
+						} else {
+							
+							sceneObj._physijs.touches.length = 0;
+							
+						}
 					}
 					
 					_is_simulating = false;
+					self.dispatchEvent( 'update', update_details );
+					
 					break;
 				
 				default:
@@ -170,6 +245,7 @@ var Physijs = (function() {
 	};
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
+	Eventable.make( Physijs.Scene );
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });
@@ -247,7 +323,7 @@ var Physijs = (function() {
 		}
 		
 		params = params || {};
-		
+		Eventable.call( this );
 		THREE.Mesh.call( this, geometry, material );
 		
 		if ( !geometry.boundingBox ) {
@@ -257,17 +333,18 @@ var Physijs = (function() {
 		this._physijs = {
 			type: null,
 			id: getObjectId(),
-			mass: mass || 0
-		}
+			mass: mass || 0,
+			touches: []
+		};
 		
 		for ( index in params ) {
 			if ( !params.hasOwnProperty( index ) ) continue;
 			this._physijs[index] = params[index];
 		}
-		
 	};
 	Physijs.Mesh.prototype = new THREE.Mesh;
 	Physijs.Mesh.prototype.constructor = Physijs.Mesh;
+	Eventable.make( Physijs.Mesh );
 	
 	// Physijs.Mesh.mass
 	Physijs.Mesh.prototype.__defineGetter__('mass', function() {

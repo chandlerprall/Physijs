@@ -11,6 +11,7 @@ var	// temp variables
 	setGravity,
 	simulate,
 	reportWorld,
+	addCollisions,
 	
 	// Object-specific functions
 	addObject,
@@ -29,7 +30,8 @@ var	// temp variables
 	
 	// private cache
 	_now,
-	_objects = [];
+	_objects = [],
+	_objects_ammo = {};
 
 
 init = function( params ) {
@@ -136,7 +138,7 @@ addObject = function( description ) {
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
-	
+	_objects_ammo[body.a] = body.id;
 };
 
 updateTransform = function( details ) {
@@ -228,7 +230,8 @@ simulate = function( params ) {
 };
 
 reportWorld = function() {
-	var index, report = [], object,
+	var index, object,
+		report = [],
 		transform = new Ammo.btTransform(), origin, rotation;
 	
 	for ( index in _objects ) {
@@ -243,24 +246,37 @@ reportWorld = function() {
 			origin = transform.getOrigin();
 			rotation = transform.getRotation();
 			
-			report.push(
-				{
-					id: object.id,
-					
-					pos_x: origin.x(),
-					pos_y: origin.y(),
-					pos_z: origin.z(),
-					
-					quat_x: rotation.x(),
-					quat_y: rotation.y(),
-					quat_z: rotation.z(),
-					quat_w: rotation.w()
-				}
-			);
+			report[object.id] = {
+				pos_x: origin.x(),
+				pos_y: origin.y(),
+				pos_z: origin.z(),
+				
+				quat_x: rotation.x(),
+				quat_y: rotation.y(),
+				quat_z: rotation.z(),
+				quat_w: rotation.w(),
+				
+				collisions: []
+			};
 		}
 	}
 	
+	addCollisions( report );
+	
 	self.postMessage({ cmd: 'update', params: { objects: report } });
+};
+
+addCollisions = function( objects ) {
+	var i,
+		dp = world.getDispatcher(),
+		num = dp.getNumManifolds(),
+		man;
+		
+	for ( i = 0; i < num; i++ ) {
+		man = dp.getManifoldByIndexInternal( i );
+		if ( man.getNumContacts() == 0 ) continue;
+		objects[_objects_ammo[man.getBody0()]].collisions.push( _objects[_objects_ammo[man.getBody1()]].id );
+	}
 };
 
 
