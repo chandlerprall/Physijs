@@ -12,10 +12,14 @@ Physijs is a drop-in physics simulator for three.js scenes. Its goal is to provi
 
 Supports Box, Sphere, and Cylinder shapes which correspond to `THREE.CubeGeometry`, `THREE.SphereGeometry`, and `THREE.CylinderGeometry`
 Very basic API at the moment
+
 * Position
 * Rotation
 * Apply basic physical force
 
-See `shapes.html` in examples directory for usage or `physi.js` for current API methods.
+**Live Examples**
+[Body](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/body.html) - demonstrating some body-related API methods
+[Collisions](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/collisions.html) - shows how to use the collision callbacks
+[Shapes](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/shapes.html) - demonstrates the currently implemented shapes
 
 *Built on top of [ammo.js](https://github.com/kripken/ammo.js/)*
