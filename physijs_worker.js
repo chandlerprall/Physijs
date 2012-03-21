@@ -2,6 +2,8 @@
 
 var	// temp variables
 	_object,
+	_vector1,
+	_vector2,
 	_transform,
 	
 	// functions
@@ -245,6 +247,8 @@ reportWorld = function() {
 			
 			origin = transform.getOrigin();
 			rotation = transform.getRotation();
+			_vector1 = object.getLinearVelocity();
+			_vector2 = object.getAngularVelocity();
 			
 			report[object.id] = {
 				pos_x: origin.x(),
@@ -255,6 +259,14 @@ reportWorld = function() {
 				quat_y: rotation.y(),
 				quat_z: rotation.z(),
 				quat_w: rotation.w(),
+				
+				linear_x: _vector1.x(),
+				linear_y: _vector1.y(),
+				linear_z: _vector1.z(),
+				
+				angular_x: _vector2.x(),
+				angular_y: _vector2.y(),
+				angular_z: _vector2.z(),
 				
 				collisions: []
 			};

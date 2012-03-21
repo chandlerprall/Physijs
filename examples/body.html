@@ -52,6 +52,18 @@
 		scene = new Physijs.Scene;
 		scene.setGravity({ x: 0, y: -10, z: 0 });
 		
+		scene.addEventListener('update', function( details ) {
+			var vector,
+				info = '';
+			
+			vector = box.getLinearVelocity();
+			info += 'Linear Velocity: ' + Math.round(vector.x * 10) / 10 + ',' + Math.round(vector.y * 10) / 10 + ',' + Math.round(vector.z * 10) / 10;
+			
+			vector = box.getAngularVelocity();
+			info += '<br />Angular Velocity: ' + Math.round(vector.x * 10) / 10 + ',' + Math.round(vector.y * 10) / 10 + ',' + Math.round(vector.z * 10) / 10;
+			document.getElementById( 'info' ).innerHTML = info;
+		});
+		
 		camera = new THREE.PerspectiveCamera(
 			35,
 			window.innerWidth / window.innerHeight,
@@ -156,7 +168,7 @@
 
 <body>
 	<p>
-		Interacting with a rigid body - move your cursor near the box to push it.
+		Interacting with a rigid body - move your cursor near the box to push it.<br /><span id="info"></span>
 	</p>
 	<div id="viewport"></div>
 </body>

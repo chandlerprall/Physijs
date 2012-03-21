@@ -189,6 +189,7 @@ var Physijs = (function() {
 						obj = event.data.params.objects[obj_id];
 						sceneObj = self._objects[obj_id];
 						
+						// Update position & rotation
 						sceneObj.position.set( obj.pos_x, obj.pos_y, obj.pos_z );
 						if ( sceneObj.useQuaternion) {
 							sceneObj.quaternion.set( obj.quat_x, obj.quat_y, obj.quat_z, obj.quat_w );
@@ -196,6 +197,11 @@ var Physijs = (function() {
 							sceneObj.rotation = getEulerXYZFromQuaternion( obj.quat_x, obj.quat_y, obj.quat_z, obj.quat_w );
 						};
 						
+						// Record velocities
+						sceneObj._physijs.linearVelocity.set( obj.linear_x, obj.linear_y, obj.linear_z );
+						sceneObj._physijs.angularVelocity.set( obj.angular_x, obj.angular_y, obj.angular_z );
+						
+						// Collisions
 						collided_with.length = 0;
 						
 						if ( obj.collisions.length > 0 ) {
@@ -334,7 +340,9 @@ var Physijs = (function() {
 			type: null,
 			id: getObjectId(),
 			mass: mass || 0,
-			touches: []
+			touches: [],
+			linearVelocity: new THREE.Vector3,
+			angularVelocity: new THREE.Vector3
 		};
 		
 		for ( index in params ) {
@@ -371,11 +379,21 @@ var Physijs = (function() {
 		}
 	};
 	
+	// Physijs.Mesh.getAngularVelocity
+	Physijs.Mesh.prototype.getAngularVelocity = function () {
+		return this._physijs.angularVelocity;
+	};
+	
 	// Physijs.Mesh.setAngularVelocity
 	Physijs.Mesh.prototype.setAngularVelocity = function ( velocity ) {
 		if ( this.world ) {
 			this.world.execute( 'setAngularVelocity', { id: this._physijs.id, x: velocity.x, y: velocity.y, z: velocity.z } );
 		}
+	};
+	
+	// Physijs.Mesh.getLinearVelocity
+	Physijs.Mesh.prototype.getLinearVelocity = function () {
+		return this._physijs.linearVelocity;
 	};
 	
 	// Physijs.Mesh.setLinearVelocity
