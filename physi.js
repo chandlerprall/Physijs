@@ -43,90 +43,6 @@ var Physijs = (function() {
 		obj.prototype.dispatchEvent = Eventable.prototype.dispatchEvent;
 	};
 	
-	THREE.GeometryUtils.triangulateQuads = THREE.GeometryUtils.triangulateQuads || function ( geometry ) {
-
-		for ( var i = geometry.faces.length - 1; i >= 0; i -- ) {
-
-			var face = geometry.faces[ i ];
-
-			if ( face instanceof THREE.Face4 ) {
-
-				var a = face.a;
-				var b = face.b;
-				var c = face.c;
-				var d = face.d;
-
-				var triA = new THREE.Face3( a, b, d );
-				var triB = new THREE.Face3( b, c, d );
-
-				triA.materialIndex = triB.materialIndex = face.materialIndex;
-
-				triA.color.copy( face.color );
-				triB.color.copy( face.color );
-
-				if ( face.vertexColors.length === 4 ) {
-
-					var cA = face.vertexColors[ 0 ];
-					var cB = face.vertexColors[ 1 ];
-					var cC = face.vertexColors[ 2 ];
-					var cD = face.vertexColors[ 3 ];
-
-					triA.vertexColors[ 0 ] = cA.clone();
-					triA.vertexColors[ 1 ] = cB.clone();
-					triA.vertexColors[ 2 ] = cD.clone();
-
-					triB.vertexColors[ 0 ] = cB.clone();
-					triB.vertexColors[ 1 ] = cC.clone();
-					triB.vertexColors[ 2 ] = cD.clone();
-
-				}
-
-				geometry.faces.splice( i, 1, triA, triB );
-
-				for ( var j = 0; j < geometry.faceVertexUvs.length; j ++ ) {
-
-					if ( geometry.faceVertexUvs[ j ].length ) {
-
-						var faceVertexUvs = geometry.faceVertexUvs[ j ][ i ];
-
-						var uvA = faceVertexUvs[ 0 ];
-						var uvB = faceVertexUvs[ 1 ];
-						var uvC = faceVertexUvs[ 2 ];
-						var uvD = faceVertexUvs[ 3 ];
-
-						var uvsTriA = [ uvA.clone(), uvB.clone(), uvD.clone() ];
-						var uvsTriB = [ uvB.clone(), uvC.clone(), uvD.clone() ];
-
-						geometry.faceVertexUvs[ j ].splice( i, 1, uvsTriA, uvsTriB );
-
-					}
-
-				}
-
-				for ( var j = 0; j < geometry.faceUvs.length; j ++ ) {
-
-					if ( geometry.faceUvs[ j ].length ) {
-
-						var faceUv = geometry.faceUvs[ j ][ i ];
-
-						geometry.faceUvs[ j ].splice( i, 1, faceUv, faceUv );
-
-					}
-
-				}
-
-			}
-
-		}
-
-		geometry.computeCentroids();
-		geometry.computeFaceNormals();
-		geometry.computeVertexNormals();
-
-		if ( geometry.hasTangents ) geometry.computeTangents();
-
-	};
-	
 	getEulerXYZFromQuaternion = function ( x, y, z, w ) {
 		return new THREE.Vector3(
 			Math.atan2( 2 * ( x * w - y * z ), ( w * w - x * x - y * y + z * z ) ),
@@ -135,26 +51,6 @@ var Physijs = (function() {
 		);
 	};
 	
-	THREE.Quaternion.prototype.setFromEuler = function( vec3 ) {
-		var pitch = vec3.x,
-			yaw = vec3.y,
-			roll = vec3.z;
-		
-		var halfYaw = yaw * 0.5;
-		var halfPitch = pitch * 0.5;
-		var halfRoll = roll * 0.5;
-		var cosYaw = Math.cos(halfYaw);
-		var sinYaw = Math.sin(halfYaw);
-		var cosPitch = Math.cos(halfPitch);
-		var sinPitch = Math.sin(halfPitch);
-		var cosRoll = Math.cos(halfRoll);
-		var sinRoll = Math.sin(halfRoll);
-		
-		this.x = cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw;
-		this.y = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
-		this.z = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
-		this.w = cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw;
-	};
 	
 	getObjectId = (function() {
 		var _id = 0;
@@ -312,9 +208,8 @@ var Physijs = (function() {
 				
 				if ( object.__dirtyRotation ) {
 					if (!object.useQuaternion) {
-						//_matrix.identity().setRotationFromEuler( object.rotation );
-						//object.quaternion.setFromRotationMatrix( _matrix );
-						object.quaternion.setFromEuler( object.rotation ); //TODO: fix setFromEuler
+						_matrix.identity().setRotationFromEuler( object.rotation );
+						object.quaternion.setFromRotationMatrix( _matrix );
 					};
 					update.quat = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 					object.__dirtyRotation = false;
