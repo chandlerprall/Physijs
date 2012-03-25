@@ -7,27 +7,9 @@ var	// temp variables
 	_transform,
 	
 	// functions
-	init,
-	
-	// World-specific functions
-	setGravity,
-	simulate,
+	public_functions = {},
 	reportWorld,
 	addCollisions,
-	
-	// Object-specific functions
-	addObject,
-	removeObject,
-	updateTransform,
-	updateMass,
-	applyCentralImpulse,
-	applyImpulse,
-	setAngularVelocity,
-	setLinearVelocity,
-	setAngularFactor,
-	setLinearFactor,
-	setCcdMotionThreshold,
-	setCcdSweptSphereRadius,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
@@ -40,7 +22,7 @@ var	// temp variables
 	_objects_ammo = {};
 
 
-init = function( params ) {
+public_functions.init = function( params ) {
 	importScripts( params.ammo );
 	_transform = new Ammo.btTransform;
 	
@@ -67,13 +49,11 @@ init = function( params ) {
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
 };
 
-setGravity = function( gravity ) {
-	//if ( world && gravity && gravity.x && gravity.y && gravity.z ) {
-		world.setGravity(new Ammo.btVector3( gravity.x, gravity.y, gravity.z ));
-	//}
+public_functions.setGravity = function( description ) {
+	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
 };
 
-addObject = function( description ) {
+public_functions.addObject = function( description ) {
 	var localInertia, shape, motionState, rbInfo, body;
 	
 	_transform.setIdentity();
@@ -160,106 +140,86 @@ addObject = function( description ) {
 	_objects_ammo[body.a] = body.id;
 };
 
-removeObject = function( details ) {
+public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
 	delete _objects[details.id];
 };
 
-updateTransform = function( details ) {
-	if ( _objects[details.id] ) {
-		_object = _objects[details.id];
-		_object.getMotionState().getWorldTransform( _transform );
-		
-		if ( details.pos ) {
-			_transform.setOrigin(new Ammo.btVector3( details.pos.x, details.pos.y, details.pos.z ));
-		}
-		
-		if ( details.quat ) {
-			_transform.setRotation(new Ammo.btQuaternion( details.quat.x, details.quat.y, details.quat.z, details.quat.w ));
-		}
-		
-		_object.setWorldTransform( _transform );
-		_object.activate();
+public_functions.updateTransform = function( details ) {
+	_object = _objects[details.id];
+	_object.getMotionState().getWorldTransform( _transform );
+	
+	if ( details.pos ) {
+		_transform.setOrigin(new Ammo.btVector3( details.pos.x, details.pos.y, details.pos.z ));
 	}
+	
+	if ( details.quat ) {
+		_transform.setRotation(new Ammo.btQuaternion( details.quat.x, details.quat.y, details.quat.z, details.quat.w ));
+	}
+	
+	_object.setWorldTransform( _transform );
+	_object.activate();
 };
 
-updateMass = function( details ) {
+public_functions.updateMass = function( details ) {
 	// #TODO: changing a static object into dynamic is buggy
-	if ( _objects[details.id] ) {
-		_object = _objects[details.id];
-		_object.setMassProps( details.mass, new Ammo.btVector3(0, 0, 0) );
-		
-		// Per http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?p=&f=9&t=3663#p13816
-		world.removeRigidBody( _object );
-		world.addRigidBody( _object );
-		_object.activate();
-	}
+	_object = _objects[details.id];
+	_object.setMassProps( details.mass, new Ammo.btVector3(0, 0, 0) );
+	
+	// Per http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?p=&f=9&t=3663#p13816
+	world.removeRigidBody( _object );
+	world.addRigidBody( _object );
+	_object.activate();
 };
 
-applyCentralImpulse = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].applyCentralImpulse(new Ammo.btVector3( details.x, details.y, details.z ));
-		_objects[details.id].activate();
-	}
+public_functions.applyCentralImpulse = function ( details ) {
+	_objects[details.id].applyCentralImpulse(new Ammo.btVector3( details.x, details.y, details.z ));
+	_objects[details.id].activate();
 };
 
-applyImpulse = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].applyImpulse(
-			new Ammo.btVector3( details.impulse_x, details.impulse_y, details.impulse_z ),
-			new Ammo.btVector3( details.x, details.y, details.z )
-		);
-		_objects[details.id].activate();
-	}
+public_functions.applyImpulse = function ( details ) {
+	_objects[details.id].applyImpulse(
+		new Ammo.btVector3( details.impulse_x, details.impulse_y, details.impulse_z ),
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
+	_objects[details.id].activate();
 };
 
-setAngularVelocity = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setAngularVelocity(
-			new Ammo.btVector3( details.x, details.y, details.z )
-		);
-		_objects[details.id].activate();
-	}
+public_functions.setAngularVelocity = function ( details ) {
+	_objects[details.id].setAngularVelocity(
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
+	_objects[details.id].activate();
 };
 
-setLinearVelocity = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setLinearVelocity(
-			new Ammo.btVector3( details.x, details.y, details.z )
-		);
-		_objects[details.id].activate();
-	}
+public_functions.setLinearVelocity = function ( details ) {
+	_objects[details.id].setLinearVelocity(
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
+	_objects[details.id].activate();
 };
 
-setAngularFactor = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setAngularFactor(
-			new Ammo.btVector3( details.x, details.y, details.z )
-		);
-	}
+public_functions.setAngularFactor = function ( details ) {
+	_objects[details.id].setAngularFactor(
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
 };
 
-setLinearFactor = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setLinearFactor(
-			new Ammo.btVector3( details.x, details.y, details.z )
-		);
-	}
+public_functions.setLinearFactor = function ( details ) {
+	_objects[details.id].setLinearFactor(
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
 };
 
-setCcdMotionThreshold = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setCcdMotionThreshold( details.threshold );
-	}
+public_functions.setCcdMotionThreshold = function ( details ) {
+	_objects[details.id].setCcdMotionThreshold( details.threshold );
 };
 
-setCcdSweptSphereRadius = function ( details ) {
-	if ( details.id && _objects[details.id] ) {
-		_objects[details.id].setCcdSweptSphereRadius( details.radius );
-	}
+public_functions.setCcdSweptSphereRadius = function ( details ) {
+	_objects[details.id].setCcdSweptSphereRadius( details.radius );
 };
 
-simulate = function( params ) {
+public_functions.simulate = function( params ) {
 	if ( world ) {
 		params = params || {};
 		_now = new Date().getTime() / 1000; // store in *seconds*
@@ -354,98 +314,9 @@ addCollisions = function( objects ) {
 
 self.onmessage = function( event ) {
 	
-	switch ( event.data.cmd ) {
-		
-		case 'init':
-			init( event.data.params || {} );
-			break;
-		
-		case 'addObject':
-			if ( event.data.params && event.data.params.description ) {
-				addObject( event.data.params.description );
-			}
-			break;
-		
-		case 'removeObject':
-			if ( event.data.params && event.data.params.description ) {
-				removeObject( event.data.params.description );
-			}
-			break;
-		
-		case 'updateTransform':
-			if ( event.data.params ) {
-				updateTransform( event.data.params );
-			}
-			break;
-		
-		case 'updateMass':
-			if ( event.data.params ) {
-				updateMass( event.data.params );
-			}
-			break;
-		
-		case 'applyCentralImpulse':
-			if ( event.data.params ) {
-				applyCentralImpulse( event.data.params );
-			}
-			break;
-		
-		case 'applyImpulse':
-			if ( event.data.params ) {
-				applyImpulse( event.data.params );
-			}
-			break;
-		
-		case 'setAngularVelocity':
-			if ( event.data.params ) {
-				setAngularVelocity( event.data.params );
-			}
-			break;
-		
-		case 'setLinearVelocity':
-			if ( event.data.params ) {;
-				setLinearVelocity( event.data.params );
-			}
-			break;
-		
-		case 'setAngularFactor':
-			if ( event.data.params ) {
-				setAngularFactor( event.data.params );
-			}
-			break;
-		
-		case 'setLinearFactor':
-			if ( event.data.params ) {
-				setLinearFactor( event.data.params );
-			}
-			break;
-		
-		case 'setCcdMotionThreshold':
-			if ( event.data.params ) {
-				setCcdMotionThreshold( event.data.params );
-			}
-			break;
-		
-		case 'setCcdSweptSphereRadius':
-			if ( event.data.params ) {
-				setCcdSweptSphereRadius( event.data.params );
-			}
-			break;
-		
-		case 'setGravity':
-			if ( event.data.params && event.data.params.gravity ) {
-				setGravity( event.data.params.gravity );
-			}
-			break;
-		
-		case 'simulate':
-			simulate( event.data.params || {} );
-			break;
-		
-		default:
-			// Do nothing
-			break;
-		
+	if ( public_functions[event.data.cmd] ) {
+		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' ) return;
+		public_functions[event.data.cmd]( event.data.params );
 	}
 	
 };

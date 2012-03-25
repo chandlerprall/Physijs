@@ -270,7 +270,7 @@ var Physijs = (function() {
 			
 			object.world = this;
 			
-			this.execute( 'addObject', { description: object._physijs } );
+			this.execute( 'addObject', object._physijs );
 		}
 	};
 	
@@ -278,13 +278,13 @@ var Physijs = (function() {
 		THREE.Mesh.prototype.remove.call( this, object );
 		
 		if ( object._physijs ) {
-			this.execute( 'removeObject', { description: { id: object._physijs.id } } );
+			this.execute( 'removeObject', { id: object._physijs.id } );
 		}
 	};
 	
 	Physijs.Scene.prototype.setGravity = function( gravity ) {
 		if ( gravity ) {
-			this.execute( 'setGravity', { gravity: gravity } );
+			this.execute( 'setGravity', gravity );
 		}
 	};
 	
