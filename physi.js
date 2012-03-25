@@ -165,7 +165,7 @@ var Physijs = (function() {
 	
 	
 	// Physijs.Scene
-	Physijs.Scene = function() {
+	Physijs.Scene = function( params ) {
 		var self = this;
 		
 		Eventable.call( this );
@@ -247,7 +247,9 @@ var Physijs = (function() {
 			
 		};
 		
-		this.execute( 'init', { ammo: Physijs.scripts.ammo || 'ammo.js' } );
+		params = params || {};
+		params.ammo = Physijs.scripts.ammo || 'ammo.js';
+		this.execute( 'init', params );
 	};
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
@@ -269,7 +271,15 @@ var Physijs = (function() {
 			object.world = this;
 			
 			this.execute( 'addObject', { description: object._physijs } );
-		};
+		}
+	};
+	
+	Physijs.Scene.prototype.remove = function( object ) {
+		THREE.Mesh.prototype.remove.call( this, object );
+		
+		if ( object._physijs ) {
+			this.execute( 'removeObject', { description: { id: object._physijs.id } } );
+		}
 	};
 	
 	Physijs.Scene.prototype.setGravity = function( gravity ) {
@@ -400,6 +410,34 @@ var Physijs = (function() {
 	Physijs.Mesh.prototype.setLinearVelocity = function ( velocity ) {
 		if ( this.world ) {
 			this.world.execute( 'setLinearVelocity', { id: this._physijs.id, x: velocity.x, y: velocity.y, z: velocity.z } );
+		}
+	};
+	
+	// Physijs.Mesh.setAngularFactor
+	Physijs.Mesh.prototype.setAngularFactor = function ( factor ) {
+		if ( this.world ) {
+			this.world.execute( 'setAngularFactor', { id: this._physijs.id, x: factor.x, y: factor.y, z: factor.z } );
+		}
+	};
+	
+	// Physijs.Mesh.setLinearFactor
+	Physijs.Mesh.prototype.setLinearFactor = function ( factor ) {
+		if ( this.world ) {
+			this.world.execute( 'setLinearFactor', { id: this._physijs.id, x: factor.x, y: factor.y, z: factor.z } );
+		}
+	};
+	
+	// Physijs.Mesh.setCcdMotionThreshold
+	Physijs.Mesh.prototype.setCcdMotionThreshold = function ( threshold ) {
+		if ( this.world ) {
+			this.world.execute( 'setCcdMotionThreshold', { id: this._physijs.id, threshold: threshold } );
+		}
+	};
+	
+	// Physijs.Mesh.setCcdSweptSphereRadius
+	Physijs.Mesh.prototype.setCcdSweptSphereRadius = function ( radius ) {
+		if ( this.world ) {
+			this.world.execute( 'setLinearFactor', { id: this._physijs.id, radius: radius } );
 		}
 	};
 	

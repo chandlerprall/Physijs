@@ -17,13 +17,17 @@ var	// temp variables
 	
 	// Object-specific functions
 	addObject,
+	removeObject,
 	updateTransform,
 	updateMass,
 	applyCentralImpulse,
 	applyImpulse,
 	setAngularVelocity,
 	setLinearVelocity,
-	
+	setAngularFactor,
+	setLinearFactor,
+	setCcdMotionThreshold,
+	setCcdSweptSphereRadius,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
@@ -42,10 +46,23 @@ init = function( params ) {
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
 		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
-		overlappingPairCache = new Ammo.btDbvtBroadphase,
-		solver = new Ammo.btSequentialImpulseConstraintSolver
+		solver = new Ammo.btSequentialImpulseConstraintSolver,
+		broadphase;
 	
-	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, overlappingPairCache, solver, collisionConfiguration );
+	if ( !params.broadphase ) params.broadphase = { type: 'dynamic' };
+	switch ( params.broadphase.type ) {
+		case 'sweepprune':
+			broadphase = new Ammo.btAxisSweep3(
+				new Ammo.btVector3( params.broadphase.aabbmin.x, params.broadphase.aabbmin.y, params.broadphase.aabbmax.z ),
+				new Ammo.btVector3( params.broadphase.aabbmax.x, params.broadphase.aabbmax.y, params.broadphase.aabbmax.z )
+			);
+		
+		case 'dynamic':
+		default:
+			broadphase = new Ammo.btDbvtBroadphase;
+	}
+	
+	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
 	
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
 };
@@ -143,6 +160,11 @@ addObject = function( description ) {
 	_objects_ammo[body.a] = body.id;
 };
 
+removeObject = function( details ) {
+	world.removeRigidBody( _objects[details.id] );
+	delete _objects[details.id];
+};
+
 updateTransform = function( details ) {
 	if ( _objects[details.id] ) {
 		_object = _objects[details.id];
@@ -206,6 +228,34 @@ setLinearVelocity = function ( details ) {
 			new Ammo.btVector3( details.x, details.y, details.z )
 		);
 		_objects[details.id].activate();
+	}
+};
+
+setAngularFactor = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setAngularFactor(
+			new Ammo.btVector3( details.x, details.y, details.z )
+		);
+	}
+};
+
+setLinearFactor = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setLinearFactor(
+			new Ammo.btVector3( details.x, details.y, details.z )
+		);
+	}
+};
+
+setCcdMotionThreshold = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setCcdMotionThreshold( details.threshold );
+	}
+};
+
+setCcdSweptSphereRadius = function ( details ) {
+	if ( details.id && _objects[details.id] ) {
+		_objects[details.id].setCcdSweptSphereRadius( details.radius );
 	}
 };
 
@@ -282,12 +332,22 @@ addCollisions = function( objects ) {
 	var i,
 		dp = world.getDispatcher(),
 		num = dp.getNumManifolds(),
-		man;
-		
+		manifold;
+	
+	var _collided = false;
 	for ( i = 0; i < num; i++ ) {
-		man = dp.getManifoldByIndexInternal( i );
-		if ( man.getNumContacts() == 0 ) continue;
-		objects[_objects_ammo[man.getBody0()]].collisions.push( _objects[_objects_ammo[man.getBody1()]].id );
+		manifold = dp.getManifoldByIndexInternal( i );
+		
+		var num_contacts = manifold.getNumContacts(), j, pt;
+		if ( num_contacts == 0 ) continue;
+		
+		for ( j = 0; j < num_contacts; j++ ) {
+			pt = manifold.getContactPoint( j );
+			//if ( pt.getDistance() < 0 ) {
+				objects[_objects_ammo[manifold.getBody0()]].collisions.push( _objects[_objects_ammo[manifold.getBody1()]].id );
+				break;
+			//}
+		}
 	}
 };
 
@@ -303,6 +363,12 @@ self.onmessage = function( event ) {
 		case 'addObject':
 			if ( event.data.params && event.data.params.description ) {
 				addObject( event.data.params.description );
+			}
+			break;
+		
+		case 'removeObject':
+			if ( event.data.params && event.data.params.description ) {
+				removeObject( event.data.params.description );
 			}
 			break;
 		
@@ -337,8 +403,32 @@ self.onmessage = function( event ) {
 			break;
 		
 		case 'setLinearVelocity':
+			if ( event.data.params ) {;
+				setLinearVelocity( event.data.params );
+			}
+			break;
+		
+		case 'setAngularFactor':
 			if ( event.data.params ) {
-				setAngularVelocity( event.data.params );
+				setAngularFactor( event.data.params );
+			}
+			break;
+		
+		case 'setLinearFactor':
+			if ( event.data.params ) {
+				setLinearFactor( event.data.params );
+			}
+			break;
+		
+		case 'setCcdMotionThreshold':
+			if ( event.data.params ) {
+				setCcdMotionThreshold( event.data.params );
+			}
+			break;
+		
+		case 'setCcdSweptSphereRadius':
+			if ( event.data.params ) {
+				setCcdSweptSphereRadius( event.data.params );
 			}
 			break;
 		
