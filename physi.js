@@ -144,7 +144,7 @@ var Physijs = (function() {
 		};
 		
 		params = params || {};
-		params.ammo = Physijs.scripts.ammo || 'ammo.js';
+		params.cannon = Physijs.scripts.cannon || 'cannon.js';
 		this.execute( 'init', params );
 	};
 	Physijs.Scene.prototype = new THREE.Scene;
@@ -185,7 +185,7 @@ var Physijs = (function() {
 	};
 	
 	Physijs.Scene.prototype.simulate = function( timeStep, maxSubSteps ) {
-		var object_id, object, update;
+		var object_id, object, position, rotation;
 		
 		if ( _is_simulating ) {
 			return false;
@@ -199,11 +199,11 @@ var Physijs = (function() {
 			object = this._objects[object_id];
 			
 			if ( object.__dirtyPosition || object.__dirtyRotation ) {
-				update = { id: object._physijs.id };
 				
 				if ( object.__dirtyPosition ) {
-					update.pos = { x: object.position.x, y: object.position.y, z: object.position.z };
+					position = { id: object._physijs.id, x: object.position.x, y: object.position.y, z: object.position.z };
 					object.__dirtyPosition = false;
+					this.execute( 'updatePosition', position );
 				}
 				
 				if ( object.__dirtyRotation ) {
@@ -211,11 +211,11 @@ var Physijs = (function() {
 						_matrix.identity().setRotationFromEuler( object.rotation );
 						object.quaternion.setFromRotationMatrix( _matrix );
 					};
-					update.quat = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
+					rotation = { id: object._physijs.id, x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 					object.__dirtyRotation = false;
+					this.execute( 'updateRotation', rotation );
 				}
 				
-				this.execute( 'updateTransform', update );
 			};
 		}
 		

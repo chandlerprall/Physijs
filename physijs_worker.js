@@ -4,7 +4,8 @@ var	// temp variables
 	_object,
 	_vector1,
 	_vector2,
-	_transform,
+	_vector3,
+	_quaternion1,
 	
 	// functions
 	public_functions = {},
@@ -18,61 +19,49 @@ var	// temp variables
 	
 	// private cache
 	_now,
-	_objects = [],
-	_objects_ammo = {};
+	_objects = [];
+	//__objects_cannon = {};
 
 
 public_functions.init = function( params ) {
-	importScripts( params.ammo );
-	_transform = new Ammo.btTransform;
+	importScripts( params.cannon );
 	
-	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
-		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
-		solver = new Ammo.btSequentialImpulseConstraintSolver,
-		broadphase;
+	_vector1 = new CANNON.Vec3;
+	_vector2 = new CANNON.Vec3;
+	_vector3 = new CANNON.Vec3;
+	_quaternion1 = new CANNON.Quaternion;
 	
-	if ( !params.broadphase ) params.broadphase = { type: 'dynamic' };
-	switch ( params.broadphase.type ) {
-		case 'sweepprune':
-			broadphase = new Ammo.btAxisSweep3(
-				new Ammo.btVector3( params.broadphase.aabbmin.x, params.broadphase.aabbmin.y, params.broadphase.aabbmax.z ),
-				new Ammo.btVector3( params.broadphase.aabbmax.x, params.broadphase.aabbmax.y, params.broadphase.aabbmax.z )
-			);
-		
-		case 'dynamic':
-		default:
-			broadphase = new Ammo.btDbvtBroadphase;
-	}
+	var bp = new CANNON.NaiveBroadphase;
 	
-	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
+	world = new CANNON.World
+	world.broadphase( bp );
 	
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
 };
 
 public_functions.setGravity = function( description ) {
-	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
+	world.gravity( description );
 };
 
 public_functions.addObject = function( description ) {
-	var localInertia, shape, motionState, rbInfo, body;
-	
-	_transform.setIdentity();
-	
-	localInertia = new Ammo.btVector3(0, 0, 0); // #TODO: localIntertia is the local inertia tensor, what does it do and should it be a parameter?
+	var shape, body;
 	
 	switch ( description.type ) {
 		case 'plane':
-			shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ) );
+			shape = new CANNON.Plane( new CANNON.Vec3( description.normal.x, description.normal.y, description.normal.z ) );
 			break;
 		
 		case 'box':
-			shape = new Ammo.btBoxShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+			description.width /= 2;
+			description.height /= 2;
+			description.depth /= 2;
+			shape = new CANNON.Box(new CANNON.Vec3( description.width, description.height, description.depth ) );
 			break;
 		
 		case 'sphere':
-			shape = new Ammo.btSphereShape( description.radius );
+			shape = new CANNON.Sphere( description.radius );
 			break;
-		
+		/*
 		case 'cylinder':
 			shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
 			break;
@@ -112,66 +101,45 @@ public_functions.addObject = function( description ) {
 			shape.setLocalScaling(localScaling);
 			
 			break;
-		
+		*/
 		default:
 			// Not recognized
 			return;
 			break;
 	}
 	
-	shape.calculateLocalInertia( description.mass, localInertia );
+	//if ( typeof description.friction !== 'undefined' ) rbInfo.set_m_friction( description.friction );
+	//if ( typeof description.restitution !== 'undefined' ) rbInfo.set_m_restitution( description.restitution );
 	
-	motionState = new Ammo.btDefaultMotionState( _transform ); // #TODO: btDefaultMotionState supports center of mass offset as second argument - implement
-	rbInfo = new Ammo.btRigidBodyConstructionInfo( description.mass, motionState, shape, localInertia );
+	body = new CANNON.RigidBody( description.mass, shape );
 	
-	if ( typeof description.friction !== 'undefined' ) rbInfo.set_m_friction( description.friction );
-	if ( typeof description.restitution !== 'undefined' ) rbInfo.set_m_restitution( description.restitution );
-	
-	body = new Ammo.btRigidBody( rbInfo );
-	
-	if ( typeof description.collision_flags !== 'undefined' ) {
-		body.setCollisionFlags( description.collision_flags );
-	}
-	
-	world.addRigidBody( body );
+	world.add( body );
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
-	_objects_ammo[body.a] = body.id;
+	//__objects_cannon[body.a] = body.id;
 };
 
 public_functions.removeObject = function( details ) {
-	world.removeRigidBody( _objects[details.id] );
-	delete _objects[details.id];
+	throw 'Object removal not supported';
+	//world.removeRigidBody( _objects[details.id] );
+	//delete _objects[details.id];
 };
 
-public_functions.updateTransform = function( details ) {
-	_object = _objects[details.id];
-	_object.getMotionState().getWorldTransform( _transform );
-	
-	if ( details.pos ) {
-		_transform.setOrigin(new Ammo.btVector3( details.pos.x, details.pos.y, details.pos.z ));
-	}
-	
-	if ( details.quat ) {
-		_transform.setRotation(new Ammo.btQuaternion( details.quat.x, details.quat.y, details.quat.z, details.quat.w ));
-	}
-	
-	_object.setWorldTransform( _transform );
-	_object.activate();
+public_functions.updatePosition = function( details ) {
+	_objects[details.id].setPosition( details.x, details.y, details.z );
+};
+
+public_functions.updateRotation = function( details ) {
+	_objects[details.id].setOrientation( details.x, details.y, details.z, details.w );
 };
 
 public_functions.updateMass = function( details ) {
-	// #TODO: changing a static object into dynamic is buggy
-	_object = _objects[details.id];
-	_object.setMassProps( details.mass, new Ammo.btVector3(0, 0, 0) );
+	_objects[details.id].mass( details.mass );
+	_objects[details.id].calculateLocalInertia( details.mass );
 	
-	// Per http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?p=&f=9&t=3663#p13816
-	world.removeRigidBody( _object );
-	world.addRigidBody( _object );
-	_object.activate();
 };
-
+/*
 public_functions.applyCentralImpulse = function ( details ) {
 	_objects[details.id].applyCentralImpulse(new Ammo.btVector3( details.x, details.y, details.z ));
 	_objects[details.id].activate();
@@ -184,21 +152,15 @@ public_functions.applyImpulse = function ( details ) {
 	);
 	_objects[details.id].activate();
 };
-
+*/
 public_functions.setAngularVelocity = function ( details ) {
-	_objects[details.id].setAngularVelocity(
-		new Ammo.btVector3( details.x, details.y, details.z )
-	);
-	_objects[details.id].activate();
+	_objects[details.id].setAngularVelocity( details.x, details.y, details.z );
 };
 
 public_functions.setLinearVelocity = function ( details ) {
-	_objects[details.id].setLinearVelocity(
-		new Ammo.btVector3( details.x, details.y, details.z )
-	);
-	_objects[details.id].activate();
+	_objects[details.id].setVelocity( details.x, details.y, details.z );
 };
-
+/*
 public_functions.setAngularFactor = function ( details ) {
 	_objects[details.id].setAngularFactor(
 		new Ammo.btVector3( details.x, details.y, details.z )
@@ -218,7 +180,7 @@ public_functions.setCcdMotionThreshold = function ( details ) {
 public_functions.setCcdSweptSphereRadius = function ( details ) {
 	_objects[details.id].setCcdSweptSphereRadius( details.radius );
 };
-
+*/
 public_functions.simulate = function( params ) {
 	if ( world ) {
 		params = params || {};
@@ -234,7 +196,8 @@ public_functions.simulate = function( params ) {
 		
 		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
 		
-		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
+		world.iterations( params.maxSubSteps );
+		world.step( params.timeStep );
 		reportWorld();
 		
 		last_simulation_time = _now;
@@ -244,51 +207,47 @@ public_functions.simulate = function( params ) {
 reportWorld = function() {
 	var index, object,
 		report = [],
-		transform = new Ammo.btTransform(), origin, rotation;
+		origin, rotation;
 	
 	for ( index in _objects ) {
 		if ( _objects.hasOwnProperty( index ) ) {
 			object = _objects[index];
 			
-			// #TODO: we can't use center of mass transform when center of mass can change,
-			//        but getMotionState().getWorldTransform() screws up on objects that have been moved
-			//object.getMotionState().getWorldTransform( transform );
-			transform = object.getCenterOfMassTransform();
-			
-			origin = transform.getOrigin();
-			rotation = transform.getRotation();
-			_vector1 = object.getLinearVelocity();
-			_vector2 = object.getAngularVelocity();
+			object.getPosition( _vector1 );
+			object.getOrientation( _quaternion1 );
+			object.getVelocity( _vector2 );
+			object.getAngularvelocity( _vector3 );
 			
 			report[object.id] = {
-				pos_x: origin.x(),
-				pos_y: origin.y(),
-				pos_z: origin.z(),
+				pos_x: _vector1.x,
+				pos_y: _vector1.y,
+				pos_z: _vector1.z,
 				
-				quat_x: rotation.x(),
-				quat_y: rotation.y(),
-				quat_z: rotation.z(),
-				quat_w: rotation.w(),
+				quat_x: _quaternion1.x,
+				quat_y: _quaternion1.y,
+				quat_z: _quaternion1.z,
+				quat_w: _quaternion1.w,
 				
-				linear_x: _vector1.x(),
-				linear_y: _vector1.y(),
-				linear_z: _vector1.z(),
+				linear_x: _vector2.x,
+				linear_y: _vector2.y,
+				linear_z: _vector2.z,
 				
-				angular_x: _vector2.x(),
-				angular_y: _vector2.y(),
-				angular_z: _vector2.z(),
+				angular_x: _vector3.x,
+				angular_y: _vector3.y,
+				angular_z: _vector3.z,
 				
 				collisions: []
 			};
 		}
 	}
 	
-	addCollisions( report );
+	//addCollisions( report );
 	
 	self.postMessage({ cmd: 'update', params: { objects: report } });
 };
 
 addCollisions = function( objects ) {
+	/*
 	var i,
 		dp = world.getDispatcher(),
 		num = dp.getNumManifolds(),
@@ -304,11 +263,12 @@ addCollisions = function( objects ) {
 		for ( j = 0; j < num_contacts; j++ ) {
 			pt = manifold.getContactPoint( j );
 			//if ( pt.getDistance() < 0 ) {
-				objects[_objects_ammo[manifold.getBody0()]].collisions.push( _objects[_objects_ammo[manifold.getBody1()]].id );
+				objects[__objects_cannon[manifold.getBody0()]].collisions.push( _objects[__objects_cannon[manifold.getBody1()]].id );
 				break;
 			//}
 		}
 	}
+	*/
 };
 
 
