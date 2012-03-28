@@ -216,7 +216,7 @@ reportWorld = function() {
 			object.getPosition( _vector1 );
 			object.getOrientation( _quaternion1 );
 			object.getVelocity( _vector2 );
-			object.getAngularvelocity( _vector3 );
+			object.getAngularVelocity( _vector3 );
 			
 			report[object.id] = {
 				pos_x: _vector1.x,
@@ -241,34 +241,20 @@ reportWorld = function() {
 		}
 	}
 	
-	//addCollisions( report );
+	addCollisions( report );
 	
 	self.postMessage({ cmd: 'update', params: { objects: report } });
 };
 
 addCollisions = function( objects ) {
-	/*
-	var i,
-		dp = world.getDispatcher(),
-		num = dp.getNumManifolds(),
-		manifold;
+	var contact, contact_objects;
 	
-	var _collided = false;
-	for ( i = 0; i < num; i++ ) {
-		manifold = dp.getManifoldByIndexInternal( i );
-		
-		var num_contacts = manifold.getNumContacts(), j, pt;
-		if ( num_contacts == 0 ) continue;
-		
-		for ( j = 0; j < num_contacts; j++ ) {
-			pt = manifold.getContactPoint( j );
-			//if ( pt.getDistance() < 0 ) {
-				objects[__objects_cannon[manifold.getBody0()]].collisions.push( _objects[__objects_cannon[manifold.getBody1()]].id );
-				break;
-			//}
+	for ( contact in world.contacts ) {
+		if ( world.contacts.hasOwnProperty( contact ) ) {
+			contact_objects = contact.split(',');
+			objects[parseInt(contact_objects[0], 10)].collisions.push( _objects[parseInt(contact_objects[1], 10)].id );
 		}
 	}
-	*/
 };
 
 

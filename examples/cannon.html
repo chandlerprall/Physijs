@@ -65,61 +65,23 @@
 		light.position.set( 40, 60, 25 );
 		light.target.position.copy( scene.position );
 		light.castShadow = true;
-		light.shadowCameraLeft = -30;
-		light.shadowCameraTop = -30;
-		light.shadowCameraRight = 30;
-		light.shadowCameraBottom = 30;
-		light.shadowBias = -.0001
+		light.shadowCameraLeft = -40;
+		light.shadowCameraTop = -40;
+		light.shadowCameraRight = 40;
+		light.shadowCameraBottom = 40;
+		light.shadowBias = -.0001;
 		scene.add( light );
 		
 		// Ground
 		var ground = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(50, 1, 50),
-			//new THREE.PlaneGeometry(50, 50),
 			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
 			0 // mass
 		);
 		ground.rotation.x = Math.PI / 16;
 		ground.receiveShadow = true;
+		window.ground = ground;
 		scene.add( ground );
-		
-		
-		// Bumpers
-		/*
-		var bumper,
-			bumper_geom = new THREE.CubeGeometry(2, 1, 50),
-			bumper_mat = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
-		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = .5;
-		bumper.position.x = -24;
-		bumper.receiveShadow = true;
-		bumper.castShadow = true;
-		scene.add( bumper );
-		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = .5;
-		bumper.position.x = 24;
-		bumper.receiveShadow = true;
-		bumper.castShadow = true;
-		scene.add( bumper );
-		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = .5;
-		bumper.position.z = -24;
-		bumper.rotation.y = Math.PI / 2.01; // 2.01 because of a bug in cannon
-		bumper.receiveShadow = true;
-		bumper.castShadow = true;
-		scene.add( bumper );
-		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
-		bumper.position.y = .5;
-		bumper.position.z = 24;
-		bumper.rotation.y = Math.PI / 2.01; // 2.01 because of a bug in cannon
-		bumper.receiveShadow = true;
-		bumper.castShadow = true;
-		scene.add( bumper );
-		*/
 		
 		requestAnimFrame( render );
 		

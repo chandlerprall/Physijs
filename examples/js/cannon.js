@@ -86,6 +86,10 @@ CANNON.NaiveBroadphase.prototype.collisionPairs = function(){
   var x = world.x;
   var y = world.y;
   var z = world.z;
+  var qx = world.qx;
+  var qy = world.qy;
+  var qz = world.qz;
+  var qw = world.qw;
   var type = world.type;
   var body = world.body;
 
@@ -124,15 +128,16 @@ CANNON.NaiveBroadphase.prototype.collisionPairs = function(){
 		(type[i]==COMPOUND && type[j]==PLANE) ||
 		(type[i]==PLANE &&  type[j]==COMPOUND)){
 
-	var pi = type[i]==PLANE ? i : j; // Plane
-	var oi = type[i]!=PLANE ? i : j; // Other
-	
-	// Rel. position
-	var r = new CANNON.Vec3(x[oi]-x[pi],
-				y[oi]-y[pi],
-				z[oi]-z[pi]);
-	var normal = body[pi]._shape.normal;
-	var q = r.dot(normal)-body[oi]._shape.boundingSphereRadius();
+	var pi = type[i]==PLANE ? i : j, // Plane
+	  oi = type[i]!=PLANE ? i : j, // Other
+	  
+	  // Rel. position
+	  r = new CANNON.Vec3(x[oi]-x[pi],
+			      y[oi]-y[pi],
+			      z[oi]-z[pi]),
+	  quat = new CANNON.Quaternion(qx[pi],qy[pi],qz[pi],qw[pi]),
+	  normal = quat.vmult(body[pi]._shape.normal),
+	  q = r.dot(normal)-body[oi]._shape.boundingSphereRadius();
 	if(q<0.0){
 	  pairs1.push(i);
 	  pairs2.push(j);
@@ -569,7 +574,7 @@ CANNON.Quaternion.prototype.toString = function(){
 /**
  * Set the quaternion components given an axis and an angle.
  * @param Vec3 axis
- * @param float angle
+ * @param float angle in radians
  */
 CANNON.Quaternion.prototype.setFromAxisAngle = function(axis,angle){
   var s = Math.sin(angle*0.5);
@@ -577,6 +582,16 @@ CANNON.Quaternion.prototype.setFromAxisAngle = function(axis,angle){
   this.y = axis.y * s;
   this.z = axis.z * s;
   this.w = Math.cos(angle*0.5);
+};
+
+CANNON.Quaternion.prototype.setFromVectors = function(u,v,target){
+  target = target || new CANNON.Quaternion();
+
+  var a = u.cross(v);
+  target.x = a.x;
+  target.y = a.y;
+  target.z = a.z;
+  target.w = Math.sqrt(Math.pow(u.norm(),2) * Math.pow(v.norm(),2)) + dotproduct(u, v);
 };
 
 /**
@@ -638,31 +653,32 @@ CANNON.Quaternion.prototype.normalize = function(){
  */
 CANNON.Quaternion.prototype.vmult = function(v,target){
   target = target || new CANNON.Vec3();
-  var x = v.x,
-      y = v.y,
-      z = v.z;
+  if(this.w==0.0){
+    target.x = v.x;
+    target.y = v.y;
+    target.z = v.z;
+  } else {
+    
+    var x = v.x,
+    y = v.y,
+    z = v.z;
+    
+    var qx = this.x,
+    qy = this.y,
+    qz = this.z,
+    qw = this.w;
+    
+    // q*v
+    var ix =  qw * x + qy * z - qz * y,
+    iy =  qw * y + qz * x - qx * z,
+    iz =  qw * z + qx * y - qy * x,
+    iw = -qx * x - qy * y - qz * z;
+    
+    target.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    target.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    target.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+  }
 
-  var qx = this.x,
-      qy = this.y,
-      qz = this.z,
-      qw = this.w;
-
-  // q*v
-  var ix =  qw * x + qy * z - qz * y,
-      iy =  qw * y + qz * x - qx * z,
-      iz =  qw * z + qx * y - qy * x,
-      iw = -qx * x - qy * y - qz * z;
-  
-  target.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-  target.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-  target.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-
-  // Version 2...
-  /*
-  target.x = (qw*qw+qx*qx-qy*qy-qz*qz)*x + (2*qx*qy-2*qw*qz)*y + (2*qx*qz+2*qw*qy)*z;
-  target.y = (2*qx*qy+2*qw*qz) * x + (qw*qw-qx*qx+qy*qy-qz*qz) * y + (2*qy*qz+2*qw*qx) * z;
-  target.z = (2*qx*qz-2*qw*qy) * x + (2*qy*qz-2*qw*qx) * y + (qw*qw-qx*qx-qy*qy+qz*qz) * z;
-  */
   return target;
 };/**
  * @class Shape
@@ -976,11 +992,11 @@ CANNON.RigidBody.prototype.setAngularVelocity = function(x,y,z){
 };
 
 /**
- * Gets the angularvelocity of the object
+ * Gets the angular velocity of the object
  * @param Vec3 target Optional.
  * @return Vec3
  */
-CANNON.RigidBody.prototype.getAngularvelocity = function(target){
+CANNON.RigidBody.prototype.getAngularVelocity = function(target){
   target = target || new CANNON.Vec3();
   if(this._id!=-1){
     target.x = this._world.wx[this._id];
@@ -2292,6 +2308,8 @@ CANNON.World.prototype.step = function(dt){
 
 	// Contact normal
 	sj.normal.copy(r.ni);
+	//console.log("before:",r.ni.toString(),"q:"+qj.toString(),"result:"+qj.vmult(r.ni).toString());
+	qj.vmult(r.ni,r.ni);
 	r.ni.negate(r.ni); // body i is the sphere, flip normal
 	r.ni.normalize();
 
