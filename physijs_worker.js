@@ -1,9 +1,14 @@
 'use strict';
 
-var	// temp variables
+var	
+	// enum
+	MESSAGE_TYPES = {
+		REPORT: 0
+	},
+	
+	// temp variables
 	_object,
-	_vector1,
-	_vector2,
+	_vector,
 	_transform,
 	
 	// functions
@@ -19,12 +24,21 @@ var	// temp variables
 	// private cache
 	_now,
 	_objects = [],
-	_objects_ammo = {};
+	_objects_ammo = {},
+	
+	// object reporting
+	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
+	REPORT_ITEMSIZE = 14, // how many float values each reported item needs
+	report;
 
 
 public_functions.init = function( params ) {
 	importScripts( params.ammo );
 	_transform = new Ammo.btTransform;
+	
+	REPORT_CHUNKSIZE = params.reportsize || 50;
+	report = new Float32Array(2 + REPORT_CHUNKSIZE * REPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	report[0] = MESSAGE_TYPES.REPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
 		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
@@ -38,6 +52,7 @@ public_functions.init = function( params ) {
 				new Ammo.btVector3( params.broadphase.aabbmin.x, params.broadphase.aabbmin.y, params.broadphase.aabbmax.z ),
 				new Ammo.btVector3( params.broadphase.aabbmax.x, params.broadphase.aabbmax.y, params.broadphase.aabbmax.z )
 			);
+			break;
 		
 		case 'dynamic':
 		default:
@@ -242,50 +257,55 @@ public_functions.simulate = function( params ) {
 };
 
 reportWorld = function() {
-	var index, object,
-		report = [],
-		transform = new Ammo.btTransform(), origin, rotation;
+	var i, object,
+		transform = new Ammo.btTransform(), origin, rotation,
+		offset = 0;
 	
-	for ( index in _objects ) {
-		if ( _objects.hasOwnProperty( index ) ) {
-			object = _objects[index];
-			
-			// #TODO: we can't use center of mass transform when center of mass can change,
-			//        but getMotionState().getWorldTransform() screws up on objects that have been moved
-			//object.getMotionState().getWorldTransform( transform );
-			transform = object.getCenterOfMassTransform();
-			
-			origin = transform.getOrigin();
-			rotation = transform.getRotation();
-			_vector1 = object.getLinearVelocity();
-			_vector2 = object.getAngularVelocity();
-			
-			report[object.id] = {
-				pos_x: origin.x(),
-				pos_y: origin.y(),
-				pos_z: origin.z(),
-				
-				quat_x: rotation.x(),
-				quat_y: rotation.y(),
-				quat_z: rotation.z(),
-				quat_w: rotation.w(),
-				
-				linear_x: _vector1.x(),
-				linear_y: _vector1.y(),
-				linear_z: _vector1.z(),
-				
-				angular_x: _vector2.x(),
-				angular_y: _vector2.y(),
-				angular_z: _vector2.z(),
-				
-				collisions: []
-			};
-		}
+	if ( report.length < 2 + _objects.length * REPORT_ITEMSIZE ) {
+		report = new Float32Array(report.length + REPORT_CHUNKSIZE * REPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 	}
 	
-	addCollisions( report );
+	report[1] = _objects.length; // record how many objects we're reporting on
 	
-	self.postMessage({ cmd: 'update', params: { objects: report } });
+	for ( i = 0; i < report[1]; i++ ) {
+		object = _objects[i];
+		
+		// #TODO: we can't use center of mass transform when center of mass can change,
+		//        but getMotionState().getWorldTransform() screws up on objects that have been moved
+		//object.getMotionState().getWorldTransform( transform );
+		transform = object.getCenterOfMassTransform();
+		
+		origin = transform.getOrigin();
+		rotation = transform.getRotation();
+		
+		// add values to report
+		offset = 2 + i * REPORT_ITEMSIZE;
+		
+		report[ offset ] = object.id;
+		
+		report[ offset + 1 ] = origin.x();
+		report[ offset + 2 ] = origin.y();
+		report[ offset + 3 ] = origin.z();
+		
+		report[ offset + 4 ] = rotation.x();
+		report[ offset + 5 ] = rotation.y();
+		report[ offset + 6 ] = rotation.z();
+		report[ offset + 7 ] = rotation.w();
+		
+		_vector = object.getLinearVelocity();
+		report[ offset + 8 ] = _vector.x();
+		report[ offset + 9 ] = _vector.y();
+		report[ offset + 10 ] = _vector.z();
+		
+		_vector = object.getAngularVelocity();
+		report[ offset + 11 ] = _vector.x();
+		report[ offset + 12 ] = _vector.y();
+		report[ offset + 13 ] = _vector.z()
+	}
+	
+	//addCollisions( report );
+	
+	self.webkitPostMessage( report, [report.buffer] );
 };
 
 addCollisions = function( objects ) {
@@ -314,7 +334,17 @@ addCollisions = function( objects ) {
 
 self.onmessage = function( event ) {
 	
-	if ( public_functions[event.data.cmd] ) {
+	if ( event.data instanceof Float32Array ) {
+		// transferable object
+		
+		if ( event.data[0] === MESSAGE_TYPES.REPORT ) {
+			report = event.data;
+		}
+		
+		return;
+	}
+	
+	if ( event.data.cmd && public_functions[event.data.cmd] ) {
 		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' ) return;
 		public_functions[event.data.cmd]( event.data.params );
 	}

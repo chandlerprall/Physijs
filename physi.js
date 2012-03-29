@@ -2,7 +2,13 @@
 
 var Physijs = (function() {
 	var _matrix = new THREE.Matrix4, _is_simulating = false,
-		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion;
+		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion,
+		
+		// constants
+		MESSAGE_TYPES = {
+			REPORT: 0
+		},
+		REPORT_ITEMSIZE = 14;
 	
 	Physijs.scripts = {};
 	
@@ -76,9 +82,32 @@ var Physijs = (function() {
 					collisions: []
 				};
 			
+			if ( event.data instanceof Float32Array ) {
+				
+				// transferable object
+				switch ( event.data[0] ) {
+					case MESSAGE_TYPES.REPORT:
+						self._updateScene( event.data );
+						break;
+				}
+				
+			} else {
+				
+				// non-transferable object
+				switch ( event.data.cmd ) {
+					default:
+					// Do nothing, just show the message
+					console.debug('Received: ' + event.data.cmd);
+					console.dir(event.data.params);
+					break;
+				}
+				
+			}
+			/*
 			switch ( event.data.cmd ) {
 				
 				case 'update':
+					/*
 					for ( obj_id in event.data.params.objects ) {
 						if ( !event.data.params.objects.hasOwnProperty( obj_id ) ) continue;
 						
@@ -99,7 +128,7 @@ var Physijs = (function() {
 						
 						// Collisions
 						collided_with.length = 0;
-						
+						/*
 						if ( obj.collisions.length > 0 ) {
 							
 							for ( i = 0; i < obj.collisions.length; i++ ) {
@@ -127,21 +156,20 @@ var Physijs = (function() {
 							sceneObj._physijs.touches.length = 0;
 							
 						}
+						/
 					}
+					
 					
 					_is_simulating = false;
 					self.dispatchEvent( 'update', update_details );
 					
 					break;
 				
-				default:
-					// Do nothing
-					console.debug('Received: ' + event.data.cmd);
-					console.dir(event.data.params);
-					break;
+				
 			}
-			
+			*/
 		};
+		
 		
 		params = params || {};
 		params.ammo = Physijs.scripts.ammo || 'ammo.js';
@@ -150,6 +178,57 @@ var Physijs = (function() {
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
 	Eventable.make( Physijs.Scene );
+	
+	Physijs.Scene.prototype._updateScene = function( data ) {
+		var num_objects = data[1],
+			object,
+			i, offset;
+			
+		for ( i = 0; i < num_objects; i++ ) {
+			
+			offset = 2 + i * REPORT_ITEMSIZE;
+			object = this._objects[ data[ offset ] ];
+			
+			object.position.set(
+				data[ offset + 1 ],
+				data[ offset + 2 ],
+				data[ offset + 3 ]
+			);
+			
+			if ( object.useQuaternion ) {
+				object.quaternion.set(
+					data[ offset + 4 ],
+					data[ offset + 5 ],
+					data[ offset + 6 ],
+					data[ offset + 7 ]
+				);
+			} else {
+				object.rotation = getEulerXYZFromQuaternion(
+					data[ offset + 4 ],
+					data[ offset + 5 ],
+					data[ offset + 6 ],
+					data[ offset + 7 ]
+				);
+			};
+			
+			object._physijs.linearVelocity.set(
+				data[ offset + 8 ],
+				data[ offset + 9 ],
+				data[ offset + 10 ]
+			);
+			
+			object._physijs.angularVelocity.set(
+				data[ offset + 11 ],
+				data[ offset + 12 ],
+				data[ offset + 13 ]
+			);
+			
+		}
+		
+		this._worker.webkitPostMessage( data, [data.buffer] );
+		_is_simulating = false;
+		self.dispatchEvent( 'update' );
+	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });
