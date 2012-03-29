@@ -6,7 +6,8 @@ var Physijs = (function() {
 		
 		// constants
 		MESSAGE_TYPES = {
-			REPORT: 0
+			WORLDREPORT: 0,
+			COLLISIONREPORT: 1
 		},
 		REPORT_ITEMSIZE = 14;
 	
@@ -86,8 +87,12 @@ var Physijs = (function() {
 				
 				// transferable object
 				switch ( event.data[0] ) {
-					case MESSAGE_TYPES.REPORT:
+					case MESSAGE_TYPES.WORLDREPORT:
 						self._updateScene( event.data );
+						break;
+					
+					case MESSAGE_TYPES.COLLISIONREPORT:
+						self._updateCollisions( event.data );
 						break;
 				}
 				
@@ -227,7 +232,98 @@ var Physijs = (function() {
 		
 		this._worker.webkitPostMessage( data, [data.buffer] );
 		_is_simulating = false;
-		self.dispatchEvent( 'update' );
+		this.dispatchEvent( 'update' );
+	};
+	
+	Physijs.Scene.prototype._updateCollisions = function( data ) {
+		/**
+		 * #TODO
+		 * This is probably the worst way ever to handle collisions. The inherent evilness is a residual
+		 * effect from the previous version's evilness which mutated when switching to transferable objects.
+		 *
+		 * If you feel inclined to make this better, please do so.
+		 */
+		 
+		var i, j, offset, object, object2,
+			collisions = {}, collided_with = [];
+		
+		// Build collision manifest
+		for ( i = 0; i < data[1]; i++ ) {
+			offset = 2 + i * 2;
+			object = data[ offset ];
+			object2 = data[ offset + 1 ];
+			
+			if ( !collisions[ object ] ) collisions[ object ] = [];
+			collisions[ object ].push( object2 );
+		}
+		
+		// Deal with collisions
+		for ( i = 0; i < this._objects.length; i++ ) {
+			object = this._objects[i];
+			
+			if ( collisions[ object._physijs.id ] ) {
+				
+				// this object is touching others
+				collided_with.length = 0;
+				
+				for ( j = 0; j < collisions[ object._physijs.id ].length; j++ ) {
+					object2 = this._objects[ collisions[ object._physijs.id ][j] ];
+					
+					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
+						object._physijs.touches.push( object2._physijs.id );
+						
+						object.dispatchEvent( 'collision', object2 );
+						object2.dispatchEvent( 'collision', object );
+					}
+					
+					collided_with.push( object2._physijs.id );
+				}
+				for ( j = 0; j < object._physijs.touches.length; j++ ) {
+					if ( collided_with.indexOf( object._physijs.touches[j] ) === -1 ) {
+						object._physijs.touches.splice( j--, 1 );
+					}
+				}
+				
+			} else {
+				
+				// not touching other objects
+				object._physijs.touches.length = 0;
+				
+			}
+			
+		}
+		
+		/*
+		if ( obj.collisions.length > 0 ) {
+			
+			for ( i = 0; i < obj.collisions.length; i++ ) {
+				collisionObj = self._objects[obj.collisions[i]];
+				
+				if ( sceneObj._physijs.touches.indexOf( collisionObj._physijs.id ) === -1 ) {
+					sceneObj._physijs.touches.push( collisionObj._physijs.id );
+					sceneObj.dispatchEvent( 'collision', collisionObj );
+					collisionObj.dispatchEvent( 'collision', sceneObj );
+					
+					update_details.collisions.push([ sceneObj, collisionObj ]);
+				}
+				
+				collided_with.push( collisionObj._physijs.id );
+			}
+			
+			for ( i = 0; i < sceneObj._physijs.touches.length; i++ ) {
+				if ( collided_with.indexOf( sceneObj._physijs.touches[i] ) === -1 ) {
+					sceneObj._physijs.touches.splice( i--, 1 );
+				}
+			}
+			
+		} else {
+			
+			sceneObj._physijs.touches.length = 0;
+			
+		}
+		*/
+		
+		this._worker.webkitPostMessage( data, [data.buffer] );
 	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {

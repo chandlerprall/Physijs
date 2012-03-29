@@ -3,7 +3,8 @@
 var	
 	// enum
 	MESSAGE_TYPES = {
-		REPORT: 0
+		WORLDREPORT: 0,
+		COLLISIONREPORT: 1
 	},
 	
 	// temp variables
@@ -14,7 +15,7 @@ var
 	// functions
 	public_functions = {},
 	reportWorld,
-	addCollisions,
+	reportCollisions,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
@@ -28,8 +29,12 @@ var
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
-	REPORT_ITEMSIZE = 14, // how many float values each reported item needs
-	report;
+	
+	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
+	worldreport,
+	
+	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
+	collisionreport;
 
 
 public_functions.init = function( params ) {
@@ -37,8 +42,11 @@ public_functions.init = function( params ) {
 	_transform = new Ammo.btTransform;
 	
 	REPORT_CHUNKSIZE = params.reportsize || 50;
-	report = new Float32Array(2 + REPORT_CHUNKSIZE * REPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
-	report[0] = MESSAGE_TYPES.REPORT;
+	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	
+	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
 		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
@@ -251,6 +259,7 @@ public_functions.simulate = function( params ) {
 		
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
 		reportWorld();
+		reportCollisions();
 		
 		last_simulation_time = _now;
 	}
@@ -261,13 +270,13 @@ reportWorld = function() {
 		transform = new Ammo.btTransform(), origin, rotation,
 		offset = 0;
 	
-	if ( report.length < 2 + _objects.length * REPORT_ITEMSIZE ) {
-		report = new Float32Array(report.length + REPORT_CHUNKSIZE * REPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
+		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 	}
 	
-	report[1] = _objects.length; // record how many objects we're reporting on
+	worldreport[1] = _objects.length; // record how many objects we're reporting on
 	
-	for ( i = 0; i < report[1]; i++ ) {
+	for ( i = 0; i < worldreport[1]; i++ ) {
 		object = _objects[i];
 		
 		// #TODO: we can't use center of mass transform when center of mass can change,
@@ -279,35 +288,66 @@ reportWorld = function() {
 		rotation = transform.getRotation();
 		
 		// add values to report
-		offset = 2 + i * REPORT_ITEMSIZE;
+		offset = 2 + i * WORLDREPORT_ITEMSIZE;
 		
-		report[ offset ] = object.id;
+		worldreport[ offset ] = object.id;
 		
-		report[ offset + 1 ] = origin.x();
-		report[ offset + 2 ] = origin.y();
-		report[ offset + 3 ] = origin.z();
+		worldreport[ offset + 1 ] = origin.x();
+		worldreport[ offset + 2 ] = origin.y();
+		worldreport[ offset + 3 ] = origin.z();
 		
-		report[ offset + 4 ] = rotation.x();
-		report[ offset + 5 ] = rotation.y();
-		report[ offset + 6 ] = rotation.z();
-		report[ offset + 7 ] = rotation.w();
+		worldreport[ offset + 4 ] = rotation.x();
+		worldreport[ offset + 5 ] = rotation.y();
+		worldreport[ offset + 6 ] = rotation.z();
+		worldreport[ offset + 7 ] = rotation.w();
 		
 		_vector = object.getLinearVelocity();
-		report[ offset + 8 ] = _vector.x();
-		report[ offset + 9 ] = _vector.y();
-		report[ offset + 10 ] = _vector.z();
+		worldreport[ offset + 8 ] = _vector.x();
+		worldreport[ offset + 9 ] = _vector.y();
+		worldreport[ offset + 10 ] = _vector.z();
 		
 		_vector = object.getAngularVelocity();
-		report[ offset + 11 ] = _vector.x();
-		report[ offset + 12 ] = _vector.y();
-		report[ offset + 13 ] = _vector.z()
+		worldreport[ offset + 11 ] = _vector.x();
+		worldreport[ offset + 12 ] = _vector.y();
+		worldreport[ offset + 13 ] = _vector.z()
 	}
 	
-	//addCollisions( report );
-	
-	self.webkitPostMessage( report, [report.buffer] );
+	self.webkitPostMessage( worldreport, [worldreport.buffer] );
 };
 
+reportCollisions = function() {
+	var i, offset,
+		dp = world.getDispatcher(),
+		num = dp.getNumManifolds(),
+		manifold, num_contacts, j, pt,
+		_collided = false;
+	
+	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
+		collisionreport = new Float32Array(collisionreport.length + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	}
+	
+	collisionreport[1] = 0; // how many collisions we're reporting on
+	
+	for ( i = 0; i < num; i++ ) {
+		manifold = dp.getManifoldByIndexInternal( i );
+		
+		num_contacts = manifold.getNumContacts();
+		if ( num_contacts == 0 ) continue;
+		
+		for ( j = 0; j < num_contacts; j++ ) {
+			pt = manifold.getContactPoint( j );
+			//if ( pt.getDistance() < 0 ) {
+				offset = 2 + (collisionreport[1]++) * COLLISIONREPORT_ITEMSIZE;
+				collisionreport[ offset ] = _objects_ammo[ manifold.getBody0() ];
+				collisionreport[ offset + 1 ] = _objects_ammo[ manifold.getBody1() ];
+				break;
+			//}
+		}
+	}
+	
+	self.webkitPostMessage( collisionreport, [collisionreport.buffer] );
+};
+/*
 addCollisions = function( objects ) {
 	var i,
 		dp = world.getDispatcher(),
@@ -330,15 +370,21 @@ addCollisions = function( objects ) {
 		}
 	}
 };
-
+*/
 
 self.onmessage = function( event ) {
 	
 	if ( event.data instanceof Float32Array ) {
 		// transferable object
 		
-		if ( event.data[0] === MESSAGE_TYPES.REPORT ) {
-			report = event.data;
+		switch ( event.data[0] ) {
+			case MESSAGE_TYPES.WORLDREPORT:
+				worldreport = event.data;
+				break;
+			
+			case MESSAGE_TYPES.COLLISIONREPORT:
+				collisionreport = event.data;
+				break;
 		}
 		
 		return;

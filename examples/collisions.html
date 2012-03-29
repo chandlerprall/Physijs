@@ -53,8 +53,8 @@
 		scene.setGravity({ x: 0, y: -10, z: 0 });
 		
 		scene.addEventListener('update', function( details ) {
-			total_collisions += details.collisions.length;
-			document.getElementById( 'info' ).textContent = total_collisions + ' collisions';
+			//total_collisions += details.collisions.length;
+			//document.getElementById( 'info' ).textContent = total_collisions + ' collisions';
 		});
 		
 		camera = new THREE.PerspectiveCamera(
@@ -131,16 +131,19 @@
 				new THREE.MeshLambertMaterial({ color: 0xdd7755 }) // Not shared because of color changes
 			);
 			box.collisions = 0;
+			
 			box.position.set(
 				Math.random() * 15 - 7.5,
 				25,
 				Math.random() * 15 - 7.5
 			);
+			
 			box.rotation.set(
 				Math.random() * Math.PI,
 				Math.random() * Math.PI,
 				Math.random() * Math.PI
 			);
+			
 			box.castShadow = true;
 			box.addEventListener( 'collision', handleCollision );
 			scene.add( box );
