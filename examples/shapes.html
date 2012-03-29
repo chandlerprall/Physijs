@@ -83,14 +83,14 @@
 		ground_geometry.computeFaceNormals();
 		ground_geometry.computeVertexNormals();
 		
-		var ground = new Physijs.PlaneMesh(
-			//new THREE.CubeGeometry(50, 1, 50),
-			ground_geometry,
+		var ground = new Physijs.BoxMesh(
+			new THREE.CubeGeometry(50, .1, 50),
+			//ground_geometry,
 			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
 			0, // mass
 			{ restitution: .2, friction: .8, width: 10, length: 10 }
 		);
-		ground.rotation.x = -Math.PI / 2;
+		//ground.rotation.x = -Math.PI / 2;
 		ground.receiveShadow = true;
 		scene.add( ground );
 		

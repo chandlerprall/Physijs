@@ -1,6 +1,8 @@
 'use strict';
 
 var	
+	transferableMessage = self.webkitPostMessage || self.postMessage,
+	
 	// enum
 	MESSAGE_TYPES = {
 		WORLDREPORT: 0,
@@ -312,7 +314,7 @@ reportWorld = function() {
 		worldreport[ offset + 13 ] = _vector.z()
 	}
 	
-	self.webkitPostMessage( worldreport, [worldreport.buffer] );
+	transferableMessage( worldreport, [worldreport.buffer] );
 };
 
 reportCollisions = function() {
@@ -345,32 +347,8 @@ reportCollisions = function() {
 		}
 	}
 	
-	self.webkitPostMessage( collisionreport, [collisionreport.buffer] );
+	transferableMessage( collisionreport, [collisionreport.buffer] );
 };
-/*
-addCollisions = function( objects ) {
-	var i,
-		dp = world.getDispatcher(),
-		num = dp.getNumManifolds(),
-		manifold;
-	
-	var _collided = false;
-	for ( i = 0; i < num; i++ ) {
-		manifold = dp.getManifoldByIndexInternal( i );
-		
-		var num_contacts = manifold.getNumContacts(), j, pt;
-		if ( num_contacts == 0 ) continue;
-		
-		for ( j = 0; j < num_contacts; j++ ) {
-			pt = manifold.getContactPoint( j );
-			//if ( pt.getDistance() < 0 ) {
-				objects[_objects_ammo[manifold.getBody0()]].collisions.push( _objects[_objects_ammo[manifold.getBody1()]].id );
-				break;
-			//}
-		}
-	}
-};
-*/
 
 self.onmessage = function( event ) {
 	

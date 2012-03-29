@@ -108,71 +108,6 @@ var Physijs = (function() {
 				}
 				
 			}
-			/*
-			switch ( event.data.cmd ) {
-				
-				case 'update':
-					/*
-					for ( obj_id in event.data.params.objects ) {
-						if ( !event.data.params.objects.hasOwnProperty( obj_id ) ) continue;
-						
-						obj = event.data.params.objects[obj_id];
-						sceneObj = self._objects[obj_id];
-						
-						// Update position & rotation
-						sceneObj.position.set( obj.pos_x, obj.pos_y, obj.pos_z );
-						if ( sceneObj.useQuaternion) {
-							sceneObj.quaternion.set( obj.quat_x, obj.quat_y, obj.quat_z, obj.quat_w );
-						} else {
-							sceneObj.rotation = getEulerXYZFromQuaternion( obj.quat_x, obj.quat_y, obj.quat_z, obj.quat_w );
-						};
-						
-						// Record velocities
-						sceneObj._physijs.linearVelocity.set( obj.linear_x, obj.linear_y, obj.linear_z );
-						sceneObj._physijs.angularVelocity.set( obj.angular_x, obj.angular_y, obj.angular_z );
-						
-						// Collisions
-						collided_with.length = 0;
-						/*
-						if ( obj.collisions.length > 0 ) {
-							
-							for ( i = 0; i < obj.collisions.length; i++ ) {
-								collisionObj = self._objects[obj.collisions[i]];
-								
-								if ( sceneObj._physijs.touches.indexOf( collisionObj._physijs.id ) === -1 ) {
-									sceneObj._physijs.touches.push( collisionObj._physijs.id );
-									sceneObj.dispatchEvent( 'collision', collisionObj );
-									collisionObj.dispatchEvent( 'collision', sceneObj );
-									
-									update_details.collisions.push([ sceneObj, collisionObj ]);
-								}
-								
-								collided_with.push( collisionObj._physijs.id );
-							}
-							
-							for ( i = 0; i < sceneObj._physijs.touches.length; i++ ) {
-								if ( collided_with.indexOf( sceneObj._physijs.touches[i] ) === -1 ) {
-									sceneObj._physijs.touches.splice( i--, 1 );
-								}
-							}
-							
-						} else {
-							
-							sceneObj._physijs.touches.length = 0;
-							
-						}
-						/
-					}
-					
-					
-					_is_simulating = false;
-					self.dispatchEvent( 'update', update_details );
-					
-					break;
-				
-				
-			}
-			*/
 		};
 		
 		
@@ -230,7 +165,11 @@ var Physijs = (function() {
 			
 		}
 		
-		this._worker.webkitPostMessage( data, [data.buffer] );
+		if ( this._worker.webkitPostMessage ) {
+			// Give the typed array back to the worker
+			this._worker.webkitPostMessage( data, [data.buffer] );
+		}
+		
 		_is_simulating = false;
 		this.dispatchEvent( 'update' );
 	};
@@ -293,37 +232,10 @@ var Physijs = (function() {
 			
 		}
 		
-		/*
-		if ( obj.collisions.length > 0 ) {
-			
-			for ( i = 0; i < obj.collisions.length; i++ ) {
-				collisionObj = self._objects[obj.collisions[i]];
-				
-				if ( sceneObj._physijs.touches.indexOf( collisionObj._physijs.id ) === -1 ) {
-					sceneObj._physijs.touches.push( collisionObj._physijs.id );
-					sceneObj.dispatchEvent( 'collision', collisionObj );
-					collisionObj.dispatchEvent( 'collision', sceneObj );
-					
-					update_details.collisions.push([ sceneObj, collisionObj ]);
-				}
-				
-				collided_with.push( collisionObj._physijs.id );
-			}
-			
-			for ( i = 0; i < sceneObj._physijs.touches.length; i++ ) {
-				if ( collided_with.indexOf( sceneObj._physijs.touches[i] ) === -1 ) {
-					sceneObj._physijs.touches.splice( i--, 1 );
-				}
-			}
-			
-		} else {
-			
-			sceneObj._physijs.touches.length = 0;
-			
+		if ( this._worker.webkitPostMessage ) {
+			// Give the typed array back to the worker
+			this._worker.webkitPostMessage( data, [data.buffer] );
 		}
-		*/
-		
-		this._worker.webkitPostMessage( data, [data.buffer] );
 	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
