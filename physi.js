@@ -2,7 +2,14 @@
 
 var Physijs = (function() {
 	var _matrix = new THREE.Matrix4, _is_simulating = false,
-		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion;
+		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion,
+		
+		// constants
+		MESSAGE_TYPES = {
+			WORLDREPORT: 0,
+			COLLISIONREPORT: 1
+		},
+		REPORT_ITEMSIZE = 14;
 	
 	Physijs.scripts = {};
 	
@@ -75,7 +82,7 @@ var Physijs = (function() {
 				update_details = {
 					collisions: []
 				};
-			
+			/*
 			switch ( event.data.cmd ) {
 				
 				case 'update':
@@ -140,6 +147,33 @@ var Physijs = (function() {
 					console.dir(event.data.params);
 					break;
 			}
+			*/
+			
+			if ( event.data instanceof Float32Array ) {
+				
+				// transferable object
+				switch ( event.data[0] ) {
+					case MESSAGE_TYPES.WORLDREPORT:
+						self._updateScene( event.data );
+						break;
+					
+					case MESSAGE_TYPES.COLLISIONREPORT:
+						self._updateCollisions( event.data );
+						break;
+				}
+				
+			} else {
+				
+				// non-transferable object
+				switch ( event.data.cmd ) {
+					default:
+					// Do nothing, just show the message
+					console.debug('Received: ' + event.data.cmd);
+					console.dir(event.data.params);
+					break;
+				}
+				
+			}
 			
 		};
 		
@@ -150,6 +184,125 @@ var Physijs = (function() {
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
 	Eventable.make( Physijs.Scene );
+	
+	Physijs.Scene.prototype._updateScene = function( data ) {
+		var num_objects = data[1],
+			object,
+			i, offset;
+			
+		for ( i = 0; i < num_objects; i++ ) {
+			
+			offset = 2 + i * REPORT_ITEMSIZE;
+			object = this._objects[ data[ offset ] ];
+			
+			object.position.set(
+				data[ offset + 1 ],
+				data[ offset + 2 ],
+				data[ offset + 3 ]
+			);
+			
+			if ( object.useQuaternion ) {
+				object.quaternion.set(
+					data[ offset + 4 ],
+					data[ offset + 5 ],
+					data[ offset + 6 ],
+					data[ offset + 7 ]
+				);
+			} else {
+				object.rotation = getEulerXYZFromQuaternion(
+					data[ offset + 4 ],
+					data[ offset + 5 ],
+					data[ offset + 6 ],
+					data[ offset + 7 ]
+				);
+			};
+			
+			object._physijs.linearVelocity.set(
+				data[ offset + 8 ],
+				data[ offset + 9 ],
+				data[ offset + 10 ]
+			);
+			
+			object._physijs.angularVelocity.set(
+				data[ offset + 11 ],
+				data[ offset + 12 ],
+				data[ offset + 13 ]
+			);
+			
+		}
+		
+		if ( this._worker.webkitPostMessage ) {
+			// Give the typed array back to the worker
+			this._worker.webkitPostMessage( data, [data.buffer] );
+		}
+		
+		_is_simulating = false;
+		this.dispatchEvent( 'update' );
+	};
+	
+	Physijs.Scene.prototype._updateCollisions = function( data ) {
+		/**
+		 * #TODO
+		 * This is probably the worst way ever to handle collisions. The inherent evilness is a residual
+		 * effect from the previous version's evilness which mutated when switching to transferable objects.
+		 *
+		 * If you feel inclined to make this better, please do so.
+		 */
+		 
+		var i, j, offset, object, object2,
+			collisions = {}, collided_with = [];
+		
+		// Build collision manifest
+		for ( i = 0; i < data[1]; i++ ) {
+			offset = 2 + i * 2;
+			object = data[ offset ];
+			object2 = data[ offset + 1 ];
+			
+			if ( !collisions[ object ] ) collisions[ object ] = [];
+			collisions[ object ].push( object2 );
+		}
+		
+		// Deal with collisions
+		for ( i = 0; i < this._objects.length; i++ ) {
+			object = this._objects[i];
+			
+			if ( collisions[ object._physijs.id ] ) {
+				
+				// this object is touching others
+				collided_with.length = 0;
+				
+				for ( j = 0; j < collisions[ object._physijs.id ].length; j++ ) {
+					object2 = this._objects[ collisions[ object._physijs.id ][j] ];
+					
+					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
+						object._physijs.touches.push( object2._physijs.id );
+						
+						object.dispatchEvent( 'collision', object2 );
+						object2.dispatchEvent( 'collision', object );
+					}
+					
+					collided_with.push( object2._physijs.id );
+				}
+				for ( j = 0; j < object._physijs.touches.length; j++ ) {
+					if ( collided_with.indexOf( object._physijs.touches[j] ) === -1 ) {
+						object._physijs.touches.splice( j--, 1 );
+					}
+				}
+				
+			} else {
+				
+				// not touching other objects
+				object._physijs.touches.length = 0;
+				
+			}
+			
+		}
+		
+		if ( this._worker.webkitPostMessage ) {
+			// Give the typed array back to the worker
+			this._worker.webkitPostMessage( data, [data.buffer] );
+		}
+	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });

@@ -1,16 +1,23 @@
 'use strict';
 
-var	// temp variables
+var	
+	transferableMessage = self.webkitPostMessage || self.postMessage,
+	
+	// enum
+	MESSAGE_TYPES = {
+		WORLDREPORT: 0,
+		COLLISIONREPORT: 1
+	},
+	
+	// temp variables
 	_object,
-	_vector1,
-	_vector2,
-	_vector3,
-	_quaternion1,
+	_vector,
+	_quaternion,
 	
 	// functions
 	public_functions = {},
 	reportWorld,
-	addCollisions,
+	reportCollisions,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
@@ -19,17 +26,30 @@ var	// temp variables
 	
 	// private cache
 	_now,
-	_objects = [];
-	//__objects_cannon = {};
+	_objects = [],
+	
+	// object reporting
+	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
+	
+	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
+	worldreport,
+	
+	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
+	collisionreport;
 
 
 public_functions.init = function( params ) {
 	importScripts( params.cannon );
 	
-	_vector1 = new CANNON.Vec3;
-	_vector2 = new CANNON.Vec3;
-	_vector3 = new CANNON.Vec3;
-	_quaternion1 = new CANNON.Quaternion;
+	_vector = new CANNON.Vec3;
+	_quaternion = new CANNON.Quaternion;
+	
+	REPORT_CHUNKSIZE = params.reportsize || 5;
+	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	
+	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	
 	var bp = new CANNON.NaiveBroadphase;
 	
@@ -117,7 +137,6 @@ public_functions.addObject = function( description ) {
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
-	//__objects_cannon[body.a] = body.id;
 };
 
 public_functions.removeObject = function( details ) {
@@ -199,66 +218,104 @@ public_functions.simulate = function( params ) {
 		world.iterations( params.maxSubSteps );
 		world.step( params.timeStep );
 		reportWorld();
+		reportCollisions();
 		
 		last_simulation_time = _now;
 	}
 };
 
 reportWorld = function() {
-	var index, object,
-		report = [],
+	var i, object,
+		report = [], offset = 0,
 		origin, rotation;
 	
-	for ( index in _objects ) {
-		if ( _objects.hasOwnProperty( index ) ) {
-			object = _objects[index];
-			
-			object.getPosition( _vector1 );
-			object.getOrientation( _quaternion1 );
-			object.getVelocity( _vector2 );
-			object.getAngularVelocity( _vector3 );
-			
-			report[object.id] = {
-				pos_x: _vector1.x,
-				pos_y: _vector1.y,
-				pos_z: _vector1.z,
-				
-				quat_x: _quaternion1.x,
-				quat_y: _quaternion1.y,
-				quat_z: _quaternion1.z,
-				quat_w: _quaternion1.w,
-				
-				linear_x: _vector2.x,
-				linear_y: _vector2.y,
-				linear_z: _vector2.z,
-				
-				angular_x: _vector3.x,
-				angular_y: _vector3.y,
-				angular_z: _vector3.z,
-				
-				collisions: []
-			};
+	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
+		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	}
+	
+	worldreport[1] = _objects.length; // record how many objects we're reporting on
+	
+	for ( i = 0; i < worldreport[1]; i++ ) {
+		object = _objects[i];
+		
+		// add values to report
+		offset = 2 + i * WORLDREPORT_ITEMSIZE;
+		
+		worldreport[ offset ] = object.id;
+		
+		object.getPosition( _vector );
+		worldreport[ offset + 1 ] = _vector.x;
+		worldreport[ offset + 2 ] = _vector.y;
+		worldreport[ offset + 3 ] = _vector.z;
+		
+		object.getOrientation( _quaternion );
+		worldreport[ offset + 4 ] = _quaternion.x;
+		worldreport[ offset + 5 ] = _quaternion.y;
+		worldreport[ offset + 6 ] = _quaternion.z;
+		worldreport[ offset + 7 ] = _quaternion.w;
+		
+		object.getVelocity( _vector );
+		worldreport[ offset + 8 ] = _vector.x;
+		worldreport[ offset + 9 ] = _vector.y;
+		worldreport[ offset + 10 ] = _vector.z;
+		
+		object.getAngularVelocity( _vector );
+		worldreport[ offset + 11 ] = _vector.x;
+		worldreport[ offset + 12 ] = _vector.y;
+		worldreport[ offset + 13 ] = _vector.z
+	}
+	
+	transferableMessage( worldreport, [worldreport.buffer] );
+};
+
+reportCollisions = function() {
+	var i, offset, number_of_contacts,
+		contact, contact_objects;
+	
+	// #TODO: don't loop over world.contacts twice
+	for ( contact in world.contacts ) {
+		if ( world.contacts.hasOwnProperty( contact ) ) {
+			number_of_contacts++;
 		}
 	}
 	
-	addCollisions( report );
+	if ( collisionreport.length < 2 + number_of_contacts * COLLISIONREPORT_ITEMSIZE ) {
+		collisionreport = new Float32Array(collisionreport.length + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	}
 	
-	self.postMessage({ cmd: 'update', params: { objects: report } });
-};
-
-addCollisions = function( objects ) {
-	var contact, contact_objects;
+	collisionreport[1] = 0; // how many collisions we're reporting on
 	
 	for ( contact in world.contacts ) {
 		if ( world.contacts.hasOwnProperty( contact ) ) {
+			offset = 2 + (collisionreport[1]++) * COLLISIONREPORT_ITEMSIZE;
 			contact_objects = contact.split(',');
-			objects[parseInt(contact_objects[0], 10)].collisions.push( _objects[parseInt(contact_objects[1], 10)].id );
+			collisionreport[ offset ] = parseInt( contact_objects[0], 10 );
+			collisionreport[ offset + 1 ] = parseInt( contact_objects[1], 10 );
 		}
 	}
+	
+	transferableMessage( collisionreport, [collisionreport.buffer] );
 };
 
-
 self.onmessage = function( event ) {
+	
+	if ( event.data instanceof Float32Array ) {
+		// transferable object
+		
+		switch ( event.data[0] ) {
+			case MESSAGE_TYPES.WORLDREPORT:
+				worldreport = event.data;
+				break;
+			
+			case MESSAGE_TYPES.COLLISIONREPORT:
+				collisionreport = event.data;
+				break;
+		}
+		
+		return;
+	}
 	
 	if ( public_functions[event.data.cmd] ) {
 		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' ) return;
