@@ -274,6 +274,7 @@ reportWorld = function() {
 	
 	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
 		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	}
 	
 	worldreport[1] = _objects.length; // record how many objects we're reporting on
@@ -326,6 +327,7 @@ reportCollisions = function() {
 	
 	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
 		collisionreport = new Float32Array(collisionreport.length + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	}
 	
 	collisionreport[1] = 0; // how many collisions we're reporting on

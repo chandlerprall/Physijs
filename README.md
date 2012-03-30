@@ -18,8 +18,8 @@ Very basic API at the moment
 * Apply basic physical force
 
 **Live Examples**
-[Body](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/body.html) - demonstrating some body-related API methods
-[Collisions](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/collisions.html) - shows how to use the collision callbacks
-[Shapes](http://chandler.prallfamily.com/labs/three/plugins/physijcs/examples/shapes.html) - demonstrates the currently implemented shapes
+[Body](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/body.html) - demonstrating some body-related API methods
+[Collisions](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/collisions.html) - shows how to use the collision callbacks
+[Shapes](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/shapes.html) - demonstrates the currently implemented shapes
 
 *Built on top of [ammo.js](https://github.com/kripken/ammo.js/)*
