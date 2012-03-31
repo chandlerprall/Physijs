@@ -30,7 +30,7 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, applyForce, setMousePosition, mouse_position,
-		projector, renderer, stats, scene, light, camera, box;
+		projector, renderer, stats, scene, light, camera, box, boxes = [];
 	
 	initScene = function() {
 		TWEEN.start();
@@ -98,13 +98,20 @@
 		
 		requestAnimFrame( render );
 		
-		box = new Physijs.BoxMesh(
-			new THREE.CubeGeometry( 4, 4, 4 ),
-			new THREE.MeshLambertMaterial({ color: 0xdd7755 })
-		);
-		box.position.y = 10;
-		box.castShadow = true;
-		scene.add( box );
+		for ( var i = 0; i < 10; i++ ) {
+			box = new Physijs.BoxMesh(
+				new THREE.CubeGeometry( 4, 4, 4 ),
+				new THREE.MeshLambertMaterial({ color: 0xdd7755 })
+			);
+			box.position.set(
+				Math.random() * 50 - 25,
+				10,
+				Math.random() * 50 - 25
+			);
+			box.castShadow = true;
+			scene.add( box );
+			boxes.push( box );
+		}
 		
 		renderer.domElement.addEventListener( 'mousemove', setMousePosition );
 	};
@@ -133,12 +140,15 @@
 	
 	applyForce = function() {
 		if (!mouse_position) return;
-		var strength = 28,
+		var strength = 35, distance, effect, offset, box;
+		
+		for ( var i = 0; i < boxes.length; i++ ) {
+			box = boxes[i];
 			distance = mouse_position.distanceTo( box.position ),
 			effect = mouse_position.clone().subSelf( box.position ).normalize().multiplyScalar( strength / distance ).negate(),
 			offset = mouse_position.clone().subSelf( box.position );
-		
-		box.applyImpulse( effect, offset );
+			box.applyImpulse( effect, offset );
+		}
 	};
 	
 	window.onload = initScene;
