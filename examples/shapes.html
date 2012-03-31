@@ -147,7 +147,9 @@
 			box_geometry = new THREE.CubeGeometry( 3, 3, 3 ),
 			sphere_geometry = new THREE.SphereGeometry( 1.5, 32, 32 ),
 			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 ),
-			cone_geometry = new THREE.CylinderGeometry( 0, 2, 4, 32 );
+			cone_geometry = new THREE.CylinderGeometry( 0, 2, 4, 32 ),
+			octahedron_geometry = new THREE.OctahedronGeometry( 1.7, 1 ),
+			torus_geometry = new THREE.TorusKnotGeometry ( 1.7, .2, 32, 4 );
 		
 		setTimeout(
 			function addListener() {
@@ -163,16 +165,16 @@
 		return function() {
 			var shape, material = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true });
 			
-			switch ( Math.floor(Math.random() * 4) ) {
+			switch ( Math.floor(Math.random() * 6) ) {
 				case 0:
-					shape = new Physijs.BoxMesh(
+					shape = new Physijs.ConvexMesh(
 						box_geometry,
 						material
 					);
 					break;
 				
 				case 1:
-					shape = new Physijs.SphereMesh(
+					shape = new Physijs.ConvexMesh(
 						sphere_geometry,
 						material,
 						undefined,
@@ -181,15 +183,29 @@
 					break;
 				
 				case 2:
-					shape = new Physijs.CylinderMesh(
+					shape = new Physijs.ConvexMesh(
 						cylinder_geometry,
 						material
 					);
 					break;
 				
 				case 3:
-					shape = new Physijs.ConeMesh(
+					shape = new Physijs.ConvexMesh(
 						cone_geometry,
+						material
+					);
+					break;
+				
+				case 4:
+					shape = new Physijs.ConvexMesh(
+						octahedron_geometry,
+						material
+					);
+					break;
+				
+				case 5:
+					shape = new Physijs.TriangleMesh(
+						torus_geometry,
 						material
 					);
 					break;

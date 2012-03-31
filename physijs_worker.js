@@ -106,7 +106,7 @@ public_functions.addObject = function( description ) {
 			shape = new Ammo.btConeShape( description.radius, description.height );
 			break;
 		
-		case 'custom':
+		case 'triangle':
 			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
 			for ( i = 0; i < description.triangles.length; i++ ) {
 				triangle = description.triangles[i];
@@ -121,6 +121,14 @@ public_functions.addObject = function( description ) {
 				triangle_mesh,
 				true
 			);
+			break;
+		
+		case 'convex':
+			var i, point, shape = new Ammo.btConvexHullShape;
+			for ( i = 0; i < description.points.length; i++ ) {
+				point = description.points[i];
+				shape.addPoint( new Ammo.btVector3( point.x, point.y, point.z ) );
+			}
 			break;
 		
 		case 'heightfield':

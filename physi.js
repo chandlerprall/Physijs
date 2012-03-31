@@ -542,8 +542,8 @@ var Physijs = (function() {
 	Physijs.ConeMesh.prototype = new Physijs.Mesh;
 	Physijs.ConeMesh.prototype.constructor = Physijs.ConeMesh;
 	
-	// Physijs.CustomMesh
-	Physijs.CustomMesh = function( geometry, material, mass, params ) {
+	// Physijs.TriangleMesh
+	Physijs.TriangleMesh = function( geometry, material, mass, params ) {
 		var i,
 			width, height, depth,
 			triangles = [];
@@ -582,12 +582,47 @@ var Physijs = (function() {
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
 		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
 		
-		this._physijs.type = 'custom';
+		this._physijs.type = 'triangle';
 		this._physijs.triangles = triangles;
 		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
 	};
-	Physijs.CustomMesh.prototype = new Physijs.Mesh;
-	Physijs.CustomMesh.prototype.constructor = Physijs.CustomMesh;
+	Physijs.TriangleMesh.prototype = new Physijs.Mesh;
+	Physijs.TriangleMesh.prototype.constructor = Physijs.TriangleMesh;
+	
+	
+	// Physijs.ConvexMesh
+	Physijs.ConvexMesh = function( geometry, material, mass, params ) {
+		var i,
+			width, height, depth,
+			points = [];
+		
+		Physijs.Mesh.call( this, geometry, material, mass, params );
+		
+		params = params || {};
+		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
+		for ( i = 0; i < geometry.vertices.length; i++ ) {
+			points.push({
+				x: geometry.vertices[i].position.x,
+				y: geometry.vertices[i].position.y,
+				z: geometry.vertices[i].position.z,
+			});
+		}
+		
+		
+		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+		
+		this._physijs.type = 'convex';
+		this._physijs.points = points;
+		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
+	};
+	Physijs.ConvexMesh.prototype = new Physijs.Mesh;
+	Physijs.ConvexMesh.prototype.constructor = Physijs.ConvexMesh;
 	
 	
 	// Physijs.HeightfieldMesh
