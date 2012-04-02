@@ -27,6 +27,7 @@ var
 	// private cache
 	_now,
 	_objects = [],
+	_num_objects = 0,
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -137,12 +138,13 @@ public_functions.addObject = function( description ) {
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
+	_num_objects++;
 };
 
 public_functions.removeObject = function( details ) {
-	throw 'Object removal not supported';
-	//world.removeRigidBody( _objects[details.id] );
-	//delete _objects[details.id];
+	world.remove( _objects[details.id] );
+	delete _objects[details.id];
+	_num_objects--;
 };
 
 public_functions.updatePosition = function( details ) {
@@ -225,8 +227,8 @@ public_functions.simulate = function( params ) {
 };
 
 reportWorld = function() {
-	var i, object,
-		report = [], offset = 0,
+	var index, object,
+		report = [], i = 0, offset = 0,
 		origin, rotation;
 	
 	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
@@ -236,34 +238,36 @@ reportWorld = function() {
 	
 	worldreport[1] = _objects.length; // record how many objects we're reporting on
 	
-	for ( i = 0; i < worldreport[1]; i++ ) {
-		object = _objects[i];
-		
-		// add values to report
-		offset = 2 + i * WORLDREPORT_ITEMSIZE;
-		
-		worldreport[ offset ] = object.id;
-		
-		object.getPosition( _vector );
-		worldreport[ offset + 1 ] = _vector.x;
-		worldreport[ offset + 2 ] = _vector.y;
-		worldreport[ offset + 3 ] = _vector.z;
-		
-		object.getOrientation( _quaternion );
-		worldreport[ offset + 4 ] = _quaternion.x;
-		worldreport[ offset + 5 ] = _quaternion.y;
-		worldreport[ offset + 6 ] = _quaternion.z;
-		worldreport[ offset + 7 ] = _quaternion.w;
-		
-		object.getVelocity( _vector );
-		worldreport[ offset + 8 ] = _vector.x;
-		worldreport[ offset + 9 ] = _vector.y;
-		worldreport[ offset + 10 ] = _vector.z;
-		
-		object.getAngularVelocity( _vector );
-		worldreport[ offset + 11 ] = _vector.x;
-		worldreport[ offset + 12 ] = _vector.y;
-		worldreport[ offset + 13 ] = _vector.z
+	for ( index in _objects ) {
+		if ( _objects.hasOwnProperty( index ) ) {
+			object = _objects[i];
+			
+			// add values to report
+			offset = 2 + (i++) * WORLDREPORT_ITEMSIZE;
+			
+			worldreport[ offset ] = object.id;
+			
+			object.getPosition( _vector );
+			worldreport[ offset + 1 ] = _vector.x;
+			worldreport[ offset + 2 ] = _vector.y;
+			worldreport[ offset + 3 ] = _vector.z;
+			
+			object.getOrientation( _quaternion );
+			worldreport[ offset + 4 ] = _quaternion.x;
+			worldreport[ offset + 5 ] = _quaternion.y;
+			worldreport[ offset + 6 ] = _quaternion.z;
+			worldreport[ offset + 7 ] = _quaternion.w;
+			
+			object.getVelocity( _vector );
+			worldreport[ offset + 8 ] = _vector.x;
+			worldreport[ offset + 9 ] = _vector.y;
+			worldreport[ offset + 10 ] = _vector.z;
+			
+			object.getAngularVelocity( _vector );
+			worldreport[ offset + 11 ] = _vector.x;
+			worldreport[ offset + 12 ] = _vector.y;
+			worldreport[ offset + 13 ] = _vector.z
+		}
 	}
 	
 	transferableMessage( worldreport, [worldreport.buffer] );
