@@ -1,8 +1,12 @@
 'use strict';
 
-var Physijs = (function() {
+window.Physijs = (function() {
 	var _matrix = new THREE.Matrix4, _is_simulating = false,
-		Physijs = {}, Eventable, getObjectId, getEulerXYZFromQuaternion,
+		_Physijs = Physijs, // used for noConflict method
+		Physijs = {}, // object assigned to window.Physijs
+		Eventable, // class to provide simple event methods
+		getObjectId, // returns a unique ID for a Physijs mesh object
+		getEulerXYZFromQuaternion,
 		
 		// constants
 		MESSAGE_TYPES = {
@@ -50,6 +54,13 @@ var Physijs = (function() {
 		obj.prototype.dispatchEvent = Eventable.prototype.dispatchEvent;
 	};
 	
+	getObjectId = (function() {
+		var _id = 0;
+		return function() {
+			return _id++;
+		};
+	})();
+	
 	getEulerXYZFromQuaternion = function ( x, y, z, w ) {
 		return new THREE.Vector3(
 			Math.atan2( 2 * ( x * w - y * z ), ( w * w - x * x - y * y + z * z ) ),
@@ -59,12 +70,11 @@ var Physijs = (function() {
 	};
 	
 	
-	getObjectId = (function() {
-		var _id = 0;
-		return function() {
-			return _id++;
-		};
-	})();
+	// Physijs.noConflict
+	Physijs.noConflict = function() {
+		window.Physijs = _Physijs;
+		return Physijs;
+	};
 	
 	
 	// Physijs.Scene
