@@ -26,8 +26,9 @@ var
 	
 	// private cache
 	_now,
-	_objects = [],
+	_objects = {},
 	_objects_ammo = {},
+	_num_objects = 0,
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -171,11 +172,13 @@ public_functions.addObject = function( description ) {
 	body.id = description.id;
 	_objects[ body.id ] = body;
 	_objects_ammo[body.a] = body.id;
+	_num_objects++;
 };
 
 public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
 	delete _objects[details.id];
+	_num_objects--;
 };
 
 public_functions.updateTransform = function( details ) {
@@ -197,10 +200,10 @@ public_functions.updateTransform = function( details ) {
 public_functions.updateMass = function( details ) {
 	// #TODO: changing a static object into dynamic is buggy
 	_object = _objects[details.id];
-	_object.setMassProps( details.mass, new Ammo.btVector3(0, 0, 0) );
 	
 	// Per http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?p=&f=9&t=3663#p13816
 	world.removeRigidBody( _object );
+	_object.setMassProps( details.mass, new Ammo.btVector3(0, 0, 0) );
 	world.addRigidBody( _object );
 	_object.activate();
 };
@@ -276,51 +279,55 @@ public_functions.simulate = function( params ) {
 };
 
 reportWorld = function() {
-	var i, object,
+	var index, object,
 		transform = new Ammo.btTransform(), origin, rotation,
-		offset = 0;
+		offset = 0,
+		i = 0;
 	
-	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
+	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
 		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	}
 	
-	worldreport[1] = _objects.length; // record how many objects we're reporting on
+	worldreport[1] = _num_objects; // record how many objects we're reporting on
 	
-	for ( i = 0; i < worldreport[1]; i++ ) {
-		object = _objects[i];
-		
-		// #TODO: we can't use center of mass transform when center of mass can change,
-		//        but getMotionState().getWorldTransform() screws up on objects that have been moved
-		//object.getMotionState().getWorldTransform( transform );
-		transform = object.getCenterOfMassTransform();
-		
-		origin = transform.getOrigin();
-		rotation = transform.getRotation();
-		
-		// add values to report
-		offset = 2 + i * WORLDREPORT_ITEMSIZE;
-		
-		worldreport[ offset ] = object.id;
-		
-		worldreport[ offset + 1 ] = origin.x();
-		worldreport[ offset + 2 ] = origin.y();
-		worldreport[ offset + 3 ] = origin.z();
-		
-		worldreport[ offset + 4 ] = rotation.x();
-		worldreport[ offset + 5 ] = rotation.y();
-		worldreport[ offset + 6 ] = rotation.z();
-		worldreport[ offset + 7 ] = rotation.w();
-		
-		_vector = object.getLinearVelocity();
-		worldreport[ offset + 8 ] = _vector.x();
-		worldreport[ offset + 9 ] = _vector.y();
-		worldreport[ offset + 10 ] = _vector.z();
-		
-		_vector = object.getAngularVelocity();
-		worldreport[ offset + 11 ] = _vector.x();
-		worldreport[ offset + 12 ] = _vector.y();
-		worldreport[ offset + 13 ] = _vector.z()
+	//for ( i = 0; i < worldreport[1]; i++ ) {
+	for ( index in _objects ) {
+		if ( _objects.hasOwnProperty( index ) ) {
+			object = _objects[index];
+			
+			// #TODO: we can't use center of mass transform when center of mass can change,
+			//        but getMotionState().getWorldTransform() screws up on objects that have been moved
+			//object.getMotionState().getWorldTransform( transform );
+			transform = object.getCenterOfMassTransform();
+			
+			origin = transform.getOrigin();
+			rotation = transform.getRotation();
+			
+			// add values to report
+			offset = 2 + (i++) * WORLDREPORT_ITEMSIZE;
+			
+			worldreport[ offset ] = object.id;
+			
+			worldreport[ offset + 1 ] = origin.x();
+			worldreport[ offset + 2 ] = origin.y();
+			worldreport[ offset + 3 ] = origin.z();
+			
+			worldreport[ offset + 4 ] = rotation.x();
+			worldreport[ offset + 5 ] = rotation.y();
+			worldreport[ offset + 6 ] = rotation.z();
+			worldreport[ offset + 7 ] = rotation.w();
+			
+			_vector = object.getLinearVelocity();
+			worldreport[ offset + 8 ] = _vector.x();
+			worldreport[ offset + 9 ] = _vector.y();
+			worldreport[ offset + 10 ] = _vector.z();
+			
+			_vector = object.getAngularVelocity();
+			worldreport[ offset + 11 ] = _vector.x();
+			worldreport[ offset + 12 ] = _vector.y();
+			worldreport[ offset + 13 ] = _vector.z()
+		}
 	}
 	
 	transferableMessage( worldreport, [worldreport.buffer] );
