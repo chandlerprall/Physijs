@@ -139,27 +139,31 @@ window.Physijs = (function() {
 			offset = 2 + i * REPORT_ITEMSIZE;
 			object = this._objects[ data[ offset ] ];
 			
-			object.position.set(
-				data[ offset + 1 ],
-				data[ offset + 2 ],
-				data[ offset + 3 ]
-			);
+			if ( object.__dirtyPosition === false ) {
+				object.position.set(
+					data[ offset + 1 ],
+					data[ offset + 2 ],
+					data[ offset + 3 ]
+				);
+			}
 			
-			if ( object.useQuaternion ) {
-				object.quaternion.set(
-					data[ offset + 4 ],
-					data[ offset + 5 ],
-					data[ offset + 6 ],
-					data[ offset + 7 ]
-				);
-			} else {
-				object.rotation = getEulerXYZFromQuaternion(
-					data[ offset + 4 ],
-					data[ offset + 5 ],
-					data[ offset + 6 ],
-					data[ offset + 7 ]
-				);
-			};
+			if ( object.__dirtyRotation === false ) {
+				if ( object.useQuaternion ) {
+					object.quaternion.set(
+						data[ offset + 4 ],
+						data[ offset + 5 ],
+						data[ offset + 6 ],
+						data[ offset + 7 ]
+					);
+				} else {
+					object.rotation = getEulerXYZFromQuaternion(
+						data[ offset + 4 ],
+						data[ offset + 5 ],
+						data[ offset + 6 ],
+						data[ offset + 7 ]
+					);
+				};
+			}
 			
 			object._physijs.linearVelocity.set(
 				data[ offset + 8 ],
