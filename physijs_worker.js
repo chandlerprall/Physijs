@@ -16,6 +16,7 @@ var
 	
 	// functions
 	public_functions = {},
+	createShape,
 	reportWorld,
 	reportCollisions,
 	
@@ -40,51 +41,10 @@ var
 	collisionreport;
 
 
-public_functions.init = function( params ) {
-	importScripts( params.ammo );
-	_transform = new Ammo.btTransform;
-	
-	REPORT_CHUNKSIZE = params.reportsize || 50;
-	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
-	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
-	
-	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
-	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
-	
-	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
-		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
-		solver = new Ammo.btSequentialImpulseConstraintSolver,
-		broadphase;
-	
-	if ( !params.broadphase ) params.broadphase = { type: 'dynamic' };
-	switch ( params.broadphase.type ) {
-		case 'sweepprune':
-			broadphase = new Ammo.btAxisSweep3(
-				new Ammo.btVector3( params.broadphase.aabbmin.x, params.broadphase.aabbmin.y, params.broadphase.aabbmax.z ),
-				new Ammo.btVector3( params.broadphase.aabbmax.x, params.broadphase.aabbmax.y, params.broadphase.aabbmax.z )
-			);
-			break;
-		
-		case 'dynamic':
-		default:
-			broadphase = new Ammo.btDbvtBroadphase;
-	}
-	
-	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
-	
-	fixedTimeStep = params.fixedTimeStep || 1 / 60;
-};
-
-public_functions.setGravity = function( description ) {
-	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
-};
-
-public_functions.addObject = function( description ) {
-	var localInertia, shape, motionState, rbInfo, body;
+createShape = function( description ) {
+	var shape;
 	
 	_transform.setIdentity();
-	
-	localInertia = new Ammo.btVector3(0, 0, 0); // #TODO: localIntertia is the local inertia tensor, what does it do and should it be a parameter?
 	
 	switch ( description.type ) {
 		case 'plane':
@@ -153,6 +113,76 @@ public_functions.addObject = function( description ) {
 			break;
 	}
 	
+	return shape;
+};
+
+public_functions.init = function( params ) {
+	importScripts( params.ammo );
+	_transform = new Ammo.btTransform;
+	
+	REPORT_CHUNKSIZE = params.reportsize || 50;
+	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	
+	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	
+	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
+		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
+		solver = new Ammo.btSequentialImpulseConstraintSolver,
+		broadphase;
+	
+	if ( !params.broadphase ) params.broadphase = { type: 'dynamic' };
+	switch ( params.broadphase.type ) {
+		case 'sweepprune':
+			broadphase = new Ammo.btAxisSweep3(
+				new Ammo.btVector3( params.broadphase.aabbmin.x, params.broadphase.aabbmin.y, params.broadphase.aabbmax.z ),
+				new Ammo.btVector3( params.broadphase.aabbmax.x, params.broadphase.aabbmax.y, params.broadphase.aabbmax.z )
+			);
+			break;
+		
+		case 'dynamic':
+		default:
+			broadphase = new Ammo.btDbvtBroadphase;
+	}
+	
+	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
+	
+	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+};
+
+public_functions.setGravity = function( description ) {
+	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
+};
+
+public_functions.addObject = function( description ) {
+	var i,
+		localInertia, shape, motionState, rbInfo, body;
+	
+	_transform.setIdentity();
+	
+	shape = createShape( description );
+	
+	// If there are children then this is a compound shape
+	if ( description.children ) {
+		var compound_shape = new Ammo.btCompoundShape, _child;
+		compound_shape.addChildShape( _transform, shape );
+		
+		for ( i = 0; i < description.children.length; i++ ) {
+			_child = description.children[i];
+			var trans = new Ammo.btTransform;
+			trans.setIdentity();
+			trans.setOrigin(new Ammo.btVector3( _child.offset.x, _child.offset.y, _child.offset.z ));
+			trans.setRotation(new Ammo.btQuaternion( _child.rotation.x, _child.rotation.y, _child.rotation.z, _child.rotation.w ));
+			
+			shape = createShape( description.children[i] );
+			compound_shape.addChildShape( trans, shape );
+		}
+		
+		shape = compound_shape;
+	}
+	
+	localInertia = new Ammo.btVector3(0, 0, 0); // #TODO: localIntertia is the local inertia tensor, what does it do and should it be a parameter?
 	shape.calculateLocalInertia( description.mass, localInertia );
 	
 	motionState = new Ammo.btDefaultMotionState( _transform ); // #TODO: btDefaultMotionState supports center of mass offset as second argument - implement

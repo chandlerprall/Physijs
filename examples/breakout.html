@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>Breakout - Physijs</title>
+	<script type="text/javascript" src="js/ThreeDebug.js"></script>
+	<script type="text/javascript" src="js/tween.js"></script>
+	<script type="text/javascript" src="js/stats.js"></script>
+	<script type="text/javascript" src="../physi.js"></script>
+	
+	<script type="text/javascript">
+	
+	'use strict';
+	
+	// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+	// shim layer with setTimeout fallback
+	window['requestAnimFrame'] = (function(){
+	  return  window.requestAnimationFrame       || 
+	          window.webkitRequestAnimationFrame || 
+	          window.mozRequestAnimationFrame    || 
+	          window.oRequestAnimationFrame      || 
+	          window.msRequestAnimationFrame     || 
+	          function(/* function */ callback, /* DOMElement */ element){
+	            window.setTimeout(callback, 1000 / 60);
+	          };
+	})();
+	
+	Physijs.scripts.worker = '../physijs_worker.js';
+	Physijs.scripts.ammo = 'examples/js/ammo.js';
+	
+	var initScene, createBlocks, render, mouseMove,
+		projector, renderer, stats, scene, light, camera,
+		blocks, paddle, ball
+	
+	initScene = function() {
+		TWEEN.start();
+		
+		projector = new THREE.Projector;
+		
+		document.getElementById( 'viewport' ).style.left = window.innerWidth / 2 - 400 + 'px';
+		document.getElementById( 'viewport' ).style.top = window.innerHeight / 2 - 400 + 'px';
+		
+		renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setSize( 800, 800 );
+		renderer.shadowMapEnabled = true;
+		renderer.shadowMapSoft = true;
+		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
+		
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		
+		scene = new Physijs.Scene({
+			//broadphase: { type: 'sweepprune', aabbmin: new THREE.Vector3( -25, -5, -25 ), aabbmax: new THREE.Vector3( 25, 5, 25 ) }
+		});
+		scene.setGravity({ x: 0, y: 0, z: 0 });
+		
+		camera = new THREE.OrthographicCamera(
+			25, -25, 25, -25, 1, 50
+		);
+		camera.position.set( 0, 25, 0 );
+		camera.lookAt( scene.position );
+		scene.add( camera );
+		
+		createBlocks();
+		
+		paddle = new Physijs.BoxMesh(
+			new THREE.CubeGeometry( 1, 1, 7 ),
+			new THREE.MeshBasicMaterial({ color: 0xdddddd }),
+			0,
+			{ restitution: 1 }
+		);
+		paddle.position.set( 20, 0, 0 );
+		scene.add( paddle );
+		
+		ball = new Physijs.SphereMesh(
+			new THREE.SphereGeometry( .5, 16, 16 ),
+			new THREE.MeshBasicMaterial({ color: 0xdddddd }),
+			1,
+			{ restitution: 1 }
+		);
+		ball.position.set( 5, 0, 2 );
+		scene.add( ball );
+		ball.setCcdMotionThreshold(.1);
+		ball.setCcdSweptSphereRadius(.5);
+		ball.setLinearFactor(new THREE.Vector3( 1, 0, 1 ));
+		ball.setLinearVelocity(new THREE.Vector3( -15, 0, 0 ));
+		
+		ball.addEventListener( 'collision', function() { console.debug('here'); });
+		
+		renderer.domElement.addEventListener( 'mousemove', mouseMove );
+		
+		requestAnimFrame( render );
+	};
+	
+	createBlocks = (function() {
+		var block_width = 2,
+			block_depth = 4,
+			block_geometry = new THREE.CubeGeometry( block_width - .4, 1, block_depth - .4 ),
+			block_material = new THREE.MeshBasicMaterial({ color: 0xdd9944 }),
+			blockCollision = function(a) {
+				scene.remove( this );
+			};
+		
+		return function() {
+			var i, j,
+				blocks_center = new THREE.Vector2( -15, 0 ),
+				blocks_width = 5,
+				blocks_depth = 10,
+				block;
+			
+			for ( i = 0; i < blocks_width; i++ ) {
+				for ( j = 0; j < blocks_depth; j++ ) {
+					block = new Physijs.BoxMesh( block_geometry, block_material, 0, { restitution: 1 } );
+					block.position.set(
+						(-blocks_width / 2 * block_width) + (i * block_width) + block_width / 2 + blocks_center.x,
+						0,
+						(-blocks_depth / 2 * block_depth) + (j * block_depth) + block_depth / 2 + blocks_center.y
+					);
+					scene.add( block );
+					block.addEventListener( 'collision', blockCollision );
+				}
+			}
+		};
+	})();
+	
+	mouseMove = function( evt ) {
+		paddle.position.z = evt.offsetX / 800 * 50 - 25;
+		paddle.__dirtyPosition = true;
+	};
+	
+	render = function() {
+		scene.simulate();
+		renderer.render( scene, camera);
+		stats.update();
+		requestAnimFrame( render );
+	};
+	
+	window.onload = initScene;
+	
+	</script>
+	
+	<style type="text/css">
+		html, body {
+			margin: 0;
+			padding: 0;
+			background-color: #444;
+			overflow: hidden;
+		}
+		
+		#viewport {
+			background-color: #000;
+			width: 800px;
+			height: 800px;
+			position: absolute;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="viewport"></div>
+</body>
+
+</html>

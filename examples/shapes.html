@@ -167,14 +167,14 @@
 			
 			switch ( Math.floor(Math.random() * 6) ) {
 				case 0:
-					shape = new Physijs.ConvexMesh(
+					shape = new Physijs.BoxMesh(
 						box_geometry,
 						material
 					);
 					break;
 				
 				case 1:
-					shape = new Physijs.ConvexMesh(
+					shape = new Physijs.SphereMesh(
 						sphere_geometry,
 						material,
 						undefined,
@@ -183,14 +183,14 @@
 					break;
 				
 				case 2:
-					shape = new Physijs.ConvexMesh(
+					shape = new Physijs.CylinderMesh(
 						cylinder_geometry,
 						material
 					);
 					break;
 				
 				case 3:
-					shape = new Physijs.ConvexMesh(
+					shape = new Physijs.ConeMesh(
 						cone_geometry,
 						material
 					);
@@ -208,11 +208,6 @@
 						torus_geometry,
 						material
 					);
-					break;
-				
-				default:
-					// wtf?
-					return;
 					break;
 			}
 				

@@ -6,7 +6,7 @@ window.Physijs = (function() {
 		Physijs = {}, // object assigned to window.Physijs
 		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
-		getEulerXYZFromQuaternion,
+		getEulerXYZFromQuaternion, getQuatertionFromEuler,
 		
 		// constants
 		MESSAGE_TYPES = {
@@ -68,6 +68,27 @@ window.Physijs = (function() {
 			Math.atan2( 2 * ( z * w - x * y ), ( w * w + x * x - y * y - z * z ) )
 		);
 	};
+	
+	getQuatertionFromEuler = function( x, y, z ) {
+		var c1, s1, c2, s2, c3, s3, c1c2, s1s2;
+		c1 = Math.cos( y  ),
+		s1 = Math.sin( y  ),
+		c2 = Math.cos( -z ),
+		s2 = Math.sin( -z ),
+		c3 = Math.cos( x  ),
+		s3 = Math.sin( x  ),
+		
+		c1c2 = c1 * c2,
+		s1s2 = s1 * s2;
+		
+		return {
+			w: c1c2 * c3  - s1s2 * s3,
+		  	x: c1c2 * s3  + s1s2 * c3,
+			y: s1 * c2 * c3 + c1 * s2 * s3,
+			z: c1 * s2 * c3 - s1 * c2 * s3
+		};
+	};
+	
 	
 	
 	// Physijs.noConflict
@@ -259,11 +280,38 @@ window.Physijs = (function() {
 	Physijs.Scene.prototype.add = function( object ) {
 		THREE.Mesh.prototype.add.call( this, object );
 		
+		var i;
+		
 		if ( object._physijs ) {
 			
 			object.__dirtyPosition = true;
 			object.__dirtyRotation = true;
 			this._objects[object._physijs.id] = object;
+			
+			if ( object.children.length ) {
+				object._physijs.children = [];
+				for ( i = 0; i < object.children.length; i++ ) {
+					if ( object.children[i]._physijs ) {
+						object.children[i]._physijs.offset = {
+							x: object.children[i].position.x,
+							y: object.children[i].position.y,
+							z: object.children[i].position.z
+						};
+						
+						if ( object.children[i].useQuaternion !== true ) {
+							object.children[i].quaternion.copy(getQuatertionFromEuler( object.children[i].rotation.x, object.children[i].rotation.y, object.children[i].rotation.z ));
+						}
+						object.children[i]._physijs.rotation = {
+							x: object.children[i].quaternion.x,
+							y: object.children[i].quaternion.y,
+							z: object.children[i].quaternion.z,
+							w: object.children[i].quaternion.w
+						};
+
+						object._physijs.children.push( object.children[i]._physijs );
+					}
+				}
+			}
 			
 			object.world = this;
 			
