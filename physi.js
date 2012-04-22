@@ -107,7 +107,7 @@ window.Physijs = (function() {
 		THREE.Scene.call( this );
 		
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
-		this._objects = [];
+		this._objects = {};
 		
 		this._worker.onmessage = function ( event ) {
 			var i, index, obj_id, obj, sceneObj, collisionObj, collided_with = [],

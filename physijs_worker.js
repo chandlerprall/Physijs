@@ -124,7 +124,7 @@ public_functions.init = function( params ) {
 	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	
-	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
 	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
