@@ -166,8 +166,7 @@
 		doCreateShape = function() {
 			var shape, material = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true });
 			
-			//switch ( Math.floor(Math.random() * 6) ) {
-			switch ( Math.floor(Math.random() * 4) ) {
+			switch ( Math.floor(Math.random() * 6) ) {
 				case 0:
 					shape = new Physijs.BoxMesh(
 						box_geometry,
