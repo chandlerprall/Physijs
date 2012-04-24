@@ -131,12 +131,12 @@
 		
 		requestAnimFrame( render );
 		
-		setTimeout( createShape, 250 );
+		createShape();
 	};
 	
 	render = function() {
 		scene.simulate(undefined, 2);
-		renderer.render( scene, camera);
+		renderer.render( scene, camera );
 		stats.update();
 		requestAnimFrame( render );
 	};
@@ -149,7 +149,8 @@
 			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 ),
 			cone_geometry = new THREE.CylinderGeometry( 0, 2, 4, 32 ),
 			octahedron_geometry = new THREE.OctahedronGeometry( 1.7, 1 ),
-			torus_geometry = new THREE.TorusKnotGeometry ( 1.7, .2, 32, 4 );
+			torus_geometry = new THREE.TorusKnotGeometry ( 1.7, .2, 32, 4 ),
+			doCreateShape;
 		
 		setTimeout(
 			function addListener() {
@@ -162,10 +163,11 @@
 			}
 		);
 			
-		return function() {
+		doCreateShape = function() {
 			var shape, material = new THREE.MeshLambertMaterial({ opacity: 0, transparent: true });
 			
-			switch ( Math.floor(Math.random() * 6) ) {
+			//switch ( Math.floor(Math.random() * 6) ) {
+			switch ( Math.floor(Math.random() * 4) ) {
 				case 0:
 					shape = new Physijs.BoxMesh(
 						box_geometry,
@@ -227,13 +229,15 @@
 				Math.random() * Math.PI
 			);
 			
-			scene.add( shape );
+			scene.add( shape, addshapes ? createShape : undefined );
 			
 			new TWEEN.Tween(shape.material).to({opacity: 1}, 500).start();
 			
 			document.getElementById('shapecount').textContent = (++shapes) + ' shapes';
-			
-			if ( addshapes ) setTimeout( createShape, 250 );
+		};
+		
+		return function() {
+			setTimeout( doCreateShape, 250 );
 		};
 	})();
 	

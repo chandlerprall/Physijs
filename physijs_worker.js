@@ -16,6 +16,8 @@ var
 	
 	// functions
 	public_functions = {},
+	getShapeFromCache,
+	setShapeCache,
 	createShape,
 	reportWorld,
 	reportCollisions,
@@ -30,6 +32,7 @@ var
 	_objects = {},
 	_objects_ammo = {},
 	_num_objects = 0,
+	_object_shapes = {},
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -41,30 +44,61 @@ var
 	collisionreport;
 
 
+getShapeFromCache = function ( cache_key ) {
+	if ( _object_shapes[ cache_key ] !== undefined ) {
+		return _object_shapes[ cache_key ];
+	}
+	return null;
+};
+
+setShapeCache = function ( cache_key, shape ) {
+	_object_shapes[ cache_key ] = shape;
+}
+
 createShape = function( description ) {
-	var shape;
+	var cache_key, shape;
 	
 	_transform.setIdentity();
 	
 	switch ( description.type ) {
 		case 'plane':
-			shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ) );
+			cache_key = 'plane_' + description.normal.x + '_' + description.normal.y + '_' + description.normal.z;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ) );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'box':
-			shape = new Ammo.btBoxShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+			cache_key = 'box_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btBoxShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'sphere':
-			shape = new Ammo.btSphereShape( description.radius );
+			cache_key = 'sphere_' + description.radius;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btSphereShape( description.radius );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'cylinder':
-			shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+			cache_key = 'cylinder_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'cone':
-			shape = new Ammo.btConeShape( description.radius, description.height );
+			cache_key = 'cone_' + description.radius + '_' + description.height;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btConeShape( description.radius, description.height );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'triangle':
