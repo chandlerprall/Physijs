@@ -4,7 +4,10 @@
 
 <head>
 	<title>Jenga - Physijs</title>
-	<script type="text/javascript" src="js/ThreeDebug.js"></script>
+	
+	<link rel="stylesheet" type="text/css" href="css/styles.css" />
+	
+	<script type="text/javascript" src="js/Three.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
 	
@@ -12,25 +15,12 @@
 	
 	'use strict';
 	
-	// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-	// shim layer with setTimeout fallback
-	window['requestAnimFrame'] = (function(){
-	  return  window.requestAnimationFrame       || 
-	          window.webkitRequestAnimationFrame || 
-	          window.mozRequestAnimationFrame    || 
-	          window.oRequestAnimationFrame      || 
-	          window.msRequestAnimationFrame     || 
-	          function(/* function */ callback, /* DOMElement */ element){
-	            window.setTimeout(callback, 1000 / 60);
-	          };
-	})();
-	
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, initEventHandling, render, createTower,
 		renderer, stats, scene, light, camera,
-		blocks = [], intersect_plane;
+		table, blocks = [], intersect_plane;
 	
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -46,7 +36,6 @@
 		document.getElementById( 'viewport' ).appendChild( stats.domElement );
 		
 		scene = new Physijs.Scene;
-		scene.setGravity({ x: 0, y: -10, z: 0 });
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -63,15 +52,18 @@
 		light.position.set( 40, 60, 25 );
 		light.target.position.copy( scene.position );
 		light.castShadow = true;
-		light.shadowCameraLeft = -30;
-		light.shadowCameraTop = -30;
-		light.shadowCameraRight = 30;
-		light.shadowCameraBottom = 30;
+		light.shadowCameraLeft = -60;
+		light.shadowCameraTop = -60;
+		light.shadowCameraRight = 60;
+		light.shadowCameraBottom = 60;
+		light.shadowCameraNear = 20;
+		light.shadowCameraFar = 200;
 		light.shadowBias = -.0001
+		light.shadowMapWidth = light.shadowMapHeight = 1024;
 		scene.add( light );
 		
 		// Table
-		var table = new Physijs.BoxMesh(
+		table = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(50, 1, 50),
 			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
 			0, // mass
@@ -85,21 +77,20 @@
 		
 		intersect_plane = new THREE.Mesh(
 			new THREE.PlaneGeometry( 150, 150 ),
-			new THREE.MeshBasicMaterial({ opacity: 0 })
+			new THREE.MeshBasicMaterial({ opacity: 0, transparent: true })
 		);
 		scene.add( intersect_plane );
-		intersect_plane.rotation.x = -Math.PI / 2;
 
 		initEventHandling();
 		
-		requestAnimFrame( render );
+		requestAnimationFrame( render );
 	};
 	
 	render = function() {
 		scene.simulate(undefined, 2);
 		renderer.render( scene, camera);
 		stats.update();
-		requestAnimFrame( render );
+		requestAnimationFrame( render );
 	};
 	
 	createTower = (function() {
@@ -180,19 +171,11 @@
 					-( evt.clientY / window.innerHeight ) * 2 + 1,
 					1
 				);
-				
 				projector.unprojectVector( _vector, camera );
 				
 				ray = new THREE.Ray( camera.position, _vector.subSelf( camera.position ).normalize() );
 				intersection = ray.intersectObject( intersect_plane );
 				mouse_position.copy( intersection[0].point );
-				
-				/*
-				// this method, while it performs better than the ray trace, has problems as you move away from center of the scene
-				scalar = ( mouse_position.y - camera.position.y ) / _vector.y;
-				
-				mouse_position = _vector.clone().multiplyScalar( scalar ).addSelf( camera.position );
-				*/
 				
 				selected_block.position.add( mouse_position, block_offset );
 				selected_block.__dirtyPosition = true;
@@ -228,28 +211,13 @@
 	window.onload = initScene;
 	
 	</script>
-	
-	<style type="text/css">
-		html, body {
-			margin: 0;
-			padding: 0;
-			overflow: hidden;
-		}
-		p {
-			font-family: Verdana;
-			font-size: 10pt;
-			text-align: center;
-			position: absolute;
-			top: 0;
-			width: 100%;
-		}
-		p a {
-			color: #4488ff;
-		}
-	</style>
 </head>
 
 <body>
+	<div id="heading">
+		<h1>Jenga</h1>
+		<p>Click & drag on the blocks to move them around.</p>
+	</div>
 	<div id="viewport"></div>
 </body>
 

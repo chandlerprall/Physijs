@@ -1,7 +1,8 @@
 'use strict';
 
 window.Physijs = (function() {
-	var _matrix = new THREE.Matrix4, _is_simulating = false,
+	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
+		_matrix = new THREE.Matrix4, _is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
 		Eventable, // class to provide simple event methods
@@ -635,53 +636,6 @@ window.Physijs = (function() {
 	Physijs.ConeMesh.prototype = new Physijs.Mesh;
 	Physijs.ConeMesh.prototype.constructor = Physijs.ConeMesh;
 	
-	// Physijs.TriangleMesh
-	Physijs.TriangleMesh = function( geometry, material, mass, params ) {
-		var i,
-			width, height, depth,
-			triangles = [];
-		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
-		
-		if ( !geometry.boundingBox ) {
-			geometry.computeBoundingBox();
-		}
-		
-		for ( i = 0; i < geometry.faces.length; i++ ) {
-			if ( geometry.faces[i] instanceof THREE.Face3 ) {
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ]
-				]);
-			} else {
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
-				]);
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
-				]);
-			}
-		}
-		
-		
-		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
-		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
-		
-		this._physijs.type = 'triangle';
-		this._physijs.triangles = triangles;
-		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
-	};
-	Physijs.TriangleMesh.prototype = new Physijs.Mesh;
-	Physijs.TriangleMesh.prototype.constructor = Physijs.TriangleMesh;
-	
 	
 	// Physijs.ConvexMesh
 	Physijs.ConvexMesh = function( geometry, material, mass, params ) {
@@ -698,11 +652,20 @@ window.Physijs = (function() {
 		}
 		
 		for ( i = 0; i < geometry.vertices.length; i++ ) {
-			points.push({
-				x: geometry.vertices[i].position.x,
-				y: geometry.vertices[i].position.y,
-				z: geometry.vertices[i].position.z,
-			});
+			if ( THREE_REVISION >= 49 ) {
+				points.push({
+					x: geometry.vertices[i].x,
+					y: geometry.vertices[i].y,
+					z: geometry.vertices[i].z,
+				});
+			} else {
+				points.push({
+					x: geometry.vertices[i].x,
+					y: geometry.vertices[i].y,
+					z: geometry.vertices[i].z,
+				});
+
+			}
 		}
 		
 		
