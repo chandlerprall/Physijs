@@ -203,6 +203,8 @@ public_functions.addObject = function( description ) {
 	_objects[ body.id ] = body;
 	_objects_ammo[body.a] = body.id;
 	_num_objects++;
+	
+	transferableMessage({ cmd: 'objectReady', params: body.id });
 };
 
 public_functions.removeObject = function( details ) {

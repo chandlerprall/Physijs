@@ -96,7 +96,7 @@
 	
 	spawnBox = (function() {
 		var box_geometry = new THREE.CubeGeometry( 4, 4, 4 ),
-			handleCollision = function() {
+			handleCollision = function( collided_with, linearVelocity, angularVelocity ) {
 				switch ( ++this.collisions ) {
 					
 					case 1:
@@ -123,33 +123,34 @@
 						this.material.color.setHex(0x77dd55);
 						break;
 				}
+			},
+			createBox = function() {
+				var box = new Physijs.BoxMesh(
+					box_geometry,
+					new THREE.MeshLambertMaterial({ color: 0xdd7755 }) // Not shared because of color changes
+				);
+				box.collisions = 0;
+				
+				box.position.set(
+					Math.random() * 15 - 7.5,
+					25,
+					Math.random() * 15 - 7.5
+				);
+				
+				box.rotation.set(
+					Math.random() * Math.PI,
+					Math.random() * Math.PI,
+					Math.random() * Math.PI
+				);
+				
+				box.castShadow = true;
+				box.addEventListener( 'collision', handleCollision );
+				scene.add( box, spawnBox );
 			};
 		
 		return function() {
-			var box = new Physijs.BoxMesh(
-				box_geometry,
-				new THREE.MeshLambertMaterial({ color: 0xdd7755 }) // Not shared because of color changes
-			);
-			box.collisions = 0;
-			
-			box.position.set(
-				Math.random() * 15 - 7.5,
-				25,
-				Math.random() * 15 - 7.5
-			);
-			
-			box.rotation.set(
-				Math.random() * Math.PI,
-				Math.random() * Math.PI,
-				Math.random() * Math.PI
-			);
-			
-			box.castShadow = true;
-			box.addEventListener( 'collision', handleCollision );
-			scene.add( box );
-			
-			setTimeout( spawnBox, 1000 );
-		}
+			setTimeout( createBox, 1000 );
+		};
 	})();
 	
 	render = function() {

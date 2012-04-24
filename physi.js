@@ -9,6 +9,9 @@ window.Physijs = (function() {
 		getEulerXYZFromQuaternion, getQuatertionFromEuler,
 		addObjectChildren,
 		
+		_temp1, _temp2,
+		_temp_vector3_1 = new THREE.Vector3,
+		
 		// constants
 		MESSAGE_TYPES = {
 			WORLDREPORT: 0,
@@ -108,12 +111,10 @@ window.Physijs = (function() {
 		
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 		this._objects = {};
+		this._callbacks = {};
 		
 		this._worker.onmessage = function ( event ) {
-			var i, index, obj_id, obj, sceneObj, collisionObj, collided_with = [],
-				update_details = {
-					collisions: []
-				};
+			var _temp;
 			
 			if ( event.data instanceof Float32Array ) {
 				
@@ -132,11 +133,18 @@ window.Physijs = (function() {
 				
 				// non-transferable object
 				switch ( event.data.cmd ) {
+					case 'objectReady':
+						_temp = event.data.params;
+						if ( self._callbacks[ _temp ] ) {
+							self._callbacks[ _temp ]( self._objects[ _temp ] );
+						}
+						break;
+					
 					default:
-					// Do nothing, just show the message
-					console.debug('Received: ' + event.data.cmd);
-					console.dir(event.data.params);
-					break;
+						// Do nothing, just show the message
+						console.debug('Received: ' + event.data.cmd);
+						console.dir(event.data.params);
+						break;
 				}
 				
 			}
@@ -233,8 +241,9 @@ window.Physijs = (function() {
 		}
 		
 		// Deal with collisions
-		for ( i = 0; i < this._objects.length; i++ ) {
-			object = this._objects[i];
+		for ( object in this._objects ) {
+			if ( !this._objects.hasOwnProperty( object ) ) return;
+			object = this._objects[ object ];
 			
 			if ( collisions[ object._physijs.id ] ) {
 				
@@ -247,8 +256,14 @@ window.Physijs = (function() {
 					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
 						object._physijs.touches.push( object2._physijs.id );
 						
-						object.dispatchEvent( 'collision', object2 );
-						object2.dispatchEvent( 'collision', object );
+						_temp_vector3_1.sub( object.getLinearVelocity(), object2.getLinearVelocity() );
+						_temp1 = _temp_vector3_1.length();
+						
+						_temp_vector3_1.sub( object.getAngularVelocity(), object2.getAngularVelocity() );
+						_temp2 = _temp_vector3_1.length();
+						
+						object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
+						object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
 					}
 					
 					collided_with.push( object2._physijs.id );
@@ -312,7 +327,7 @@ window.Physijs = (function() {
 		}
 	};
 	
-	Physijs.Scene.prototype.add = function( object ) {
+	Physijs.Scene.prototype.add = function( object, callback ) {
 		THREE.Mesh.prototype.add.call( this, object );
 		
 		if ( object._physijs ) {
@@ -326,6 +341,10 @@ window.Physijs = (function() {
 			}
 			
 			object.world = this;
+			
+			if ( callback !== undefined ) {
+				this._callbacks[ object._physijs.id ] = callback;
+			}
 			
 			this.execute( 'addObject', object._physijs );
 		}
