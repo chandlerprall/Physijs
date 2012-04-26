@@ -20,7 +20,7 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, createShape,
-		renderer, stats, scene, light, ground, camera;
+		renderer, stats, scene, light, ground, ground_material, camera;
 	
 	initScene = function() {
 		TWEEN.start();
@@ -52,7 +52,7 @@
 		
 		// Light
 		light = new THREE.DirectionalLight( 0xFFFFFF );
-		light.position.set( 40, 60, 25 );
+		light.position.set( 20, 40, -15 );
 		light.target.position.copy( scene.position );
 		light.castShadow = true;
 		light.shadowCameraLeft = -60;
@@ -62,13 +62,23 @@
 		light.shadowCameraNear = 20;
 		light.shadowCameraFar = 200;
 		light.shadowBias = -.0001
-		light.shadowMapWidth = light.shadowMapHeight = 1024;
+		light.shadowMapWidth = light.shadowMapHeight = 2048;
+		light.shadowDarkness = .7;
 		scene.add( light );
+		
+		// Materials
+		ground_material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
+			.8, // high friction
+			.4 // low restitution
+		);
+		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
+		ground_material.map.repeat.set( 2.5, 2.5 );
 		
 		// Ground
 		ground = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(50, 1, 50),
-			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
+			ground_material,
 			0 // mass
 		);
 		ground.receiveShadow = true;
@@ -76,24 +86,23 @@
 		
 		// Bumpers
 		var bumper,
-			bumper_geom = new THREE.CubeGeometry(2, 1, 50),
-			bumper_mat = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
+			bumper_geom = new THREE.CubeGeometry(2, 1, 50);
 		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper = new Physijs.BoxMesh( bumper_geom, ground_material, 0, { restitution: .2 } );
 		bumper.position.y = 1;
 		bumper.position.x = -24;
 		bumper.receiveShadow = true;
 		bumper.castShadow = true;
 		scene.add( bumper );
 		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper = new Physijs.BoxMesh( bumper_geom, ground_material, 0, { restitution: .2 } );
 		bumper.position.y = 1;
 		bumper.position.x = 24;
 		bumper.receiveShadow = true;
 		bumper.castShadow = true;
 		scene.add( bumper );
 		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper = new Physijs.BoxMesh( bumper_geom, ground_material, 0, { restitution: .2 } );
 		bumper.position.y = 1;
 		bumper.position.z = -24;
 		bumper.rotation.y = Math.PI / 2;
@@ -101,7 +110,7 @@
 		bumper.castShadow = true;
 		scene.add( bumper );
 		
-		bumper = new Physijs.BoxMesh( bumper_geom, bumper_mat, 0, { restitution: .2 } );
+		bumper = new Physijs.BoxMesh( bumper_geom, ground_material, 0, { restitution: .2 } );
 		bumper.position.y = 1;
 		bumper.position.z = 24;
 		bumper.rotation.y = Math.PI / 2;

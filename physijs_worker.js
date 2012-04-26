@@ -30,6 +30,7 @@ var
 	// private cache
 	_now,
 	_objects = {},
+	_materials = {},
 	_objects_ammo = {},
 	_num_objects = 0,
 	_object_shapes = {},
@@ -185,6 +186,10 @@ public_functions.init = function( params ) {
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
 };
 
+public_functions.registerMaterial = function( description ) {
+	_materials[ description.id ] = description;
+};
+
 public_functions.setGravity = function( description ) {
 	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
 };
@@ -222,8 +227,10 @@ public_functions.addObject = function( description ) {
 	motionState = new Ammo.btDefaultMotionState( _transform ); // #TODO: btDefaultMotionState supports center of mass offset as second argument - implement
 	rbInfo = new Ammo.btRigidBodyConstructionInfo( description.mass, motionState, shape, localInertia );
 	
-	if ( typeof description.friction !== 'undefined' ) rbInfo.set_m_friction( description.friction );
-	if ( typeof description.restitution !== 'undefined' ) rbInfo.set_m_restitution( description.restitution );
+	if ( description.materialId !== undefined ) {
+		rbInfo.set_m_friction( _materials[ description.materialId ].friction );
+		rbInfo.set_m_restitution( _materials[ description.materialId ].restitution );
+	}
 	
 	body = new Ammo.btRigidBody( rbInfo );
 	
@@ -452,7 +459,7 @@ self.onmessage = function( event ) {
 	}
 	
 	if ( event.data.cmd && public_functions[event.data.cmd] ) {
-		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' ) return;
+		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
 		public_functions[event.data.cmd]( event.data.params );
 	}
 	

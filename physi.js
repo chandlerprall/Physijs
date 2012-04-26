@@ -103,6 +103,22 @@ window.Physijs = (function() {
 	};
 	
 	
+	// Physijs.createMaterial
+	Physijs.createMaterial = function( material, friction, restitution ) {
+		var physijs_material = function(){};
+		physijs_material.prototype = material;
+		physijs_material = new physijs_material;
+		
+		physijs_material._physijs = {
+			id: material.id,
+			friction: friction === undefined ? .8 : friction,
+			restitution: restitution === undefined ? .2 : restitution
+		};
+		
+		return physijs_material;
+	};
+	
+	
 	// Physijs.Scene
 	Physijs.Scene = function( params ) {
 		var self = this;
@@ -111,6 +127,7 @@ window.Physijs = (function() {
 		THREE.Scene.call( this );
 		
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
+		this._materials = {};
 		this._objects = {};
 		this._callbacks = {};
 		
@@ -347,6 +364,13 @@ window.Physijs = (function() {
 				this._callbacks[ object._physijs.id ] = callback;
 			}
 			
+			if ( object.material._physijs ) {
+				if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {
+					this.execute( 'registerMaterial', object.material._physijs );
+					object._physijs.materialId = object.material._physijs.id;
+				}
+			}
+			
 			this.execute( 'addObject', object._physijs );
 		}
 	};
@@ -407,14 +431,13 @@ window.Physijs = (function() {
 	
 	
 	// Phsijs.Mesh
-	Physijs.Mesh = function ( geometry, material, mass, params ) {
+	Physijs.Mesh = function ( geometry, material, mass ) {
 		var index;
 		
 		if ( !geometry ) {
 			return;
 		}
 		
-		params = params || {};
 		Eventable.call( this );
 		THREE.Mesh.call( this, geometry, material );
 		
@@ -430,11 +453,6 @@ window.Physijs = (function() {
 			linearVelocity: new THREE.Vector3,
 			angularVelocity: new THREE.Vector3
 		};
-		
-		for ( index in params ) {
-			if ( !params.hasOwnProperty( index ) ) continue;
-			this._physijs[index] = params[index];
-		}
 	};
 	Physijs.Mesh.prototype = new THREE.Mesh;
 	Physijs.Mesh.prototype.constructor = Physijs.Mesh;
@@ -519,12 +537,10 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.PlaneMesh
-	Physijs.PlaneMesh = function ( geometry, material, mass, params ) {
+	Physijs.PlaneMesh = function ( geometry, material, mass ) {
 		var width, height;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
@@ -544,12 +560,10 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.BoxMesh
-	Physijs.BoxMesh = function( geometry, material, mass, params ) {
+	Physijs.BoxMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -570,10 +584,8 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.SphereMesh
-	Physijs.SphereMesh = function( geometry, material, mass, params ) {
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+	Physijs.SphereMesh = function( geometry, material, mass ) {
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingSphere ) {
 			geometry.computeBoundingSphere();
@@ -588,12 +600,10 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.CylinderMesh
-	Physijs.CylinderMesh = function( geometry, material, mass, params ) {
+	Physijs.CylinderMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -614,12 +624,10 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.ConeMesh
-	Physijs.ConeMesh = function( geometry, material, mass, params ) {
+	Physijs.ConeMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -638,14 +646,12 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.ConvexMesh
-	Physijs.ConvexMesh = function( geometry, material, mass, params ) {
+	Physijs.ConvexMesh = function( geometry, material, mass ) {
 		var i,
 			width, height, depth,
 			points = [];
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -682,13 +688,9 @@ window.Physijs = (function() {
 	
 	
 	// Physijs.HeightfieldMesh
-	Physijs.HeightfieldMesh = function( geometry, material, mass, params ) {
+	Physijs.HeightfieldMesh = function( geometry, material, mass ) {
 		var i, j, vertex,
-			width, length, heightfield = [], maxheight = 0;
-		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+			width, length, heightfield = [], maxheight = 0, params = {};
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();

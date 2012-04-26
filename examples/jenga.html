@@ -20,7 +20,7 @@
 	
 	var initScene, initEventHandling, render, createTower,
 		renderer, stats, scene, light, camera,
-		table, blocks = [], intersect_plane;
+		table, blocks = [], table_material, block_material, intersect_plane;
 	
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -49,7 +49,7 @@
 		
 		// Light
 		light = new THREE.DirectionalLight( 0xFFFFFF );
-		light.position.set( 40, 60, 25 );
+		light.position.set( 20, 40, -15 );
 		light.target.position.copy( scene.position );
 		light.castShadow = true;
 		light.shadowCameraLeft = -60;
@@ -58,14 +58,32 @@
 		light.shadowCameraBottom = 60;
 		light.shadowCameraNear = 20;
 		light.shadowCameraFar = 200;
-		light.shadowBias = -.0001
-		light.shadowMapWidth = light.shadowMapHeight = 1024;
+		light.shadowBias = -.001
+		light.shadowMapWidth = light.shadowMapHeight = 2048;
+		light.shadowDarkness = .7;
 		scene.add( light );
+		
+		// Materials
+		table_material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/wood.jpg' ) }),
+			.6, // medium friction
+			.5 // medium restitution
+		);
+		table_material.map.wrapS = table_material.map.wrapT = THREE.RepeatWrapping;
+		table_material.map.repeat.set( 5, 5 );
+		
+		block_material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/plywood.jpg' ) }),
+			.8, // high friction
+			.6 // medium restitution
+		);
+		block_material.map.wrapS = block_material.map.wrapT = THREE.RepeatWrapping;
+		block_material.map.repeat.set( 1, 1 );
 		
 		// Table
 		table = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(50, 1, 50),
-			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
+			table_material,
 			0, // mass
 			{ restitution: .2, friction: .8 }
 		);
@@ -95,8 +113,7 @@
 	
 	createTower = (function() {
 		var block_length = 6, block_height = 1, block_width = 1.5, block_offset = 2,
-			block_geometry = new THREE.CubeGeometry( block_length, block_height, block_width ),
-			block_material = new THREE.MeshLambertMaterial({ color: 0xBB7744 });
+			block_geometry = new THREE.CubeGeometry( block_length, block_height, block_width );
 		
 		return function() {
 			var i, j, rows = 16,

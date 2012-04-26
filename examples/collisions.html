@@ -19,7 +19,7 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, _boxes = [], spawnBox,
-		renderer, stats, scene, ground, light, camera;
+		renderer, stats, scene, ground_material, ground, light, camera;
 	
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -48,7 +48,7 @@
 		
 		// Light
 		light = new THREE.DirectionalLight( 0xFFFFFF );
-		light.position.set( 40, 60, 25 );
+		light.position.set( 20, 40, -15 );
 		light.target.position.copy( scene.position );
 		light.castShadow = true;
 		light.shadowCameraLeft = -60;
@@ -58,13 +58,22 @@
 		light.shadowCameraNear = 20;
 		light.shadowCameraFar = 200;
 		light.shadowBias = -.0001
-		light.shadowMapWidth = light.shadowMapHeight = 1024;
+		light.shadowMapWidth = light.shadowMapHeight = 2048;
+		light.shadowDarkness = .7;
 		scene.add( light );
 		
 		// Ground
+		ground_material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
+			.8, // high friction
+			.4 // low restitution
+		);
+		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
+		ground_material.map.repeat.set( 3, 3 );
+		
 		ground = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(100, 1, 100),
-			new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
+			ground_material,
 			0 // mass
 		);
 		ground.receiveShadow = true;
@@ -106,9 +115,21 @@
 				}
 			},
 			createBox = function() {
-				var box = new Physijs.BoxMesh(
+				var box, material;
+				
+				material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/plywood.jpg' ) }),
+					.4, // low friction
+					.6 // high restitution
+				);
+				material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+				material.map.repeat.set( .5, .5 );
+				
+				//material = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) });
+				
+				box = new Physijs.BoxMesh(
 					box_geometry,
-					new THREE.MeshLambertMaterial({ color: 0xdd7755 }) // Not shared because of color changes
+					material
 				);
 				box.collisions = 0;
 				
