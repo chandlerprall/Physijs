@@ -127,21 +127,6 @@ createShape = function( description ) {
 			}
 			break;
 		
-		case 'heightfield':
-			var ptr = Ammo.allocate( description.heightfield.length*4, "float", Ammo.ALLOC_NORMAL );
-			for ( var f = 0; f < description.heightfield.length; f++ ) {
-				//Ammo.setValue(ptr+(f<<2), description.heightfield[f][1], 'float');
-				Ammo.setValue(ptr+(f<<2), Math.random() * 5, 'float');
-			}
-			
-			shape = new Ammo.btHeightfieldTerrainShape( description.datapoints_x, description.datapoints_y, ptr, 1, -20, 20, 1, 0, false );
-			//shape.setUseDiamondSubdivision( true );
-			
-			var localScaling = new Ammo.btVector3( description.width / (description.datapoints_x - 1), 1, description.length / (description.datapoints_y - 1) );
-			shape.setLocalScaling(localScaling);
-			
-			break;
-		
 		default:
 			// Not recognized
 			return;

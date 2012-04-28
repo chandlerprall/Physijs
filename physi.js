@@ -687,45 +687,5 @@ window.Physijs = (function() {
 	Physijs.ConvexMesh.prototype.constructor = Physijs.ConvexMesh;
 	
 	
-	// Physijs.HeightfieldMesh
-	Physijs.HeightfieldMesh = function( geometry, material, mass ) {
-		var i, j, vertex,
-			width, length, heightfield = [], maxheight = 0, params = {};
-		
-		if ( !geometry.boundingBox ) {
-			geometry.computeBoundingBox();
-		}
-		
-		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-		length = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
-		
-		for ( i = 0; i < params.width; i++ ) {
-			for ( j = 0; j < params.length; j++ ) {
-				vertex = geometry.vertices[ i + j * (params.length) ];
-				heightfield.push([
-					vertex.position.x,
-					vertex.position.z,
-					vertex.position.y
-				]);
-				
-				if ( Math.abs( vertex.position.z ) > maxheight ) {
-					maxheight = Math.abs( vertex.position.z );
-				}
-			}
-		}
-		
-		this._physijs.type = 'heightfield';
-		this._physijs.width = width;
-		this._physijs.length = length;
-		this._physijs.datapoints_x = params.width;
-		this._physijs.datapoints_y = params.length;
-		this._physijs.mass = (typeof mass === 'undefined') ? width * height * length : mass;
-		this._physijs.heightfield = heightfield;
-		this._physijs.maxheight = maxheight;
-	};
-	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
-	Physijs.HeightfieldMesh.prototype.constructor = Physijs.CylinderMesh;
-	
-	
 	return Physijs;
 })();
