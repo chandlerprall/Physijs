@@ -183,8 +183,6 @@ public_functions.addObject = function( description ) {
 	var i,
 		localInertia, shape, motionState, rbInfo, body;
 	
-	_transform.setIdentity();
-	
 	shape = createShape( description );
 	
 	// If there are children then this is a compound shape
@@ -208,6 +206,10 @@ public_functions.addObject = function( description ) {
 	
 	localInertia = new Ammo.btVector3(0, 0, 0); // #TODO: localIntertia is the local inertia tensor, what does it do and should it be a parameter?
 	shape.calculateLocalInertia( description.mass, localInertia );
+	
+	_transform.setIdentity();
+	_transform.setOrigin(new Ammo.btVector3( description.position.x, description.position.y, description.position.z ));
+	_transform.setRotation(new Ammo.btQuaternion( description.rotation.x, description.rotation.y, description.rotation.z, description.rotation.w ));
 	
 	motionState = new Ammo.btDefaultMotionState( _transform ); // #TODO: btDefaultMotionState supports center of mass offset as second argument - implement
 	rbInfo = new Ammo.btRigidBodyConstructionInfo( description.mass, motionState, shape, localInertia );
