@@ -25,7 +25,14 @@ body {
 	padding: 6px 0;
 	background-color: #64a36d;
 	font-size: 16px;
-}
-#heading a {
+#heading }
+a {
 	color: #4488ff;
+}
+
+.linkback {
+	font-size: 16px;
+}
+.linkback a {
+	color: #1155aa;
 }
