@@ -259,6 +259,9 @@ form {
 
 img {
   width: 170px;
+  box-shadow: 0px 1px 2px #444;
+  -moz-box-shadow: 0px 1px 2px #444;
+  -webkit-box-shadow: 0px 1px 2px #444;
 }
 
 /*******************************************************************************
