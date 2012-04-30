@@ -1,0 +1,31 @@
+html {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: Verdana;
+	font-size: 10pt;
+	overflow: hidden;
+}
+
+#heading {
+	position: absolute;
+	top: 0;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	background-color: #71b87b;
+	text-align: center;
+}
+#heading h1 {
+	margin: 0;
+	padding: 6px 0;
+	background-color: #64a36d;
+	font-size: 16px;
+}
+#heading a {
+	color: #4488ff;
+}
