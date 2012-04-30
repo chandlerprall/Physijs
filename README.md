@@ -14,6 +14,13 @@ You, hopefully. If you are familiar with [three.js](https://github.com/mrdoob/th
 
 If you need (or want) a feature not already included then add it to the [issue tracker](https://github.com/chandlerprall/Physijs/issues) or implement it yourself and send over a pull request.
 
+### Examples
+[![rigid bodies](http://chandlerprall.github.com/Physijs/examples/body.jpg)](http://chandlerprall.github.com/Physijs/examples/body.html)
+[![collisions](http://chandlerprall.github.com/Physijs/examples/collisions.jpg)](http://chandlerprall.github.com/Physijs/examples/collisions.html)
+[![compound shapes](http://chandlerprall.github.com/Physijs/examples/compound.jpg)](http://chandlerprall.github.com/Physijs/examples/compound.html)
+[![all shapes](http://chandlerprall.github.com/Physijs/examples/shapes.jpg)](http://chandlerprall.github.com/Physijs/examples/shapes.html)
+[![jenga](http://chandlerprall.github.com/Physijs/examples/jenga.jpg)](http://chandlerprall.github.com/Physijs/examples/jenga.html)
+
 ### Features
 * Support for [multiple object shapes](https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes), including custom convex objects.
 * Material system provides simple control over friction and restitution ("bounciness")
