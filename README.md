@@ -1,25 +1,30 @@
 Physijs
 =======
-####Physics plugin for [three.js](https://github.com/mrdoob/three.js)####
+#### Physics plugin for [three.js](https://github.com/mrdoob/three.js)
 
-**What is it?**
+Physijs brings a very easy to use interface to the three.js framework. One of the reasons three.js is so popular is because it is so incredibly easy for graphics newbies to get into 3D programming. Physijs takes that philosophy to heart and makes physics simulations just as easy to run. In fact, there are just [five easy steps](https://github.com/chandlerprall/Physijs/wiki/Basic-Setup) that must be taken to make a 3D scene come alive.
 
-Physijs is a drop-in physics simulator for three.js scenes. Its goal is to provide a simple and fast way to add physics into your 3D scene. Built for specifically for three.js, Physijs enables physics simulation by extending the existing classes you're already using. If you use three.js then you already know how to use Physijs.
+#### How does Physijs work?
+Physijs is built on top of [ammo.js](https://github.com/kripken/ammo.js/) (although there is also a [cannon.js branch](https://github.com/chandlerprall/Physijs/tree/cannon)) and runs the physics simulation in a separate thread (via web worker) to avoid impacting in your application's performance and taking up your your 3D rendering time.
 
-- - -
+A lot of effort has been made to keep the style of code the same when using Physijs. Apart from [updating an object's position](https://github.com/chandlerprall/Physijs/wiki/Updating-an-object's-position-&-rotation), all of the normal three.js conventions remain the same. If you are used to three.js, you already know how to use the Physijs plugin.
 
-**Current State**
+#### Who is this for?
+You, hopefully. If you are familiar with [three.js](https://github.com/mrdoob/three.js) and want to add physics to your scene, this is the plugin for you. No mucking about with shape definitions, keeping objects in their correct positions, or identifying collisions - simply use a few Physijs objects in place of three.js's and you'll automatically have a dynamic environment.
 
-Supports Box, Sphere, and Cylinder shapes which correspond to `THREE.CubeGeometry`, `THREE.SphereGeometry`, and `THREE.CylinderGeometry`
-Very basic API at the moment
+If you need (or want) a feature not already included then add it to the [issue tracker](https://github.com/chandlerprall/Physijs/issues) or implement it yourself and send over a pull request.
 
-* Position
-* Rotation
-* Apply basic physical force
+### Features
+* Support for [multiple object shapes](https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes), including custom convex objects.
+* Material system provides simple control over friction and restitution ("bounciness")
+* Integrated collision detection and events
+* Compound objects using the hierarchy system in three.js
+* Rotations using either euler or quaternion systems - your preference
+* Built seamlessly on top of three.js to keep the same convention and coding style
 
-**Live Examples**
-[Body](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/body.html) - demonstrating some body-related API methods
-[Collisions](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/collisions.html) - shows how to use the collision callbacks
-[Shapes](http://chandler.prallfamily.com/labs/three/plugins/physijs/examples/shapes.html) - demonstrates the currently implemented shapes
-
-*Built on top of [ammo.js](https://github.com/kripken/ammo.js/)*
+### In the Future
+* More (and better) optimizations
+* Constraint systems such as point-to-point and hinge.
+* Vehicle systems
+* Heightfield/heightmap shape
+* It would be awesome to have concave shape decomposition
