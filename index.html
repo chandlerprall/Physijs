@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Physijs : Physics plugin for Three.js" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Physijs</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/chandlerprall/Physijs">Fork Me on GitHub</a>
+
+          <h1 id="project_title">Physijs</h1>
+          <h2 id="project_tagline">Physics plugin for Three.js</h2>
+
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/chandlerprall/Physijs/zipball/master">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/chandlerprall/Physijs/tarball/master">Download this project as a tar.gz file</a>
+          </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>Physijs</h1>
+
+<h4>Physics plugin for <a href="https://github.com/mrdoob/three.js">three.js</a>
+</h4>
+
+<p>Physijs brings a very easy to use interface to the three.js framework. One of the reasons three.js is so popular is because it is so incredibly easy for graphics newbies to get into 3D programming. Physijs takes that philosophy to heart and makes physics simulations just as easy to run. In fact, there are just <a href="https://github.com/chandlerprall/Physijs/wiki/Basic-Setup">five easy steps</a> that must be taken to make a 3D scene come alive.</p>
+
+<h4>How does Physijs work?</h4>
+
+<p>Physijs is built on top of <a href="https://github.com/kripken/ammo.js/">ammo.js</a> (although there is also a <a href="https://github.com/chandlerprall/Physijs/tree/cannon">cannon.js branch</a>) and runs the physics simulation in a separate thread (via web worker) to avoid impacting in your application's performance and taking up your your 3D rendering time.</p>
+
+<p>A lot of effort has been made to keep the style of code the same when using Physijs. Apart from <a href="https://github.com/chandlerprall/Physijs/wiki/Updating-an-object's-position-&amp;-rotation">updating an object's position</a>, all of the normal three.js conventions remain the same. If you are used to three.js, you already know how to use the Physijs plugin.</p>
+
+<h4>Who is this for?</h4>
+
+<p>You, hopefully. If you are familiar with <a href="https://github.com/mrdoob/three.js">three.js</a> and want to add physics to your scene, this is the plugin for you. No mucking about with shape definitions, keeping objects in their correct positions, or identifying collisions - simply use a few Physijs objects in place of three.js's and you'll automatically have a dynamic environment.</p>
+
+<p>If you need (or want) a feature not already included then add it to the <a href="https://github.com/chandlerprall/Physijs/issues">issue tracker</a> or implement it yourself and send over a pull request.</p>
+
+<h3>Features</h3>
+
+<ul>
+<li>Support for <a href="https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes">multiple object shapes</a>, including custom convex objects.</li>
+<li>Material system provides simple control over friction and restitution ("bounciness")</li>
+<li>Integrated collision detection and events</li>
+<li>Compound objects using the hierarchy system in three.js</li>
+<li>Rotations using either euler or quaternion systems - your preference</li>
+<li>Built seamlessly on top of three.js to keep the same convention and coding style</li>
+</ul><h3>In the Future</h3>
+
+<ul>
+<li>More (and better) optimizations</li>
+<li>Constraint systems such as point-to-point and hinge.</li>
+<li>Vehicle systems</li>
+<li>Heightfield/heightmap shape</li>
+<li>It would be awesome to have concave shape decomposition</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Physijs maintained by <a href="https://github.com/chandlerprall">chandlerprall</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
