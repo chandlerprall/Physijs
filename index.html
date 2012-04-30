@@ -31,6 +31,13 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
+      
+		<div class="socialmedia">
+		    <div class="fb-like" data-send="false" data-layout="button_count" data-width="75" data-show-faces="true"></div>
+		    <span class="twitter"><a href="https://twitter.com/share" class="twitter-share-button" data-text="<?php the_title(); ?>" data-via="chandlerprall">Tweet</a></span>
+		    <div class="g-plusone" data-size="small" data-annotation="inline"></div>
+		</div>
+      
         <h1>Physijs</h1>
 
 <h4>Physics plugin for <a href="https://github.com/mrdoob/three.js">three.js</a>
@@ -87,7 +94,23 @@
       </footer>
     </div>
 
-    
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "http://connect.facebook.net/en_US/all.js#xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+
+<script type="text/javascript">(function() {
+var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+po.src = 'https://apis.google.com/js/plusone.js';
+var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+})();</script>    
 
 <script type="text/javascript">
 
