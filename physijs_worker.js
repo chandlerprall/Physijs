@@ -16,6 +16,9 @@ var
 	
 	// functions
 	public_functions = {},
+	getShapeFromCache,
+	setShapeCache,
+	createShape,
 	reportWorld,
 	reportCollisions,
 	
@@ -26,8 +29,11 @@ var
 	
 	// private cache
 	_now,
-	_objects = [],
+	_objects = {},
+	_materials = {},
+	_objects_ammo = {},
 	_num_objects = 0,
+	_object_shapes = {},
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -39,59 +45,62 @@ var
 	collisionreport;
 
 
-public_functions.init = function( params ) {
-	importScripts( params.cannon );
-	
-	_vector = new CANNON.Vec3;
-	_quaternion = new CANNON.Quaternion;
-	
-	REPORT_CHUNKSIZE = params.reportsize || 5;
-	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
-	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
-	
-	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
-	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
-	
-	var bp = new CANNON.NaiveBroadphase;
-	
-	world = new CANNON.World
-	world.broadphase( bp );
-	
-	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+getShapeFromCache = function ( cache_key ) {
+	if ( _object_shapes[ cache_key ] !== undefined ) {
+		return _object_shapes[ cache_key ];
+	}
+	return null;
 };
 
-public_functions.setGravity = function( description ) {
-	world.gravity( description );
-};
+setShapeCache = function ( cache_key, shape ) {
+	_object_shapes[ cache_key ] = shape;
+}
 
-public_functions.addObject = function( description ) {
-	var shape, body;
+createShape = function( description ) {
+	var cache_key, shape;
 	
 	switch ( description.type ) {
 		case 'plane':
-			shape = new CANNON.Plane( new CANNON.Vec3( description.normal.x, description.normal.y, description.normal.z ) );
+			cache_key = 'plane_' + description.normal.x + '_' + description.normal.y + '_' + description.normal.z;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new CANNON.Plane( new CANNON.Vec3( description.normal.x, description.normal.y, description.normal.z ) );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'box':
-			description.width /= 2;
-			description.height /= 2;
-			description.depth /= 2;
-			shape = new CANNON.Box(new CANNON.Vec3( description.width, description.height, description.depth ) );
+			cache_key = 'box_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new CANNON.Box(new CANNON.Vec3( description.width / 2, description.height / 2, description.depth / 2 ) );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'sphere':
-			shape = new CANNON.Sphere( description.radius );
+			cache_key = 'sphere_' + description.radius;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new CANNON.Sphere( description.radius );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		/*
 		case 'cylinder':
-			shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+			cache_key = 'cylinder_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btCylinderShape(new Ammo.btVector3( description.width / 2, description.height / 2, description.depth / 2 ));
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
 		case 'cone':
-			shape = new Ammo.btConeShape( description.radius, description.height );
+			cache_key = 'cone_' + description.radius + '_' + description.height;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btConeShape( description.radius, description.height );
+				setShapeCache( cache_key, shape );
+			}
 			break;
 		
-		case 'custom':
+		case 'triangle':
 			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
 			for ( i = 0; i < description.triangles.length; i++ ) {
 				triangle = description.triangles[i];
@@ -107,38 +116,109 @@ public_functions.addObject = function( description ) {
 				true
 			);
 			break;
+		*/
 		
-		case 'heightfield':
-			var ptr = Ammo.allocate( description.heightfield.length*4, "float", Ammo.ALLOC_NORMAL );
-			for ( var f = 0; f < description.heightfield.length; f++ ) {
-				//Ammo.setValue(ptr+(f<<2), description.heightfield[f][1], 'float');
-				Ammo.setValue(ptr+(f<<2), Math.random() * 5, 'float');
+		case 'convex':
+			var i, point, shape = new CANNON.ConvexHull;
+			var points = [];
+			var normals = [];
+			
+			for ( i = 0; i < description.points.length; i++ ) {
+				point = description.points[i];
+				points.push(
+					new CANNON.Vec3( point.x, point.y, point.z )
+				);
 			}
 			
-			shape = new Ammo.btHeightfieldTerrainShape( description.datapoints_x, description.datapoints_y, ptr, 1, -20, 20, 1, 0, false );
-			//shape.setUseDiamondSubdivision( true );
+			for ( i = 0; i < description.normals.length; i++ ) {
+				point = description.normals[i];
+				normals.push(
+					new CANNON.Vec3( point.x, point.y, point.z )
+				);
+			}
 			
-			var localScaling = new Ammo.btVector3( description.width / (description.datapoints_x - 1), 1, description.length / (description.datapoints_y - 1) );
-			shape.setLocalScaling(localScaling);
+			shape.addPoints(
+				points,
+				description.faces,
+				normals
+			);
 			
 			break;
-		*/
+		
 		default:
 			// Not recognized
 			return;
 			break;
 	}
 	
-	//if ( typeof description.friction !== 'undefined' ) rbInfo.set_m_friction( description.friction );
-	//if ( typeof description.restitution !== 'undefined' ) rbInfo.set_m_restitution( description.restitution );
+	return shape;
+};
+
+public_functions.init = function( params ) {
+	importScripts( params.cannon );
+	
+	_vector = new CANNON.Vec3;
+	_quaternion = new CANNON.Quaternion;
+	
+	REPORT_CHUNKSIZE = params.reportsize || 5;
+	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	
+	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	
+	world = new CANNON.World;
+	world.broadphase = new CANNON.NaiveBroadphase;
+	
+	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+};
+
+public_functions.registerMaterial = function( description ) {
+	_materials[ description.id ] = description;
+};
+
+public_functions.setGravity = function( description ) {
+	world.gravity.set( description.x, description.y, description.z );
+};
+
+public_functions.addObject = function( description ) {
+	var shape, body;
+	
+	shape = createShape( description );
+	
+	// If there are children then this is a compound shape
+	if ( description.children ) {
+		var compound_shape = new CANNON.Compound, _child;
+		compound_shape.addChild( shape );
+		
+		for ( i = 0; i < description.children.length; i++ ) {
+			_child = description.children[i];
+			shape = createShape( description.children[i] );
+			compound_shape.addChildShape( shape, _child.offset, _child.rotation );
+		}
+		
+		shape = compound_shape;
+	}
+	
+	/*
+	if ( description.materialId !== undefined ) {
+		rbInfo.set_m_friction( _materials[ description.materialId ].friction );
+		rbInfo.set_m_restitution( _materials[ description.materialId ].restitution );
+	}
+	*/
 	
 	body = new CANNON.RigidBody( description.mass, shape );
+	
+	body.position.set( description.position.x, description.position.y, description.position.z );
+	body.quaternion.set( description.rotation.x, description.rotation.y, description.rotation.z, description.rotation.w );
 	
 	world.add( body );
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
 	_num_objects++;
+	
+	transferableMessage({ cmd: 'objectReady', params: body.id });
 };
 
 public_functions.removeObject = function( details ) {
@@ -148,11 +228,11 @@ public_functions.removeObject = function( details ) {
 };
 
 public_functions.updatePosition = function( details ) {
-	_objects[details.id].setPosition( details.x, details.y, details.z );
+	_objects[details.id].position.set( details.x, details.y, details.z );
 };
 
 public_functions.updateRotation = function( details ) {
-	_objects[details.id].setOrientation( details.x, details.y, details.z, details.w );
+	_objects[details.id].quaternion.set( details.x, details.y, details.z, details.w );
 };
 
 public_functions.updateMass = function( details ) {
@@ -175,11 +255,11 @@ public_functions.applyImpulse = function ( details ) {
 };
 */
 public_functions.setAngularVelocity = function ( details ) {
-	_objects[details.id].setAngularVelocity( details.x, details.y, details.z );
+	_objects[details.id].angularVelocity.set( details.x, details.y, details.z );
 };
 
 public_functions.setLinearVelocity = function ( details ) {
-	_objects[details.id].setVelocity( details.x, details.y, details.z );
+	_objects[details.id].velocity.set( details.x, details.y, details.z );
 };
 /*
 public_functions.setAngularFactor = function ( details ) {
@@ -217,7 +297,7 @@ public_functions.simulate = function( params ) {
 		
 		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
 		
-		world.iterations( params.maxSubSteps );
+		world.solver.iterations = params.maxSubSteps;
 		world.step( params.timeStep );
 		reportWorld();
 		reportCollisions();
@@ -231,42 +311,38 @@ reportWorld = function() {
 		report = [], i = 0, offset = 0,
 		origin, rotation;
 	
-	if ( worldreport.length < 2 + _objects.length * WORLDREPORT_ITEMSIZE ) {
+	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
 		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	}
 	
-	worldreport[1] = _objects.length; // record how many objects we're reporting on
+	worldreport[1] = _num_objects; // record how many objects we're reporting on
 	
 	for ( index in _objects ) {
 		if ( _objects.hasOwnProperty( index ) ) {
-			object = _objects[i];
+			object = _objects[index];
 			
 			// add values to report
 			offset = 2 + (i++) * WORLDREPORT_ITEMSIZE;
 			
 			worldreport[ offset ] = object.id;
 			
-			object.getPosition( _vector );
-			worldreport[ offset + 1 ] = _vector.x;
-			worldreport[ offset + 2 ] = _vector.y;
-			worldreport[ offset + 3 ] = _vector.z;
+			worldreport[ offset + 1 ] = object.position.x;
+			worldreport[ offset + 2 ] = object.position.y;
+			worldreport[ offset + 3 ] = object.position.z;
 			
-			object.getOrientation( _quaternion );
-			worldreport[ offset + 4 ] = _quaternion.x;
-			worldreport[ offset + 5 ] = _quaternion.y;
-			worldreport[ offset + 6 ] = _quaternion.z;
-			worldreport[ offset + 7 ] = _quaternion.w;
+			worldreport[ offset + 4 ] = object.quaternion.x;
+			worldreport[ offset + 5 ] = object.quaternion.y;
+			worldreport[ offset + 6 ] = object.quaternion.z;
+			worldreport[ offset + 7 ] = object.quaternion.w;
 			
-			object.getVelocity( _vector );
-			worldreport[ offset + 8 ] = _vector.x;
-			worldreport[ offset + 9 ] = _vector.y;
-			worldreport[ offset + 10 ] = _vector.z;
+			worldreport[ offset + 8 ] = object.velocity.x;
+			worldreport[ offset + 9 ] = object.velocity.y;
+			worldreport[ offset + 10 ] = object.velocity.z;
 			
-			object.getAngularVelocity( _vector );
-			worldreport[ offset + 11 ] = _vector.x;
-			worldreport[ offset + 12 ] = _vector.y;
-			worldreport[ offset + 13 ] = _vector.z
+			worldreport[ offset + 11 ] = object.angularVelocity.x;
+			worldreport[ offset + 12 ] = object.angularVelocity.y;
+			worldreport[ offset + 13 ] = object.angularVelocity.z
 		}
 	}
 	
@@ -300,7 +376,7 @@ reportCollisions = function() {
 		}
 	}
 	
-	transferableMessage( collisionreport, [collisionreport.buffer] );
+	//transferableMessage( collisionreport, [collisionreport.buffer] );
 };
 
 self.onmessage = function( event ) {

@@ -89,9 +89,8 @@
 	};
 	
 	render = function() {
-		scene.simulate();
+		scene.simulate() && stats.update();;
 		renderer.render( scene, camera);
-		stats.update();
 		requestAnimFrame( render );
 	};
 	

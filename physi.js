@@ -1,12 +1,17 @@
 'use strict';
 
 var Physijs = (function() {
-	var _matrix = new THREE.Matrix4, _is_simulating = false,
+	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
+		_matrix = new THREE.Matrix4, _is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
 		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
-		getEulerXYZFromQuaternion,
+		getEulerXYZFromQuaternion, getQuatertionFromEuler,
+		addObjectChildren,
+		
+		_temp1, _temp2,
+		_temp_vector3_1 = new THREE.Vector3,
 		
 		// constants
 		MESSAGE_TYPES = {
@@ -69,10 +74,49 @@ var Physijs = (function() {
 		);
 	};
 	
+	
+	getQuatertionFromEuler = function( x, y, z ) {
+		var c1, s1, c2, s2, c3, s3, c1c2, s1s2;
+		c1 = Math.cos( y  ),
+		s1 = Math.sin( y  ),
+		c2 = Math.cos( -z ),
+		s2 = Math.sin( -z ),
+		c3 = Math.cos( x  ),
+		s3 = Math.sin( x  ),
+		
+		c1c2 = c1 * c2,
+		s1s2 = s1 * s2;
+		
+		return {
+			w: c1c2 * c3  - s1s2 * s3,
+		  	x: c1c2 * s3  + s1s2 * c3,
+			y: s1 * c2 * c3 + c1 * s2 * s3,
+			z: c1 * s2 * c3 - s1 * c2 * s3
+		};
+	};
+	
+	
+	
 	// Physijs.noConflict
 	Physijs.noConflict = function() {
 		window.Physijs = _Physijs;
 		return Physijs;
+	};
+	
+	
+	// Physijs.createMaterial
+	Physijs.createMaterial = function( material, friction, restitution ) {
+		var physijs_material = function(){};
+		physijs_material.prototype = material;
+		physijs_material = new physijs_material;
+		
+		physijs_material._physijs = {
+			id: material.id,
+			friction: friction === undefined ? .8 : friction,
+			restitution: restitution === undefined ? .2 : restitution
+		};
+		
+		return physijs_material;
 	};
 	
 	
@@ -84,13 +128,12 @@ var Physijs = (function() {
 		THREE.Scene.call( this );
 		
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
-		this._objects = [];
+		this._materials = {};
+		this._objects = {};
+		this._callbacks = {};
 		
 		this._worker.onmessage = function ( event ) {
-			var i, index, obj_id, obj, sceneObj, collisionObj, collided_with = [],
-				update_details = {
-					collisions: []
-				};
+			var _temp;
 			
 			if ( event.data instanceof Float32Array ) {
 				
@@ -109,15 +152,22 @@ var Physijs = (function() {
 				
 				// non-transferable object
 				switch ( event.data.cmd ) {
+					case 'objectReady':
+						_temp = event.data.params;
+						if ( self._callbacks[ _temp ] ) {
+							self._callbacks[ _temp ]( self._objects[ _temp ] );
+						}
+						break;
+					
 					default:
-					// Do nothing, just show the message
-					console.debug('Received: ' + event.data.cmd);
-					console.dir(event.data.params);
-					break;
+						// Do nothing, just show the message
+						console.debug('Received: ' + event.data.cmd);
+						console.dir(event.data.params);
+						break;
 				}
 				
 			}
-			
+
 		};
 		
 		params = params || {};
@@ -210,8 +260,9 @@ var Physijs = (function() {
 		}
 		
 		// Deal with collisions
-		for ( i = 0; i < this._objects.length; i++ ) {
-			object = this._objects[i];
+		for ( object in this._objects ) {
+			if ( !this._objects.hasOwnProperty( object ) ) return;
+			object = this._objects[ object ];
 			
 			if ( collisions[ object._physijs.id ] ) {
 				
@@ -224,8 +275,14 @@ var Physijs = (function() {
 					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
 						object._physijs.touches.push( object2._physijs.id );
 						
-						object.dispatchEvent( 'collision', object2 );
-						object2.dispatchEvent( 'collision', object );
+						_temp_vector3_1.sub( object.getLinearVelocity(), object2.getLinearVelocity() );
+						_temp1 = _temp_vector3_1.length();
+						
+						_temp_vector3_1.sub( object.getAngularVelocity(), object2.getAngularVelocity() );
+						_temp2 = _temp_vector3_1.length();
+						
+						object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
+						object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
 					}
 					
 					collided_with.push( object2._physijs.id );
@@ -255,16 +312,73 @@ var Physijs = (function() {
 		this._worker.postMessage({ cmd: cmd, params: params });
 	};
 	
-	Physijs.Scene.prototype.add = function( object ) {
+	addObjectChildren = function( parent, object, offset ) {
+		var i;
+		
+		if ( parent !== object ) {
+			offset.x += object.position.x;
+			offset.y += object.position.y;
+			offset.z += object.position.z;
+		}
+		
+		for ( i = 0; i < object.children.length; i++ ) {
+			if ( object.children[i]._physijs ) {
+				object.children[i]._physijs.offset = {
+					x: object.children[i].position.x + offset.x,
+					y: object.children[i].position.y + offset.y,
+					z: object.children[i].position.z + offset.z
+				};
+				
+				if ( object.children[i].useQuaternion !== true ) {
+					object.children[i].quaternion.copy(getQuatertionFromEuler( object.children[i].rotation.x, object.children[i].rotation.y, object.children[i].rotation.z ));
+				}
+				object.children[i]._physijs.rotation = {
+					x: object.children[i].quaternion.x,
+					y: object.children[i].quaternion.y,
+					z: object.children[i].quaternion.z,
+					w: object.children[i].quaternion.w
+				};
+				
+				parent._physijs.children.push( object.children[i]._physijs );
+			}
+			
+			addObjectChildren( parent, object.children[i], offset.clone() );
+		}
+	};
+	
+	Physijs.Scene.prototype.add = function( object, callback ) {
 		THREE.Mesh.prototype.add.call( this, object );
 		
 		if ( object._physijs ) {
-			
-			object.__dirtyPosition = true;
-			object.__dirtyRotation = true;
+			object.__dirtyPosition = false;
+			object.__dirtyRotation = false;
 			this._objects[object._physijs.id] = object;
 			
+			if ( object.children.length ) {
+				object._physijs.children = [];
+				addObjectChildren( object, object, new THREE.Vector3 );
+			}
+			
 			object.world = this;
+			
+			if ( callback !== undefined ) {
+				this._callbacks[ object._physijs.id ] = callback;
+			}
+			
+			if ( object.material._physijs ) {
+				if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {
+					this.execute( 'registerMaterial', object.material._physijs );
+					object._physijs.materialId = object.material._physijs.id;
+				}
+			}
+			
+			// Object starting position + rotation		
+			object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };	
+			if (!object.useQuaternion) {
+				_matrix.identity().setRotationFromEuler( object.rotation );
+				object.quaternion.setFromRotationMatrix( _matrix );
+			};
+			object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 			
 			this.execute( 'addObject', object._physijs );
 		}
@@ -326,14 +440,13 @@ var Physijs = (function() {
 	
 	
 	// Phsijs.Mesh
-	Physijs.Mesh = function ( geometry, material, mass, params ) {
+	Physijs.Mesh = function ( geometry, material, mass ) {
 		var index;
 		
 		if ( !geometry ) {
 			return;
 		}
 		
-		params = params || {};
 		Eventable.call( this );
 		THREE.Mesh.call( this, geometry, material );
 		
@@ -349,11 +462,6 @@ var Physijs = (function() {
 			linearVelocity: new THREE.Vector3,
 			angularVelocity: new THREE.Vector3
 		};
-		
-		for ( index in params ) {
-			if ( !params.hasOwnProperty( index ) ) continue;
-			this._physijs[index] = params[index];
-		}
 	};
 	Physijs.Mesh.prototype = new THREE.Mesh;
 	Physijs.Mesh.prototype.constructor = Physijs.Mesh;
@@ -372,6 +480,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.applyCentralImpulse
 	Physijs.Mesh.prototype.applyCentralImpulse = function ( force ) {
+		throw 'applyCentralImpulse: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'applyCentralImpulse', { id: this._physijs.id, x: force.x, y: force.y, z: force.z } );
 		}
@@ -379,6 +488,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.applyImpulse
 	Physijs.Mesh.prototype.applyImpulse = function ( force, offset ) {
+		throw 'applyImpulse: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'applyImpulse', { id: this._physijs.id, impulse_x: force.x, impulse_y: force.y, impulse_z: force.z, x: offset.x, y: offset.y, z: offset.z } );
 		}
@@ -410,6 +520,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.setAngularFactor
 	Physijs.Mesh.prototype.setAngularFactor = function ( factor ) {
+		throw 'setAngularFactor: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'setAngularFactor', { id: this._physijs.id, x: factor.x, y: factor.y, z: factor.z } );
 		}
@@ -417,6 +528,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.setLinearFactor
 	Physijs.Mesh.prototype.setLinearFactor = function ( factor ) {
+		throw 'setLinearFactor: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'setLinearFactor', { id: this._physijs.id, x: factor.x, y: factor.y, z: factor.z } );
 		}
@@ -424,6 +536,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.setCcdMotionThreshold
 	Physijs.Mesh.prototype.setCcdMotionThreshold = function ( threshold ) {
+		throw 'setCcdMotionThreshold: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'setCcdMotionThreshold', { id: this._physijs.id, threshold: threshold } );
 		}
@@ -431,6 +544,7 @@ var Physijs = (function() {
 	
 	// Physijs.Mesh.setCcdSweptSphereRadius
 	Physijs.Mesh.prototype.setCcdSweptSphereRadius = function ( radius ) {
+		throw 'setCcdSweptSphereRadius: Not implemented';
 		if ( this.world ) {
 			this.world.execute( 'setLinearFactor', { id: this._physijs.id, radius: radius } );
 		}
@@ -438,12 +552,10 @@ var Physijs = (function() {
 	
 	
 	// Physijs.PlaneMesh
-	Physijs.PlaneMesh = function ( geometry, material, mass, params ) {
+	Physijs.PlaneMesh = function ( geometry, material, mass ) {
 		var width, height;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
@@ -463,12 +575,10 @@ var Physijs = (function() {
 	
 	
 	// Physijs.BoxMesh
-	Physijs.BoxMesh = function( geometry, material, mass, params ) {
+	Physijs.BoxMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -489,10 +599,8 @@ var Physijs = (function() {
 	
 	
 	// Physijs.SphereMesh
-	Physijs.SphereMesh = function( geometry, material, mass, params ) {
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+	Physijs.SphereMesh = function( geometry, material, mass ) {
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingSphere ) {
 			geometry.computeBoundingSphere();
@@ -507,12 +615,10 @@ var Physijs = (function() {
 	
 	
 	// Physijs.CylinderMesh
-	Physijs.CylinderMesh = function( geometry, material, mass, params ) {
+	Physijs.CylinderMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -533,12 +639,10 @@ var Physijs = (function() {
 	
 	
 	// Physijs.ConeMesh
-	Physijs.ConeMesh = function( geometry, material, mass, params ) {
+	Physijs.ConeMesh = function( geometry, material, mass ) {
 		var width, height, depth;
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
@@ -555,96 +659,60 @@ var Physijs = (function() {
 	Physijs.ConeMesh.prototype = new Physijs.Mesh;
 	Physijs.ConeMesh.prototype.constructor = Physijs.ConeMesh;
 	
-	// Physijs.CustomMesh
-	Physijs.CustomMesh = function( geometry, material, mass, params ) {
-		var i,
+	
+	// Physijs.ConvexMesh
+	Physijs.ConvexMesh = function( geometry, material, mass ) {
+		var i, face,
 			width, height, depth,
-			triangles = [];
+			points = [],
+			faces = [],
+			normals = [];
 		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
+		Physijs.Mesh.call( this, geometry, material, mass );
 		
 		if ( !geometry.boundingBox ) {
 			geometry.computeBoundingBox();
 		}
 		
-		for ( i = 0; i < geometry.faces.length; i++ ) {
-			if ( geometry.faces[i] instanceof THREE.Face3 ) {
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ]
-				]);
+		for ( i = 0; i < geometry.vertices.length; i++ ) {
+			if ( THREE_REVISION >= 49 ) {
+				points.push({
+					x: geometry.vertices[i].x,
+					y: geometry.vertices[i].y,
+					z: geometry.vertices[i].z,
+				});
 			} else {
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].a ].position.x, geometry.vertices[ geometry.faces[i].a ].position.y, geometry.vertices[ geometry.faces[i].a ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
-				]);
-				triangles.push([
-					[ geometry.vertices[ geometry.faces[i].b ].position.x, geometry.vertices[ geometry.faces[i].b ].position.y, geometry.vertices[ geometry.faces[i].b ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].c ].position.x, geometry.vertices[ geometry.faces[i].c ].position.y, geometry.vertices[ geometry.faces[i].c ].position.z ],
-					[ geometry.vertices[ geometry.faces[i].d ].position.x, geometry.vertices[ geometry.faces[i].d ].position.y, geometry.vertices[ geometry.faces[i].d ].position.z ]
-				]);
+				points.push({
+					x: geometry.vertices[i].position.x,
+					y: geometry.vertices[i].position.y,
+					z: geometry.vertices[i].position.z,
+				});
 			}
 		}
 		
+		for ( i = 0; i < geometry.faces.length; i++ ) {
+			face = geometry.faces[i];
+			if ( face instanceof THREE.Face3 ) {
+				faces.push([ face.a, face.b, face.c ]);
+			} else {
+				faces.push([ face.a, face.b, face.c, face.d ]);
+			}
+			
+			normals.push([ face.normal.x, face.normal.y, face.normal.z ]);
+		}
 		
 		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
 		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
 		
-		this._physijs.type = 'custom';
-		this._physijs.triangles = triangles;
+		this._physijs.type = 'convex';
+		this._physijs.points = points;
+		this._physijs.faces = faces;
+		this._physijs.normals = normals;
 		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
 	};
-	Physijs.CustomMesh.prototype = new Physijs.Mesh;
-	Physijs.CustomMesh.prototype.constructor = Physijs.CustomMesh;
-	
-	
-	// Physijs.HeightfieldMesh
-	Physijs.HeightfieldMesh = function( geometry, material, mass, params ) {
-		var i, j, vertex,
-			width, length, heightfield = [], maxheight = 0;
-		
-		Physijs.Mesh.call( this, geometry, material, mass, params );
-		
-		params = params || {};
-		
-		if ( !geometry.boundingBox ) {
-			geometry.computeBoundingBox();
-		}
-		
-		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-		length = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
-		
-		for ( i = 0; i < params.width; i++ ) {
-			for ( j = 0; j < params.length; j++ ) {
-				vertex = geometry.vertices[ i + j * (params.length) ];
-				heightfield.push([
-					vertex.position.x,
-					vertex.position.z,
-					vertex.position.y
-				]);
-				
-				if ( Math.abs( vertex.position.z ) > maxheight ) {
-					maxheight = Math.abs( vertex.position.z );
-				}
-			}
-		}
-		
-		this._physijs.type = 'heightfield';
-		this._physijs.width = width;
-		this._physijs.length = length;
-		this._physijs.datapoints_x = params.width;
-		this._physijs.datapoints_y = params.length;
-		this._physijs.mass = (typeof mass === 'undefined') ? width * height * length : mass;
-		this._physijs.heightfield = heightfield;
-		this._physijs.maxheight = maxheight;
-	};
-	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
-	Physijs.HeightfieldMesh.prototype.constructor = Physijs.CylinderMesh;
+	Physijs.ConvexMesh.prototype = new Physijs.Mesh;
+	Physijs.ConvexMesh.prototype.constructor = Physijs.ConvexMesh;
 	
 	
 	return Physijs;
