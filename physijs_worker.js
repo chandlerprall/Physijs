@@ -30,6 +30,7 @@ var
 	// private cache
 	_now,
 	_objects = {},
+	_constraints = {},
 	_materials = {},
 	_objects_ammo = {},
 	_num_objects = 0,
@@ -328,6 +329,39 @@ public_functions.setCcdSweptSphereRadius = function ( details ) {
 	_objects[details.id].setCcdSweptSphereRadius( details.radius );
 };
 
+public_functions.addConstraint = function ( details ) {
+	var constraint;
+	
+	switch ( details.type ) {
+		
+		case 'point':
+			constraint = new Ammo.btPoint2PointConstraint(
+				_objects[ details.objectid ],
+				new Ammo.btVector3( details.position.x, details.position.y, details.position.z )
+			);
+			break;
+		
+		case 'point2point':
+			constraint = new Ammo.btPoint2PointConstraint(
+				_objects[ details.objecta ],
+				_objects[ details.objectb ],
+				new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+				new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z )
+			);
+			_objects[ details.objecta ].setActivationState( 4 );
+			_objects[ details.objectb ].setActivationState( 4 );
+			break;
+		
+		default:
+			return;
+		
+	};
+	
+	world.addConstraint( constraint );
+	
+	_constraints[ details._id ] = constraint;
+};
+
 public_functions.simulate = function( params ) {
 	if ( world ) {
 		params = params || {};
@@ -459,7 +493,7 @@ self.onmessage = function( event ) {
 	}
 	
 	if ( event.data.cmd && public_functions[event.data.cmd] ) {
-		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
+		//if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
 		public_functions[event.data.cmd]( event.data.params );
 	}
 	
