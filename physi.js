@@ -305,6 +305,55 @@ window.Physijs = (function() {
 		}
 	};
 	
+	Physijs.Scene.prototype.addConstraint = function ( objecta, objectb, description ) {
+		var constraint = {
+			id: getObjectId()
+		};
+		
+		if ( description === undefined ) {
+			description = objectb;
+		}
+		
+		constraint.type = description.type;
+		
+		switch ( description.type ) {
+			
+			case 'point':
+				constraint.objectid = objecta._physijs.id;
+				constraint.position = description.position;
+				break;
+			
+			case 'point2point':
+				var rotationa = new THREE.Matrix4().setRotationFromEuler( objecta.rotation ),
+					rotationb = new THREE.Matrix4().setRotationFromEuler( objectb.rotation );;
+				
+				rotationa.getInverse( rotationa );
+				rotationb.getInverse( rotationb );
+				
+				constraint.objecta = objecta._physijs.id;
+				constraint.objectb = objectb._physijs.id;
+				constraint.positiona = rotationa.multiplyVector3( description.position.clone().subSelf( objecta.position ) );
+				constraint.positionb = rotationb.multiplyVector3( description.position.clone().subSelf( objectb.position ) );
+				/*
+				var marker = new THREE.Mesh(
+					new THREE.CubeGeometry( .5, 5, .5 ),
+					new THREE.MeshNormalMaterial
+				);
+				marker.position.copy( constraint.positionb );
+				objectb.add( marker );
+				*/
+				break;
+			
+			default:
+				return;
+			
+		};
+		
+		this.execute( 'addConstraint', constraint );
+		
+		return constraint.id;
+	};
+	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });
 	};
