@@ -670,13 +670,13 @@ window.Physijs = (function() {
 				points.push({
 					x: geometry.vertices[i].x,
 					y: geometry.vertices[i].y,
-					z: geometry.vertices[i].z,
+					z: geometry.vertices[i].z
 				});
 			} else {
 				points.push({
-					x: geometry.vertices[i].x,
-					y: geometry.vertices[i].y,
-					z: geometry.vertices[i].z,
+					x: geometry.vertices[i].x.position,
+					y: geometry.vertices[i].y.position,
+					z: geometry.vertices[i].z.position
 				});
 
 			}
