@@ -348,8 +348,25 @@ public_functions.addConstraint = function ( details ) {
 				new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
 				new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z )
 			);
-			_objects[ details.objecta ].setActivationState( 4 );
-			_objects[ details.objectb ].setActivationState( 4 );
+			break;
+		
+		case 'hinge':
+			constraint = new Ammo.btHingeConstraint(
+				_objects[ details.objectid ],
+				new Ammo.btVector3( details.position.x, details.position.y, details.position.z ),
+				new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
+			);
+			break;
+		
+		case 'dualhinge':
+			constraint = new Ammo.btHingeConstraint(
+				_objects[ details.objecta ],
+				_objects[ details.objectb ],
+				new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+				new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ),
+				new Ammo.btVector3( details.axisa.x, details.axisa.y, details.axisa.z ),
+				new Ammo.btVector3( details.axisb.x, details.axisb.y, details.axisb.z )
+			);
 			break;
 		
 		default:
