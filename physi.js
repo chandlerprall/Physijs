@@ -550,6 +550,10 @@ window.Physijs = (function() {
 		
 		Physijs.Mesh.call( this, geometry, material, mass );
 		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
 		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
 		
