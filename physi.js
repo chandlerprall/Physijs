@@ -129,7 +129,6 @@ window.Physijs = (function() {
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 		this._materials = {};
 		this._objects = {};
-		this._callbacks = {};
 		
 		this._worker.onmessage = function ( event ) {
 			var _temp;
@@ -153,8 +152,8 @@ window.Physijs = (function() {
 				switch ( event.data.cmd ) {
 					case 'objectReady':
 						_temp = event.data.params;
-						if ( self._callbacks[ _temp ] ) {
-							self._callbacks[ _temp ]( self._objects[ _temp ] );
+						if ( self._objects[ _temp ].readyCallback ) {
+							self._objects[ _temp ].readyCallback( self._objects[ _temp ] );
 						}
 						break;
 					
@@ -361,7 +360,7 @@ window.Physijs = (function() {
 			object.world = this;
 			
 			if ( callback !== undefined ) {
-				this._callbacks[ object._physijs.id ] = callback;
+				object.readyCallback = callback;
 			}
 			
 			if ( object.material._physijs ) {
