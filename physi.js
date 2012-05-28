@@ -538,7 +538,7 @@ window.Physijs = (function() {
 	// Physijs.Mesh.setCcdSweptSphereRadius
 	Physijs.Mesh.prototype.setCcdSweptSphereRadius = function ( radius ) {
 		if ( this.world ) {
-			this.world.execute( 'setLinearFactor', { id: this._physijs.id, radius: radius } );
+			this.world.execute( 'setCcdSweptSphereRadius', { id: this._physijs.id, radius: radius } );
 		}
 	};
 	
