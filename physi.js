@@ -490,6 +490,20 @@ window.Physijs = (function() {
 		}
 	};
 	
+	// Physijs.Mesh.applyCentralForce
+	Physijs.Mesh.prototype.applyCentralForce = function ( force ) {
+		if ( this.world ) {
+			this.world.execute( 'applyCentralForce', { id: this._physijs.id, x: force.x, y: force.y, z: force.z } );
+		}
+	};
+	
+	// Physijs.Mesh.applyForce
+	Physijs.Mesh.prototype.applyForce = function ( force, offset ) {
+		if ( this.world ) {
+			this.world.execute( 'applyForce', { id: this._physijs.id, impulse_x: force.x, impulse_y: force.y, impulse_z: force.z, x: offset.x, y: offset.y, z: offset.z } );
+		}
+	};
+	
 	// Physijs.Mesh.getAngularVelocity
 	Physijs.Mesh.prototype.getAngularVelocity = function () {
 		return this._physijs.angularVelocity;

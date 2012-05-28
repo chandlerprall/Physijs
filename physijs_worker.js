@@ -281,6 +281,19 @@ public_functions.applyImpulse = function ( details ) {
 	_objects[details.id].activate();
 };
 
+public_functions.applyCentralForce = function ( details ) {
+	_objects[details.id].applyCentralForce(new Ammo.btVector3( details.x, details.y, details.z ));
+	_objects[details.id].activate();
+};
+
+public_functions.applyForce = function ( details ) {
+	_objects[details.id].applyImpulse(
+		new Ammo.btVector3( details.impulse_x, details.impulse_y, details.impulse_z ),
+		new Ammo.btVector3( details.x, details.y, details.z )
+	);
+	_objects[details.id].activate();
+};
+
 public_functions.setAngularVelocity = function ( details ) {
 	_objects[details.id].setAngularVelocity(
 		new Ammo.btVector3( details.x, details.y, details.z )
