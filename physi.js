@@ -8,6 +8,7 @@ window.Physijs = (function() {
 		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
 		getEulerXYZFromQuaternion, getQuatertionFromEuler,
+		convertWorldPositionToObject, // Converts a world-space position to object-space
 		addObjectChildren,
 		
 		_temp1, _temp2,
@@ -98,6 +99,27 @@ window.Physijs = (function() {
 		};
 	};
 	
+	convertWorldPositionToObject = function( position, object ) {
+		_temp_matrix4_1.identity(); // reset temp matrix
+		
+		// Set the temp matrix's rotation to the object's rotation
+		if ( object.useQuaternion ) {
+			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
+		} else {
+			_temp_matrix4_1.identity().setRotationFromEuler( object.rotation );
+		}
+		
+		// Invert rotation matrix in order to "unrotate" a point back to object space
+		_temp_matrix4_1.getInverse( _temp_matrix4_1 ); 
+		
+		// Yay! Temp vars!
+		_temp_vector3_1.copy( position );
+		_temp_vector3_2.copy( object.position );
+		
+		// Apply the rotation
+		return _temp_matrix4_1.multiplyVector3( _temp_vector3_1.subSelf( _temp_vector3_2 ) );
+	};
+	
 	
 	
 	// Physijs.noConflict
@@ -120,6 +142,75 @@ window.Physijs = (function() {
 		};
 		
 		return physijs_material;
+	};
+	
+	
+	// Constraints
+	Physijs.PointConstraint = function( objecta, objectb, position ) {
+		if ( position === undefined ) {
+			position = objectb;
+			objectb = undefined;
+		}
+		
+		this.type = 'point';
+		this.id = getObjectId();
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		}
+	};
+	Physijs.PointConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb
+		};
+	};
+	
+	Physijs.HingeConstraint = function( objecta, objectb, position, axis ) {
+		if ( axis === undefined ) {
+			axis = position;
+			position = objectb;
+			objectb = undefined;
+		}
+		
+		this.type = 'hinge';
+		this.id = getObjectId();
+		this.scene = objecta.parent;
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.axis = axis;
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		}
+	};
+	Physijs.HingeConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb,
+			axis: this.axis
+		};
+	};
+	Physijs.HingeConstraint.prototype.enableAngularMotor = function( velocity, acceleration ) {
+		this.scene.execute( 'hinge_enableAngularMotor', { constraint: this.id, velocity: velocity, acceleration: acceleration } );
+	};
+	Physijs.HingeConstraint.prototype.enableTargetMotor = function( target ) {
+		this.scene.execute( 'hinge_enableTargetMotor', { constraint: this.id, velocity: target } );
+	};
+	Physijs.HingeConstraint.prototype.disableMotor = function( velocity, acceleration ) {
+		this.scene.execute( 'hinge_disableMotor', { constraint: this.id } );
 	};
 	
 	
@@ -308,100 +399,34 @@ window.Physijs = (function() {
 		}
 	};
 	
-	Physijs.Scene.prototype.convertWorldPositionToObject = function( position, object ) {
-		_temp_matrix4_1.identity(); // reset temp matrix
+	Physijs.Scene.prototype.addConstraint = function ( constraint, show_marker ) {
+		this.execute( 'addConstraint', constraint.getDefinition() );
 		
-		// Set the temp matrix's rotation to the object's rotation
-		if ( object.useQuaternion ) {
-			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
-		} else {
-			_temp_matrix4_1.identity().setRotationFromEuler( object.rotation );
+		if ( show_marker ) {
+			var marker;
+			
+			switch ( constraint.type ) {
+				case 'point':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+				
+				case 'hinge':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+			}
 		}
 		
-		// Invert rotation matrix in order to "unrotate" a point back to object space
-		_temp_matrix4_1.getInverse( _temp_matrix4_1 ); 
-		
-		// Yay! Temp vars!
-		_temp_vector3_1.copy( position );
-		_temp_vector3_2.copy( object.position );
-		
-		// Apply the rotation
-		return _temp_matrix4_1.multiplyVector3( _temp_vector3_1.subSelf( _temp_vector3_2 ) );
-	};
-	
-	Physijs.Scene.prototype.addConstraint = function ( objecta, objectb, description ) {
-		var constraint = {
-			id: getObjectId()
-		};
-		
-		if ( description === undefined ) {
-			description = objectb;
-		}
-		
-		constraint.type = description.type;
-		
-		switch ( description.type ) {
-			
-			case 'point':
-				constraint.objectid = objecta._physijs.id;
-				
-				_temp = this.convertWorldPositionToObject( description.position, objecta );
-				constraint.position = { x: _temp.x, y: _temp.y, z: _temp.z };
-				break;
-			
-			case 'point2point':
-				var _temp;
-				
-				constraint.objecta = objecta._physijs.id;
-				constraint.objectb = objectb._physijs.id;
-				
-				_temp = this.convertWorldPositionToObject( description.position, objecta );
-				constraint.positiona = { x: _temp.x, y: _temp.y, z: _temp.z };
-				
-				_temp = this.convertWorldPositionToObject( description.position, objectb );
-				constraint.positionb = { x: _temp.x, y: _temp.y, z: _temp.z };
-				break;
-			
-			case 'hinge':
-				var _temp;
-				
-				constraint.objectid = objecta._physijs.id;
-				
-				_temp = this.convertWorldPositionToObject( description.position, objecta );
-				constraint.position = { x: _temp.x, y: _temp.y, z: _temp.z };
-				constraint.axis = { x: description.axis.x, y: description.axis.y, z: description.axis.z };
-				
-				var marker = new THREE.Mesh(
-					new THREE.CubeGeometry( 1, 1, 10 ),
-					new THREE.MeshNormalMaterial
-				);
-				marker.position.copy( constraint.position );
-				objecta.add( marker );
-				break;
-			
-			case 'dualhinge':
-				var _temp;
-				
-				constraint.objecta = objecta._physijs.id;
-				constraint.objectb = objectb._physijs.id;
-				
-				_temp = this.convertWorldPositionToObject( description.position, objecta );
-				constraint.positiona = { x: _temp.x, y: _temp.y, z: _temp.z };
-				
-				_temp = this.convertWorldPositionToObject( description.position, objectb );
-				constraint.positionb = { x: _temp.x, y: _temp.y, z: _temp.z };
-				
-				constraint.axisa = constraint.axisb = { x: description.axis.x, y: description.axis.y, z: description.axis.z };
-				break;
-			
-			default:
-				return;
-			
-		};
-		
-		this.execute( 'addConstraint', constraint );
-		
-		return constraint.id;
+		return constraint;
 	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
