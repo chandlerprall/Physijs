@@ -335,38 +335,40 @@ public_functions.addConstraint = function ( details ) {
 	switch ( details.type ) {
 		
 		case 'point':
-			constraint = new Ammo.btPoint2PointConstraint(
-				_objects[ details.objectid ],
-				new Ammo.btVector3( details.position.x, details.position.y, details.position.z )
-			);
-			break;
-		
-		case 'point2point':
-			constraint = new Ammo.btPoint2PointConstraint(
-				_objects[ details.objecta ],
-				_objects[ details.objectb ],
-				new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
-				new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z )
-			);
+			if ( details.objectb === undefined ) {
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z )
+				);
+			} else {
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z )
+				);
+
+			}
 			break;
 		
 		case 'hinge':
-			constraint = new Ammo.btHingeConstraint(
-				_objects[ details.objectid ],
-				new Ammo.btVector3( details.position.x, details.position.y, details.position.z ),
-				new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
-			);
-			break;
-		
-		case 'dualhinge':
-			constraint = new Ammo.btHingeConstraint(
-				_objects[ details.objecta ],
-				_objects[ details.objectb ],
-				new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
-				new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ),
-				new Ammo.btVector3( details.axisa.x, details.axisa.y, details.axisa.z ),
-				new Ammo.btVector3( details.axisb.x, details.axisb.y, details.axisb.z )
-			);
+			if ( details.objectb === undefined ) {
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
+				);
+			} else {
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
+				);
+
+			}
 			break;
 		
 		default:
@@ -376,7 +378,7 @@ public_functions.addConstraint = function ( details ) {
 	
 	world.addConstraint( constraint );
 	
-	_constraints[ details._id ] = constraint;
+	_constraints[ details.id ] = constraint;
 };
 
 public_functions.simulate = function( params ) {
@@ -401,6 +403,18 @@ public_functions.simulate = function( params ) {
 		last_simulation_time = _now;
 	}
 };
+
+
+// Constraint functions
+public_functions.hinge_enableAngularMotor = function( params ) {
+	var hinge = _constraints[ params.constraint ];
+	hinge.enableAngularMotor( true, params.velocity, params.acceleration );
+	hinge.getRigidBodyA().activate();
+};
+public_functions.hinge_disableMotor = function( params ) {
+	_constraints[ params.constraint ].enableMotor( false );
+};
+
 
 reportWorld = function() {
 	var index, object,
