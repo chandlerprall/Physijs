@@ -410,6 +410,9 @@ public_functions.simulate = function( params ) {
 
 
 // Constraint functions
+public_functions.hinge_setLimits = function( params ) {
+	_constraints[ params.constraint ].setLimit( params.low, params.high, 0, params.bias_factor, params.relaxation_factor );
+};
 public_functions.hinge_enableAngularMotor = function( params ) {
 	var hinge = _constraints[ params.constraint ];
 	hinge.enableAngularMotor( true, params.velocity, params.acceleration );
