@@ -201,6 +201,15 @@ window.Physijs = (function() {
 			axis: this.axis
 		};
 	};
+	/*
+	 * low = minimum angle in radians
+	 * high = maximum angle in radians
+	 * bias_factor = applied as a factor to constraint error
+	 * relaxation_factor = controls bounce (0.0 == no bounce)
+	 */
+	Physijs.HingeConstraint.prototype.setLimits = function( low, high, bias_factor, relaxation_factor ) {
+		this.scene.execute( 'hinge_setLimits', { constraint: this.id, low: low, high: high, bias_factor: bias_factor, relaxation_factor: relaxation_factor } );
+	};
 	Physijs.HingeConstraint.prototype.enableAngularMotor = function( velocity, acceleration ) {
 		this.scene.execute( 'hinge_enableAngularMotor', { constraint: this.id, velocity: velocity, acceleration: acceleration } );
 	};
