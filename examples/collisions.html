@@ -147,7 +147,8 @@
 				
 				box.castShadow = true;
 				box.addEventListener( 'collision', handleCollision );
-				scene.add( box, spawnBox );
+				box.addEventListener( 'ready', spawnBox );
+				scene.add( box );
 			};
 		
 		return function() {

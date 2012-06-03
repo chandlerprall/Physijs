@@ -76,8 +76,9 @@
 		ground_material.map.repeat.set( 2.5, 2.5 );
 		
 		// Ground
-		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(50, 1, 50),
+		ground = new Physijs.PlaneMesh(
+			//new THREE.CubeGeometry(50, 1, 50),
+			new THREE.PlaneGeometry(50, 50),
 			ground_material,
 			0 // mass
 		);
@@ -217,7 +218,10 @@
 				Math.random() * Math.PI
 			);
 			
-			scene.add( shape, addshapes ? createShape : undefined );
+			if ( addshapes ) {
+				shape.addEventListener( 'ready', createShape );
+			}
+			scene.add( shape );
 			
 			new TWEEN.Tween(shape.material).to({opacity: 1}, 500).start();
 			

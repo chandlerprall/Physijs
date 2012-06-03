@@ -152,9 +152,7 @@ window.Physijs = (function() {
 				switch ( event.data.cmd ) {
 					case 'objectReady':
 						_temp = event.data.params;
-						if ( self._objects[ _temp ].readyCallback ) {
-							self._objects[ _temp ].readyCallback( self._objects[ _temp ] );
-						}
+						self._objects[ _temp ].dispatchEvent( 'ready' );
 						break;
 					
 					default:
@@ -344,7 +342,7 @@ window.Physijs = (function() {
 		}
 	};
 	
-	Physijs.Scene.prototype.add = function( object, callback ) {
+	Physijs.Scene.prototype.add = function( object ) {
 		THREE.Mesh.prototype.add.call( this, object );
 		
 		if ( object._physijs ) {
@@ -358,10 +356,6 @@ window.Physijs = (function() {
 			}
 			
 			object.world = this;
-			
-			if ( callback !== undefined ) {
-				object.readyCallback = callback;
-			}
 			
 			if ( object.material._physijs ) {
 				if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {

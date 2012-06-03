@@ -218,7 +218,8 @@
 				Math.random() * Math.PI * 2
 			);
 			
-			scene.add( chair, spawnChair );
+			chair.addEventListener( 'ready', spawnChair );
+			scene.add( chair );
 		};
 		
 		return function() {
