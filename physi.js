@@ -691,9 +691,9 @@ window.Physijs = (function() {
 				});
 			} else {
 				points.push({
-					x: geometry.vertices[i].x.position,
-					y: geometry.vertices[i].y.position,
-					z: geometry.vertices[i].z.position
+					x: geometry.vertices[i].position.x,
+					y: geometry.vertices[i].position.y,
+					z: geometry.vertices[i].position.z
 				});
 
 			}
