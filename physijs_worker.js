@@ -65,7 +65,7 @@ createShape = function( description ) {
 		case 'plane':
 			cache_key = 'plane_' + description.normal.x + '_' + description.normal.y + '_' + description.normal.z;
 			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
-				shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ) );
+				shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ), 0 );
 				setShapeCache( cache_key, shape );
 			}
 			break;

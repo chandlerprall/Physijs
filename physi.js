@@ -571,13 +571,7 @@ window.Physijs = (function() {
 		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
 		
 		this._physijs.type = 'plane';
-		
-		this._physijs.normal = {
-			x: this._physijs.normal.x,
-			y: this._physijs.normal.y,
-			z: this._physijs.normal.z
-		};
-		
+		this._physijs.normal = geometry.faces[0].normal.clone();
 		this._physijs.mass = (typeof mass === 'undefined') ? width * height : mass;
 	};
 	Physijs.PlaneMesh.prototype = new Physijs.Mesh;
