@@ -449,9 +449,15 @@ public_functions.hinge_enableAngularMotor = function( params ) {
 	var constraint = _constraints[ params.constraint ];
 	constraint.enableAngularMotor( true, params.velocity, params.acceleration );
 	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
 };
 public_functions.hinge_disableMotor = function( params ) {
 	_constraints[ params.constraint ].enableMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
 };
 
 public_functions.slider_setLimits = function( params ) {
@@ -479,6 +485,9 @@ public_functions.slider_enableLinearMotor = function( params ) {
 };
 public_functions.slider_disableLinearMotor = function( params ) {
 	_constraints[ params.constraint ].setPoweredLinMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
 };
 public_functions.slider_enableAngularMotor = function( params ) {
 	var constraint = _constraints[ params.constraint ];
@@ -486,12 +495,16 @@ public_functions.slider_enableAngularMotor = function( params ) {
 	constraint.setMaxAngMotorForce( params.acceleration );
 	constraint.setPoweredAngMotor( true );
 	constraint.getRigidBodyA().activate();
-	if ( constraint.getRigidBodyB ) {
+	if ( constraint.getRigidBodyB() ) {
 		constraint.getRigidBodyB().activate();
 	}
 };
 public_functions.slider_disableAngularMotor = function( params ) {
 	_constraints[ params.constraint ].setPoweredAngMotor( false );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
 };
 
 
