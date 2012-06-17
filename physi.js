@@ -7,7 +7,7 @@ window.Physijs = (function() {
 		Physijs = {}, // object assigned to window.Physijs
 		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
-		getEulerXYZFromQuaternion, getQuatertionFromEuler,
+		getEulerXYZFromQuaternion, getQuatertionFromEuler, concatenateQuaternions,
 		addObjectChildren,
 		
 		_temp1, _temp2,
@@ -94,7 +94,18 @@ window.Physijs = (function() {
 		};
 	};
 	
-	
+	concatenateQuaternions = function( q1, q2) {
+		
+		var q3 = { x : 0, y : 0, z : 0, w : 0};
+		
+		q3.x = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+		q3.y = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+		q3.z = q1.w * q2.z + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z;
+		q3.w = q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x;
+		
+		return q3;
+		
+	}
 	
 	// Physijs.noConflict
 	Physijs.noConflict = function() {
@@ -307,7 +318,7 @@ window.Physijs = (function() {
 	Physijs.Scene.prototype.execute = function( cmd, params ) {
 		this._worker.postMessage({ cmd: cmd, params: params });
 	};
-	
+	/*
 	addObjectChildren = function( parent, object, offset ) {
 		var i;
 		
@@ -341,6 +352,41 @@ window.Physijs = (function() {
 			addObjectChildren( parent, object.children[i], offset.clone() );
 		}
 	};
+	*/
+
+	addObjectChildren = function( parent, object, offset ) {
+		var i, parentRotation;
+		
+		if ( parent !== object ) {
+			offset.x += object.position.x;
+			offset.y += object.position.y;
+			offset.z += object.position.z;
+		}
+
+		parentRotation = getQuatertionFromEuler( object.rotation.x, object.rotation.y, object.rotation.z );
+		
+		for ( i = 0; i < object.children.length; i++ ) {
+			if ( object.children[i]._physijs ) {
+				object.children[i]._physijs.offset = {
+					x: object.children[i].position.x + offset.x,
+					y: object.children[i].position.y + offset.y,
+					z: object.children[i].position.z + offset.z
+				};
+				
+				if ( object.children[i].useQuaternion !== true ) {
+					object.children[i].quaternion.copy(getQuatertionFromEuler( object.children[i].rotation.x, object.children[i].rotation.y, object.children[i].rotation.z ));
+				}
+				
+				object.children[i]._physijs.rotation = 
+					concatenateQuaternions(parentRotation, object.children[i].quaternion);
+				
+				parent._physijs.children.push( object.children[i]._physijs );
+			}
+			
+			addObjectChildren( parent, object.children[i], offset.clone() );
+		}
+	}
+			
 	
 	Physijs.Scene.prototype.add = function( object ) {
 		THREE.Mesh.prototype.add.call( this, object );
