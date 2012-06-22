@@ -358,7 +358,10 @@ reportWorld = function() {
 		i = 0;
 	
 	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
-		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		worldreport = new Float32Array(
+			2 + // message id & # objects in report
+			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
+		);
 		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	}
 	
