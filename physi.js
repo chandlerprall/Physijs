@@ -272,10 +272,10 @@ window.Physijs = (function() {
 						object._physijs.touches.push( object2._physijs.id );
 						
 						_temp_vector3_1.sub( object.getLinearVelocity(), object2.getLinearVelocity() );
-						_temp1 = _temp_vector3_1.length();
+						_temp1 = _temp_vector3_1.clone();
 						
 						_temp_vector3_1.sub( object.getAngularVelocity(), object2.getAngularVelocity() );
-						_temp2 = _temp_vector3_1.length();
+						_temp2 = _temp_vector3_1;
 						
 						object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
 						object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
