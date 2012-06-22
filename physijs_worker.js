@@ -417,7 +417,10 @@ reportCollisions = function() {
 		_collided = false;
 	
 	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
-		collisionreport = new Float32Array(collisionreport.length + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport = new Float32Array(
+			2 + // message id & # objects in report
+			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
+		);
 		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	}
 	
