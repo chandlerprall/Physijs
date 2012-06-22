@@ -12,6 +12,7 @@ window.Physijs = (function() {
 		
 		_temp1, _temp2,
 		_temp_vector3_1 = new THREE.Vector3,
+		_quaternion_1 = new THREE.Quaternion,
 		
 		// constants
 		MESSAGE_TYPES = {
@@ -308,37 +309,34 @@ window.Physijs = (function() {
 		this._worker.postMessage({ cmd: cmd, params: params });
 	};
 	
-	addObjectChildren = function( parent, object, offset ) {
+	addObjectChildren = function( parent, object ) {
 		var i;
-		
-		if ( parent !== object ) {
-			offset.x += object.position.x;
-			offset.y += object.position.y;
-			offset.z += object.position.z;
-		}
 		
 		for ( i = 0; i < object.children.length; i++ ) {
 			if ( object.children[i]._physijs ) {
-				object.children[i]._physijs.offset = {
-					x: object.children[i].position.x + offset.x,
-					y: object.children[i].position.y + offset.y,
-					z: object.children[i].position.z + offset.z
+				object.children[i].updateMatrix();
+				object.children[i].updateMatrixWorld();
+				
+				_temp_vector3_1.getPositionFromMatrix( object.children[i].matrixWorld );
+				_quaternion_1.setFromRotationMatrix( object.children[i].matrixWorld );
+				
+				object.children[i]._physijs.position_offset = {
+					x: _temp_vector3_1.x,
+					y: _temp_vector3_1.y,
+					z: _temp_vector3_1.z
 				};
 				
-				if ( object.children[i].useQuaternion !== true ) {
-					object.children[i].quaternion.copy(getQuatertionFromEuler( object.children[i].rotation.x, object.children[i].rotation.y, object.children[i].rotation.z ));
-				}
 				object.children[i]._physijs.rotation = {
-					x: object.children[i].quaternion.x,
-					y: object.children[i].quaternion.y,
-					z: object.children[i].quaternion.z,
-					w: object.children[i].quaternion.w
+					x: _quaternion_1.x,
+					y: _quaternion_1.y,
+					z: _quaternion_1.z,
+					w: _quaternion_1.w
 				};
 				
 				parent._physijs.children.push( object.children[i]._physijs );
 			}
 			
-			addObjectChildren( parent, object.children[i], offset.clone() );
+			addObjectChildren( parent, object.children[i] );
 		}
 	};
 	
@@ -352,7 +350,7 @@ window.Physijs = (function() {
 			
 			if ( object.children.length ) {
 				object._physijs.children = [];
-				addObjectChildren( object, object, new THREE.Vector3 );
+				addObjectChildren( object, object );
 			}
 			
 			object.world = this;

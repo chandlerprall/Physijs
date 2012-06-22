@@ -194,7 +194,7 @@ public_functions.addObject = function( description ) {
 			_child = description.children[i];
 			var trans = new Ammo.btTransform;
 			trans.setIdentity();
-			trans.setOrigin(new Ammo.btVector3( _child.offset.x, _child.offset.y, _child.offset.z ));
+			trans.setOrigin(new Ammo.btVector3( _child.position_offset.x, _child.position_offset.y, _child.position_offset.z ));
 			trans.setRotation(new Ammo.btQuaternion( _child.rotation.x, _child.rotation.y, _child.rotation.z, _child.rotation.w ));
 			
 			shape = createShape( description.children[i] );
