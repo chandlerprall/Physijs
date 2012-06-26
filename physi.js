@@ -534,6 +534,13 @@ window.Physijs = (function() {
 		}
 	};
 	
+	// Physijs.Mesh.setDamping
+	Physijs.Mesh.prototype.setDamping = function ( linear, angular ) {
+		if ( this.world ) {
+			this.world.execute( 'setDamping', { id: this._physijs.id, linear: linear, angular: angular } );
+		}
+	};
+	
 	// Physijs.Mesh.setCcdMotionThreshold
 	Physijs.Mesh.prototype.setCcdMotionThreshold = function ( threshold ) {
 		if ( this.world ) {

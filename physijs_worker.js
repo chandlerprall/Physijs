@@ -320,6 +320,10 @@ public_functions.setLinearFactor = function ( details ) {
 	);
 };
 
+public_functions.setDamping = function ( details ) {
+	_objects[details.id].setDamping( details.linear, details.angular );
+};
+
 public_functions.setCcdMotionThreshold = function ( details ) {
 	_objects[details.id].setCcdMotionThreshold( details.threshold );
 };
