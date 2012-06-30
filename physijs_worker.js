@@ -287,10 +287,10 @@ public_functions.applyCentralForce = function ( details ) {
 };
 
 public_functions.applyForce = function ( details ) {
-	_objects[details.id].applyImpulse(
-		new Ammo.btVector3( details.impulse_x, details.impulse_y, details.impulse_z ),
-		new Ammo.btVector3( details.x, details.y, details.z )
-	);
+	_objects[details.id].applyForce(
+			new Ammo.btVector3( details.force_x, details.force_y, details.force_z ),
+			new Ammo.btVector3( details.x, details.y, details.z )
+	);	
 	_objects[details.id].activate();
 };
 
