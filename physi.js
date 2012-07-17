@@ -492,7 +492,7 @@ window.Physijs = (function() {
 	// Physijs.Mesh.applyForce
 	Physijs.Mesh.prototype.applyForce = function ( force, offset ) {
 		if ( this.world ) {
-			this.world.execute( 'applyForce', { id: this._physijs.id, impulse_x: force.x, impulse_y: force.y, impulse_z: force.z, x: offset.x, y: offset.y, z: offset.z } );
+			this.world.execute( 'applyForce', { id: this._physijs.id, force_x: force.x, force_y : force.y, force_z : force.z, x: offset.x, y: offset.y, z: offset.z } );
 		}
 	};
 	
