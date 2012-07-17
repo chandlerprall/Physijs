@@ -15,7 +15,6 @@ window.Physijs = (function() {
 		_temp_vector3_1 = new THREE.Vector3,
 		_temp_vector3_2 = new THREE.Vector3,
 		_temp_matrix4_1 = new THREE.Matrix4,
-		
 		_quaternion_1 = new THREE.Quaternion,
 		
 		// constants
