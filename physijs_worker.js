@@ -126,6 +126,30 @@ createShape = function( description ) {
 				shape.addPoint( new Ammo.btVector3( point.x, point.y, point.z ) );
 			}
 			break;
+
+		case 'heightfield':
+
+			var ptr = Ammo.allocate(description.xpts * description.zpts, "float", Ammo.ALLOC_NORMAL);
+
+			for (var f = 0; f < description.points.length; f++) {
+				
+				Ammo.setValue(ptr + f,  description.points[f].y  , 'float');
+			}
+
+			shape = new Ammo.btHeightfieldTerrainShape(
+					description.xpts,
+					description.zpts,
+					ptr,
+					1,
+					-description.absMaxHeight,
+					description.absMaxHeight,
+					1,
+					0,
+					false);
+
+			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts),1,description.zsize/(description.zpts));
+			shape.setLocalScaling(localScaling);
+			break;
 		
 		default:
 			// Not recognized
