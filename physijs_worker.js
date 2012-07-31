@@ -133,7 +133,7 @@ createShape = function( description ) {
 
 			for (var f = 0; f < description.points.length; f++) {
 				
-				Ammo.setValue(ptr + f,  description.points[f].y  , 'float');
+				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
 			}
 
 			shape = new Ammo.btHeightfieldTerrainShape(
