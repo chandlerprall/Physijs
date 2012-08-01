@@ -575,7 +575,30 @@ window.Physijs = (function() {
 	};
 	Physijs.PlaneMesh.prototype = new Physijs.Mesh;
 	Physijs.PlaneMesh.prototype.constructor = Physijs.PlaneMesh;
-	
+
+	// Physijs.HeightfieldMesh
+	Physijs.HeightfieldMesh = function ( geometry, material, mass, xdiv, zdiv) {
+
+		var points = [];
+		
+		Physijs.Mesh.call( this, geometry, material, mass );
+
+		for ( var i = 0; i < geometry.vertices.length; i++ ) {
+
+			points[i] = geometry.vertices[i].y;
+		}
+		
+		this._physijs.type   = 'heightfield';
+		this._physijs.points = points;
+		this._physijs.xsize  = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		this._physijs.zsize  = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+		// note - this assumes our plane geometry is square, unless we pass in specific xdiv and zdiv
+		this._physijs.xpts = (typeof xdiv === 'undefined') ? Math.sqrt(geometry.vertices.length) : xdiv + 1;
+		this._physijs.zpts = (typeof zdiv === 'undefined') ? Math.sqrt(geometry.vertices.length) : zdiv + 1;
+		this._physijs.absMaxHeight = Math.max(geometry.boundingBox.max.y,Math.abs(geometry.boundingBox.min.y));
+	};
+	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
+	Physijs.HeightfieldMesh.prototype.constructor = Physijs.HeightfieldMesh;	
 	
 	// Physijs.BoxMesh
 	Physijs.BoxMesh = function( geometry, material, mass ) {
