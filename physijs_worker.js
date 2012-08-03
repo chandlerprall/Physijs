@@ -65,7 +65,7 @@ createShape = function( description ) {
 		case 'plane':
 			cache_key = 'plane_' + description.normal.x + '_' + description.normal.y + '_' + description.normal.z;
 			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
-				shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ) );
+				shape = new Ammo.btStaticPlaneShape( new Ammo.btVector3( description.normal.x, description.normal.y, description.normal.z ), 0 );
 				setShapeCache( cache_key, shape );
 			}
 			break;
@@ -125,6 +125,30 @@ createShape = function( description ) {
 				point = description.points[i];
 				shape.addPoint( new Ammo.btVector3( point.x, point.y, point.z ) );
 			}
+			break;
+
+		case 'heightfield':
+
+			var ptr = Ammo.allocate(description.xpts * description.zpts, "float", Ammo.ALLOC_NORMAL);
+
+			for (var f = 0; f < description.points.length; f++) {
+				
+				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
+			}
+
+			shape = new Ammo.btHeightfieldTerrainShape(
+					description.xpts,
+					description.zpts,
+					ptr,
+					1,
+					-description.absMaxHeight,
+					description.absMaxHeight,
+					1,
+					0,
+					false);
+
+			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts),1,description.zsize/(description.zpts));
+			shape.setLocalScaling(localScaling);
 			break;
 		
 		default:
@@ -194,7 +218,7 @@ public_functions.addObject = function( description ) {
 			_child = description.children[i];
 			var trans = new Ammo.btTransform;
 			trans.setIdentity();
-			trans.setOrigin(new Ammo.btVector3( _child.offset.x, _child.offset.y, _child.offset.z ));
+			trans.setOrigin(new Ammo.btVector3( _child.position_offset.x, _child.position_offset.y, _child.position_offset.z ));
 			trans.setRotation(new Ammo.btQuaternion( _child.rotation.x, _child.rotation.y, _child.rotation.z, _child.rotation.w ));
 			
 			shape = createShape( description.children[i] );
@@ -281,6 +305,19 @@ public_functions.applyImpulse = function ( details ) {
 	_objects[details.id].activate();
 };
 
+public_functions.applyCentralForce = function ( details ) {
+	_objects[details.id].applyCentralForce(new Ammo.btVector3( details.x, details.y, details.z ));
+	_objects[details.id].activate();
+};
+
+public_functions.applyForce = function ( details ) {
+	_objects[details.id].applyForce(
+			new Ammo.btVector3( details.force_x, details.force_y, details.force_z ),
+			new Ammo.btVector3( details.x, details.y, details.z )
+	);	
+	_objects[details.id].activate();
+};
+
 public_functions.setAngularVelocity = function ( details ) {
 	_objects[details.id].setAngularVelocity(
 		new Ammo.btVector3( details.x, details.y, details.z )
@@ -305,6 +342,10 @@ public_functions.setLinearFactor = function ( details ) {
 	_objects[details.id].setLinearFactor(
 		new Ammo.btVector3( details.x, details.y, details.z )
 	);
+};
+
+public_functions.setDamping = function ( details ) {
+	_objects[details.id].setDamping( details.linear, details.angular );
 };
 
 public_functions.setCcdMotionThreshold = function ( details ) {
@@ -345,7 +386,10 @@ reportWorld = function() {
 		i = 0;
 	
 	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
-		worldreport = new Float32Array(worldreport.length + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		worldreport = new Float32Array(
+			2 + // message id & # objects in report
+			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
+		);
 		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	}
 	
@@ -401,7 +445,10 @@ reportCollisions = function() {
 		_collided = false;
 	
 	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
-		collisionreport = new Float32Array(collisionreport.length + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport = new Float32Array(
+			2 + // message id & # objects in report
+			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
+		);
 		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	}
 	
