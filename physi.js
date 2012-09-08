@@ -8,10 +8,13 @@ window.Physijs = (function() {
 		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
 		getEulerXYZFromQuaternion, getQuatertionFromEuler,
+		convertWorldPositionToObject, // Converts a world-space position to object-space
 		addObjectChildren,
 		
 		_temp1, _temp2,
 		_temp_vector3_1 = new THREE.Vector3,
+		_temp_vector3_2 = new THREE.Vector3,
+		_temp_matrix4_1 = new THREE.Matrix4,
 		_quaternion_1 = new THREE.Quaternion,
 		
 		// constants
@@ -95,6 +98,27 @@ window.Physijs = (function() {
 		};
 	};
 	
+	convertWorldPositionToObject = function( position, object ) {
+		_temp_matrix4_1.identity(); // reset temp matrix
+		
+		// Set the temp matrix's rotation to the object's rotation
+		if ( object.useQuaternion ) {
+			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
+		} else {
+			_temp_matrix4_1.identity().setRotationFromEuler( object.rotation );
+		}
+		
+		// Invert rotation matrix in order to "unrotate" a point back to object space
+		_temp_matrix4_1.getInverse( _temp_matrix4_1 ); 
+		
+		// Yay! Temp vars!
+		_temp_vector3_1.copy( position );
+		_temp_vector3_2.copy( object.position );
+		
+		// Apply the rotation
+		return _temp_matrix4_1.multiplyVector3( _temp_vector3_1.subSelf( _temp_vector3_2 ) );
+	};
+	
 	
 	
 	// Physijs.noConflict
@@ -119,6 +143,236 @@ window.Physijs = (function() {
 		return physijs_material;
 	};
 	
+	
+	// Constraints
+	Physijs.PointConstraint = function( objecta, objectb, position ) {
+		if ( position === undefined ) {
+			position = objectb;
+			objectb = undefined;
+		}
+		
+		this.type = 'point';
+		this.id = getObjectId();
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		}
+	};
+	Physijs.PointConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb
+		};
+	};
+	
+	Physijs.HingeConstraint = function( objecta, objectb, position, axis ) {
+		if ( axis === undefined ) {
+			axis = position;
+			position = objectb;
+			objectb = undefined;
+		}
+		
+		this.type = 'hinge';
+		this.id = getObjectId();
+		this.scene = objecta.parent;
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.axis = axis;
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		}
+	};
+	Physijs.HingeConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb,
+			axis: this.axis
+		};
+	};
+	/*
+	 * low = minimum angle in radians
+	 * high = maximum angle in radians
+	 * bias_factor = applied as a factor to constraint error
+	 * relaxation_factor = controls bounce (0.0 == no bounce)
+	 */
+	Physijs.HingeConstraint.prototype.setLimits = function( low, high, bias_factor, relaxation_factor ) {
+		this.scene.execute( 'hinge_setLimits', { constraint: this.id, low: low, high: high, bias_factor: bias_factor, relaxation_factor: relaxation_factor } );
+	};
+	Physijs.HingeConstraint.prototype.enableAngularMotor = function( velocity, acceleration ) {
+		this.scene.execute( 'hinge_enableAngularMotor', { constraint: this.id, velocity: velocity, acceleration: acceleration } );
+	};
+	Physijs.HingeConstraint.prototype.disableMotor = function( velocity, acceleration ) {
+		this.scene.execute( 'hinge_disableMotor', { constraint: this.id } );
+	};
+	
+	Physijs.SliderConstraint = function( objecta, objectb, position, axis ) {
+		if ( axis === undefined ) {
+			axis = position;
+			position = objectb;
+			objectb = undefined;
+		}
+		
+		this.type = 'slider';
+		this.id = getObjectId();
+		this.scene = objecta.parent;
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.axis = axis;
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		}
+	};
+	Physijs.SliderConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb,
+			axis: this.axis
+		};
+	};
+	Physijs.SliderConstraint.prototype.setLimits = function( lin_lower, lin_upper, ang_lower, ang_upper ) {
+		this.scene.execute( 'slider_setLimits', { constraint: this.id, lin_lower: lin_lower, lin_upper: lin_upper, ang_lower: ang_lower, ang_upper: ang_upper } );
+	};
+	Physijs.SliderConstraint.prototype.setRestitution = function( linear, angular ) {
+		this.scene.execute(
+			'slider_setRestitution',
+			{
+				constraint: this.id,
+				linear: linear,
+				angular: angular
+			}
+		);
+	};
+	Physijs.SliderConstraint.prototype.enableLinearMotor = function( velocity, acceleration) {
+		this.scene.execute( 'slider_enableLinearMotor', { constraint: this.id, velocity: velocity, acceleration: acceleration } );
+	};
+	Physijs.SliderConstraint.prototype.disableLinearMotor = function() {
+		this.scene.execute( 'slider_disableLinearMotor', { constraint: this.id } );
+	};
+	Physijs.SliderConstraint.prototype.enableAngularMotor = function( velocity, acceleration ) {
+		this.scene.execute( 'slider_enableAngularMotor', { constraint: this.id, velocity: velocity, acceleration: acceleration } );
+	};
+	Physijs.SliderConstraint.prototype.disableAngularMotor = function() {
+		this.scene.execute( 'slider_disableAngularMotor', { constraint: this.id } );
+	};
+	
+	Physijs.ConeTwistConstraint = function( objecta, objectb, position ) {
+		if ( position === undefined ) {
+			throw 'Both objects must be defined in a ConeTwistConstraint.';
+		}
+		this.type = 'conetwist';
+		this.id = getObjectId();
+		this.scene = objecta.parent;
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.objectb = objectb._physijs.id;
+		this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+		this.axisa = { x: objecta.rotation.x, y: objecta.rotation.y, z: objecta.rotation.z };
+		this.axisb = { x: objectb.rotation.x, y: objectb.rotation.y, z: objectb.rotation.z };
+	};
+	Physijs.ConeTwistConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb,
+			axisa: this.axisa,
+			axisb: this.axisb
+		};
+	};
+	Physijs.ConeTwistConstraint.prototype.setLimit = function( x, y, z ) {
+		this.scene.execute( 'conetwist_setLimit', { constraint: this.id, x: x, y: y, z: z } );
+	};
+	Physijs.ConeTwistConstraint.prototype.enableMotor = function() {
+		this.scene.execute( 'conetwist_enableMotor', { constraint: this.id } );
+	};
+	Physijs.ConeTwistConstraint.prototype.setMaxMotorImpulse = function( max_impulse ) {
+		this.scene.execute( 'conetwist_setMaxMotorImpulse', { constraint: this.id, max_impulse: max_impulse } );
+	};
+	Physijs.ConeTwistConstraint.prototype.setMotorTarget = function( target ) {
+		if ( target instanceof THREE.Vector3 ) {
+			throw 'Wait for Three.js r50 to setMotorTarget from Vector3 - use Matrix4 or Quaternion instead';
+			target = new THREE.Quaternion().setFromEuler( target );
+		} else if ( target instanceof THREE.Matrix4 ) {
+			target = new THREE.Quaternion().setFromRotationMatrix( target );
+		}
+		this.scene.execute( 'conetwist_setMotorTarget', { constraint: this.id, x: target.x, y: target.y, z: target.z, w: target.w } );
+	};
+	Physijs.ConeTwistConstraint.prototype.disableMotor = function() {
+		this.scene.execute( 'conetwist_disableMotor', { constraint: this.id } );
+	};
+	
+	Physijs.DOFConstraint = function( objecta, objectb, position ) {
+		if ( position === undefined ) {
+			position = objectb;
+			objectb = undefined;
+		}
+		this.type = 'dof';
+		this.id = getObjectId();
+		this.scene = objecta.parent;
+		this.objecta = objecta._physijs.id;
+		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.axisa = { x: objecta.rotation.x, y: objecta.rotation.y, z: objecta.rotation.z };
+		
+		if ( objectb ) {
+			this.objectb = objectb._physijs.id;
+			this.positionb = convertWorldPositionToObject( position, objectb ).clone();
+			this.axisb = { x: objectb.rotation.x, y: objectb.rotation.y, z: objectb.rotation.z };
+		}
+	};
+	Physijs.DOFConstraint.prototype.getDefinition = function() {
+		return {
+			type: this.type,
+			id: this.id,
+			objecta: this.objecta,
+			objectb: this.objectb,
+			positiona: this.positiona,
+			positionb: this.positionb,
+			axisa: this.axisa,
+			axisb: this.axisb
+		};
+	};
+	Physijs.DOFConstraint.prototype.setLinearLowerLimit = function( limit ) {
+		this.scene.execute( 'dof_setLinearLowerLimit', { constraint: this.id, x: limit.x, y: limit.y, z: limit.z } );
+	}
+	Physijs.DOFConstraint.prototype.setLinearUpperLimit = function( limit ) {
+		this.scene.execute( 'dof_setLinearUpperLimit', { constraint: this.id, x: limit.x, y: limit.y, z: limit.z } );
+	}
+	Physijs.DOFConstraint.prototype.setAngularLowerLimit = function( limit ) {
+		this.scene.execute( 'dof_setAngularLowerLimit', { constraint: this.id, x: limit.x, y: limit.y, z: limit.z } );
+	}
+	Physijs.DOFConstraint.prototype.setAngularUpperLimit = function( limit ) {
+		this.scene.execute( 'dof_setAngularUpperLimit', { constraint: this.id, x: limit.x, y: limit.y, z: limit.z } );
+	}
+	Physijs.DOFConstraint.prototype.enableAngularMotor = function( which ) {
+		this.scene.execute( 'dof_enableAngularMotor', { constraint: this.id, which: which } );
+	};
+	Physijs.DOFConstraint.prototype.configureAngularMotor = function( which, low_angle, high_angle, velocity, max_force ) {
+		this.scene.execute( 'dof_configureAngularMotor', { constraint: this.id, which: which, low_angle: low_angle, high_angle: high_angle, velocity: velocity, max_force: max_force } );
+	};
+	Physijs.DOFConstraint.prototype.disableAngularMotor = function( which ) {
+		this.scene.execute( 'dof_disableAngularMotor', { constraint: this.id, which: which } );
+	};
 	
 	// Physijs.Scene
 	Physijs.Scene = function( params ) {
@@ -154,6 +408,10 @@ window.Physijs = (function() {
 					case 'objectReady':
 						_temp = event.data.params;
 						self._objects[ _temp ].dispatchEvent( 'ready' );
+						break;
+
+					case 'worldReady':
+						self.dispatchEvent( 'ready' );
 						break;
 					
 					default:
@@ -303,6 +561,70 @@ window.Physijs = (function() {
 			// Give the typed array back to the worker
 			this._worker.webkitPostMessage( data, [data.buffer] );
 		}
+	};
+	
+	Physijs.Scene.prototype.addConstraint = function ( constraint, show_marker ) {
+		this.execute( 'addConstraint', constraint.getDefinition() );
+		
+		if ( show_marker ) {
+			var marker;
+			
+			switch ( constraint.type ) {
+				case 'point':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+				
+				case 'hinge':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+				
+				case 'slider':
+					marker = new THREE.Mesh(
+						new THREE.CubeGeometry( 10, 1, 1 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					// This rotation isn't right if all three axis are non-0 values
+					// TODO: change marker's rotation order to ZYX
+					marker.rotation.set(
+						constraint.axis.y, // yes, y and
+						constraint.axis.x, // x axis are swapped
+						constraint.axis.z
+					);
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+				
+				case 'conetwist':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+				
+				case 'dof':
+					marker = new THREE.Mesh(
+						new THREE.SphereGeometry( 1.5 ),
+						new THREE.MeshNormalMaterial
+					);
+					marker.position.copy( constraint.positiona );
+					this._objects[ constraint.objecta ].add( marker );
+					break;
+			}
+		}
+		
+		return constraint;
 	};
 	
 	Physijs.Scene.prototype.execute = function( cmd, params ) {

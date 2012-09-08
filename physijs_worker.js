@@ -30,6 +30,7 @@ var
 	// private cache
 	_now,
 	_objects = {},
+	_constraints = {},
 	_materials = {},
 	_objects_ammo = {},
 	_num_objects = 0,
@@ -188,11 +189,14 @@ public_functions.init = function( params ) {
 		case 'dynamic':
 		default:
 			broadphase = new Ammo.btDbvtBroadphase;
+			break;
 	}
 	
 	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
 	
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+
+	transferableMessage({ cmd: 'worldReady' });
 };
 
 public_functions.registerMaterial = function( description ) {
@@ -356,6 +360,156 @@ public_functions.setCcdSweptSphereRadius = function ( details ) {
 	_objects[details.id].setCcdSweptSphereRadius( details.radius );
 };
 
+public_functions.addConstraint = function ( details ) {
+	var constraint;
+	
+	switch ( details.type ) {
+		
+		case 'point':
+			if ( details.objectb === undefined ) {
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z )
+				);
+			} else {
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z )
+				);
+
+			}
+			break;
+		
+		case 'hinge':
+			if ( details.objectb === undefined ) {
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
+				);
+			} else {
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ),
+					new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z ),
+					new Ammo.btVector3( details.axis.x, details.axis.y, details.axis.z )
+				);
+
+			}
+			break;
+		
+		case 'slider':
+			var transforma, transformb, rotation;
+			
+			transforma = new Ammo.btTransform();
+			transforma.setOrigin(new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ));
+			
+			var rotation = transforma.getRotation();
+			rotation.setEuler( details.axis.x, details.axis.y, details.axis.z );
+			transforma.setRotation( rotation );
+			
+			if ( details.objectb ) {
+				transformb = new Ammo.btTransform();
+				transformb.setOrigin(new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ));
+				
+				rotation = transformb.getRotation();
+				rotation.setEuler( details.axis.x, details.axis.y, details.axis.z );
+				transformb.setRotation( rotation );
+				
+				constraint = new Ammo.btSliderConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					transforma,
+					transformb,
+					true
+				);
+			} else {
+				constraint = new Ammo.btSliderConstraint(
+					_objects[ details.objecta ],
+					transforma,
+					true
+				);
+			}
+			break;
+		
+		case 'conetwist':
+			var transforma, transformb;
+			
+			transforma = new Ammo.btTransform();
+			transforma.setIdentity();
+			
+			transformb = new Ammo.btTransform();
+			transformb.setIdentity();
+			
+			transforma.setOrigin(new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ));
+			transformb.setOrigin(new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ));
+			
+			var rotation = transforma.getRotation();
+			rotation.setEulerZYX( -details.axisa.z, -details.axisa.y, -details.axisa.x );
+			transforma.setRotation( rotation );
+			
+			rotation = transformb.getRotation();
+			rotation.setEulerZYX( -details.axisb.z, -details.axisb.y, -details.axisb.x );
+			transformb.setRotation( rotation );
+			
+			constraint = new Ammo.btConeTwistConstraint(
+				_objects[ details.objecta ],
+				_objects[ details.objectb ],
+				transforma,
+				transformb
+			);
+			
+			constraint.setLimit( Math.PI, 0, Math.PI );
+			break;
+		
+		case 'dof':
+			var transforma, transformb, rotation;
+		
+			transforma = new Ammo.btTransform();
+			transforma.setIdentity();
+			transforma.setOrigin(new Ammo.btVector3( details.positiona.x, details.positiona.y, details.positiona.z ));
+			
+			rotation = transforma.getRotation();
+			rotation.setEulerZYX( -details.axisa.z, -details.axisa.y, -details.axisa.x );
+			transforma.setRotation( rotation );
+			
+			if ( details.objectb ) {
+				transformb = new Ammo.btTransform();
+				transformb.setIdentity();
+				transformb.setOrigin(new Ammo.btVector3( details.positionb.x, details.positionb.y, details.positionb.z ));
+				
+				rotation = transformb.getRotation();
+				rotation.setEulerZYX( -details.axisb.z, -details.axisb.y, -details.axisb.x );
+				transformb.setRotation( rotation );
+				
+				constraint = new Ammo.btGeneric6DofConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					transforma,
+					transformb
+				);
+			} else {
+				constraint = new Ammo.btGeneric6DofConstraint(
+					_objects[ details.objecta ],
+					transforma
+				);
+			}
+			break;
+		
+		default:
+			return;
+		
+	};
+	
+	world.addConstraint( constraint );
+	
+	_constraints[ details.id ] = constraint;
+};
+
 public_functions.simulate = function( params ) {
 	if ( world ) {
 		params = params || {};
@@ -376,6 +530,173 @@ public_functions.simulate = function( params ) {
 		reportCollisions();
 		
 		last_simulation_time = _now;
+	}
+};
+
+
+// Constraint functions
+public_functions.hinge_setLimits = function( params ) {
+	_constraints[ params.constraint ].setLimit( params.low, params.high, 0, params.bias_factor, params.relaxation_factor );
+};
+public_functions.hinge_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableAngularMotor( true, params.velocity, params.acceleration );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.hinge_disableMotor = function( params ) {
+	_constraints[ params.constraint ].enableMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+
+public_functions.slider_setLimits = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setLowerLinLimit( params.lin_lower || 0 );
+	constraint.setUpperLinLimit( params.lin_upper || 0 );
+	
+	constraint.setLowerAngLimit( params.ang_lower || 0 );
+	constraint.setUpperAngLimit( params.ang_upper || 0 );
+};
+public_functions.slider_setRestitution = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setSoftnessLimLin( params.linear || 0 );
+	constraint.setSoftnessLimAng( params.angular || 0 );
+};
+public_functions.slider_enableLinearMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setTargetLinMotorVelocity( params.velocity );
+	constraint.setMaxLinMotorForce( params.acceleration );
+	constraint.setPoweredLinMotor( true );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_disableLinearMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setPoweredLinMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setTargetAngMotorVelocity( params.velocity );
+	constraint.setMaxAngMotorForce( params.acceleration );
+	constraint.setPoweredAngMotor( true );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_disableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setPoweredAngMotor( false );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+
+public_functions.conetwist_setLimit = function( params ) {
+	_constraints[ params.constraint ].setLimit( params.z, params.y, params.x ); // ZYX order
+};
+public_functions.conetwist_enableMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableMotor( true );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_setMaxMotorImpulse = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setMaxMotorImpulse( params.max_impulse );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_setMotorTarget = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setMotorTarget(new Ammo.btQuaternion( params.x, params.y, params.z, params.w ));
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_disableMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableMotor( false );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+
+public_functions.dof_setLinearLowerLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setLinearLowerLimit(new Ammo.btVector3( params.x, params.y, params.z ));
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setLinearUpperLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setLinearUpperLimit(new Ammo.btVector3( params.x, params.y, params.z ));
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setAngularLowerLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setAngularLowerLimit(new Ammo.btVector3( params.x, params.y, params.z ));
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setAngularUpperLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setAngularUpperLimit(new Ammo.btVector3( params.x, params.y, params.z ));
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	motor.set_m_enableMotor( true );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_configureAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	
+	motor.set_m_loLimit( params.low_angle );
+	motor.set_m_hiLimit( params.high_angle );
+	motor.set_m_targetVelocity( params.velocity );
+	motor.set_m_maxMotorForce( params.max_force );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_disableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	motor.set_m_enableMotor( false );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
 	}
 };
 
@@ -493,7 +814,7 @@ self.onmessage = function( event ) {
 	}
 	
 	if ( event.data.cmd && public_functions[event.data.cmd] ) {
-		if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
+		//if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
 		public_functions[event.data.cmd]( event.data.params );
 	}
 	
