@@ -155,6 +155,10 @@ window.Physijs = (function() {
 						_temp = event.data.params;
 						self._objects[ _temp ].dispatchEvent( 'ready' );
 						break;
+
+					case 'worldReady':
+						self.dispatchEvent( 'ready' );
+						break;
 					
 					default:
 						// Do nothing, just show the message

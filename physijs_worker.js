@@ -188,11 +188,14 @@ public_functions.init = function( params ) {
 		case 'dynamic':
 		default:
 			broadphase = new Ammo.btDbvtBroadphase;
+			break;
 	}
 	
 	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
 	
 	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+
+	transferableMessage({ cmd: 'worldReady' });
 };
 
 public_functions.registerMaterial = function( description ) {
