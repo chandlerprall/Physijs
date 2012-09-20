@@ -24,11 +24,11 @@ var
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
-	last_simulation_time, // store in *seconds*
+	rateLimit, // sets whether or not to sync the simulation rate with fixedTimeStep
+	last_simulation_time,
 	world,
 	
 	// private cache
-	_now,
 	_objects = {},
 	_constraints = {},
 	_materials = {},
@@ -194,7 +194,8 @@ public_functions.init = function( params ) {
 	
 	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
 	
-	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+	fixedTimeStep = params.fixedTimeStep;
+	rateLimit = params.rateLimit;
 
 	transferableMessage({ cmd: 'worldReady' });
 };
@@ -510,26 +511,32 @@ public_functions.addConstraint = function ( details ) {
 	_constraints[ details.id ] = constraint;
 };
 
-public_functions.simulate = function( params ) {
+public_functions.simulate = function simulate( params ) {
 	if ( world ) {
 		params = params || {};
-		_now = new Date().getTime() / 1000; // store in *seconds*
 		
 		if ( !params.timeStep ) {
 			if ( last_simulation_time ) {
-				params.timeStep = _now - last_simulation_time; // time since last simulation
+				params.timeStep = 0;
+				while ( params.timeStep < fixedTimeStep ) {
+					params.timeStep = ( new Date().getTime() - last_simulation_time ) / 1000; // time since last simulation
+				}
 			} else {
 				params.timeStep = fixedTimeStep; // handle first frame
 			}
+		} else {
+			if ( params.timeStep < fixedTimeStep ) {
+				params.timeStep = fixedTimeStep;
+			}
 		}
-		
+
 		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
 		
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
 		reportWorld();
 		reportCollisions();
 		
-		last_simulation_time = _now;
+		last_simulation_time = new Date().getTime();
 	}
 };
 

@@ -20,7 +20,7 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, createShape,
-		renderer, stats, scene, light, ground, ground_material, camera;
+		renderer, render_stats, physics_stats, scene, light, ground, ground_material, camera;
 	
 	initScene = function() {
 		TWEEN.start();
@@ -31,14 +31,27 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '0px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
 		
-		scene = new Physijs.Scene;
-		scene.setGravity({ x: 0, y: -10, z: 0 });
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
+		
+		scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				scene.simulate( undefined, 2 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -76,9 +89,9 @@
 		ground_material.map.repeat.set( 2.5, 2.5 );
 		
 		// Ground
-		ground = new Physijs.PlaneMesh(
-			//new THREE.CubeGeometry(50, 1, 50),
-			new THREE.PlaneGeometry(50, 50),
+		ground = new Physijs.BoxMesh(
+			new THREE.CubeGeometry(50, 1, 50),
+			//new THREE.PlaneGeometry(50, 50),
 			ground_material,
 			0 // mass
 		);
@@ -120,15 +133,15 @@
 		scene.add( bumper );
 		
 		requestAnimationFrame( render );
-		
+		scene.simulate();
+
 		createShape();
 	};
 	
 	render = function() {
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera );
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	createShape = (function() {

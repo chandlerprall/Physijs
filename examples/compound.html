@@ -18,7 +18,7 @@
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
-	var initScene, render, renderer, stats, scene, ground, light, camera, spawnChair,
+	var initScene, render, renderer, render_stats, physics_stats, scene, ground, light, camera, spawnChair,
 		ground_material, chair_material;
 	
 	initScene = function() {
@@ -28,13 +28,27 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '0px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
+		
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
 		
 		scene = new Physijs.Scene;
+		scene.setGravity(new THREE.Vector3( 0, -50, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				scene.simulate( undefined, 2 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -91,6 +105,7 @@
 		spawnChair();
 		
 		requestAnimationFrame( render );
+		scene.simulate();
 	};
 	
 	spawnChair = (function() {
@@ -223,15 +238,14 @@
 		};
 		
 		return function() {
-			setTimeout( doSpawn, 1500 );
+			setTimeout( doSpawn, 500 );
 		};
 	})();
 	
 	render = function() {
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera);
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	window.onload = initScene;

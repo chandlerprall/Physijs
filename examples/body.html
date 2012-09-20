@@ -20,7 +20,7 @@
 	
 	var initScene, render, applyForce, setMousePosition, mouse_position,
 		ground_material, box_material,
-		projector, renderer, stats, scene, ground, light, camera, box, boxes = [];
+		projector, renderer, render_stats, physics_stats, scene, ground, light, camera, box, boxes = [];
 	
 	initScene = function() {
 		projector = new THREE.Projector;
@@ -31,13 +31,28 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '1px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
+
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
 		
 		scene = new Physijs.Scene;
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				applyForce();
+				scene.simulate( undefined, 1 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -91,8 +106,6 @@
 		ground.receiveShadow = true;
 		scene.add( ground );
 		
-		requestAnimationFrame( render );
-		
 		for ( var i = 0; i < 10; i++ ) {
 			box = new Physijs.BoxMesh(
 				new THREE.CubeGeometry( 4, 4, 4 ),
@@ -114,14 +127,15 @@
 		}
 		
 		renderer.domElement.addEventListener( 'mousemove', setMousePosition );
+
+		requestAnimationFrame( render );
+		scene.simulate();
 	};
 	
 	render = function() {
-		applyForce();
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera);
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	setMousePosition = function( evt ) {
