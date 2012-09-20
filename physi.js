@@ -403,24 +403,40 @@ window.Physijs = (function() {
 				
 			} else {
 				
-				// non-transferable object
-				switch ( event.data.cmd ) {
-					case 'objectReady':
-						_temp = event.data.params;
-						self._objects[ _temp ].dispatchEvent( 'ready' );
-						break;
+				if ( event.data.command ) {
 
-					case 'worldReady':
-						self.dispatchEvent( 'ready' );
-						break;
+					// non-transferable object
+					switch ( event.data.cmd ) {
+						case 'objectReady':
+							_temp = event.data.params;
+							self._objects[ _temp ].dispatchEvent( 'ready' );
+							break;
+
+						case 'worldReady':
+							self.dispatchEvent( 'ready' );
+							break;
+						
+						default:
+							// Do nothing, just show the message
+							console.debug('Received: ' + event.data.cmd);
+							console.dir(event.data.params);
+							break;
+					}
+
+				} else {
+
+					switch ( event.data[0] ) {
+						case MESSAGE_TYPES.WORLDREPORT:
+							self._updateScene( event.data );
+							break;
+						
+						case MESSAGE_TYPES.COLLISIONREPORT:
+							self._updateCollisions( event.data );
+							break;
+					}
 					
-					default:
-						// Do nothing, just show the message
-						console.debug('Received: ' + event.data.cmd);
-						console.dir(event.data.params);
-						break;
 				}
-				
+
 			}
 		};
 		

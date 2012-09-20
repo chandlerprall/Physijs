@@ -9,7 +9,6 @@
 	
 	<script type="text/javascript" src="js/Three.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
-	<script type="text/javascript" src="js/simplex-noise.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
 	
 	<script type="text/javascript">
@@ -22,7 +21,7 @@
 	var initScene, render,
 		ground_material, car_material, wheel_material, wheel_geometry,
 		projector, renderer, render_stats, physics_stats, scene, ground_geometry, ground, light, camera,
-		car = {}, NoiseGen;
+		car = {};
 	
 	initScene = function() {
 		projector = new THREE.Projector;
@@ -83,28 +82,16 @@
 		
 		// Materials
 		ground_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/grass.png' ) }),
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
 			.8, // high friction
 			.4 // low restitution
 		);
 		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
-		ground_material.map.repeat.set( 2.5, 2.5 );
+		ground_material.map.repeat.set( 3, 3 );
 		
 		// Ground
-		NoiseGen = new SimplexNoise;
-		
-		ground_geometry = new THREE.PlaneGeometry( 75, 75, 50, 50 );
-		for ( var i = 0; i < ground_geometry.vertices.length; i++ ) {
-			var vertex = ground_geometry.vertices[i];
-			vertex.y = NoiseGen.noise( vertex.x / 30, vertex.z / 30 ) * 2;
-		}
-		ground_geometry.computeFaceNormals();
-		ground_geometry.computeVertexNormals();
-		
-		// If your plane is not square as far as face count then the HeightfieldMesh
-		// takes two more arguments at the end: # of x faces and # of z faces that were passed to THREE.PlaneMaterial
-		ground = new Physijs.HeightfieldMesh(
-			ground_geometry,
+		ground = new Physijs.BoxMesh(
+			new THREE.CubeGeometry(100, 1, 100),
 			ground_material,
 			0 // mass
 		);

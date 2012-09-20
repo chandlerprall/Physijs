@@ -166,10 +166,16 @@ public_functions.init = function( params ) {
 	_transform = new Ammo.btTransform;
 	
 	REPORT_CHUNKSIZE = params.reportsize || 50;
-	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	if ( self.webkitPostMessage ) {
+		// Transferable messages are supported, take advantage of them with TypedArrays
+		worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	} else {
+		// Transferable messages are not supported, send data as normal arrays
+		worldreport = [];
+		collisionreport = [];
+	}
 	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
-	
-	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
 	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
@@ -713,12 +719,14 @@ reportWorld = function() {
 		offset = 0,
 		i = 0;
 	
-	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
-		worldreport = new Float32Array(
-			2 + // message id & # objects in report
-			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
-		);
-		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	if ( self.webkitPostMessage ) {
+		if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
+			worldreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
+			);
+			worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+		}
 	}
 	
 	worldreport[1] = _num_objects; // record how many objects we're reporting on
@@ -772,12 +780,14 @@ reportCollisions = function() {
 		manifold, num_contacts, j, pt,
 		_collided = false;
 	
-	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
-		collisionreport = new Float32Array(
-			2 + // message id & # objects in report
-			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
-		);
-		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	if ( self.webkitPostMessage ) {
+		if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
+			collisionreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
+			);
+			collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+		}
 	}
 	
 	collisionreport[1] = 0; // how many collisions we're reporting on
