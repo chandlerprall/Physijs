@@ -6,7 +6,8 @@ var
 	// enum
 	MESSAGE_TYPES = {
 		WORLDREPORT: 0,
-		COLLISIONREPORT: 1
+		COLLISIONREPORT: 1,
+		VEHICLEREPORT: 2
 	},
 	
 	// temp variables
@@ -20,16 +21,19 @@ var
 	setShapeCache,
 	createShape,
 	reportWorld,
+	reportVehicles,
 	reportCollisions,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
 	rateLimit, // sets whether or not to sync the simulation rate with fixedTimeStep
 	last_simulation_time,
+	last_simulation_duration = 0,
 	world,
 	
 	// private cache
 	_objects = {},
+	_vehicles = {},
 	_constraints = {},
 	_materials = {},
 	_objects_ammo = {},
@@ -41,9 +45,12 @@ var
 	
 	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
 	worldreport,
-	
+
 	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
-	collisionreport;
+	collisionreport,
+
+	VEHICLEREPORT_ITEMSIZE = 2, // one float for each object id
+	vehiclereport;
 
 
 getShapeFromCache = function ( cache_key ) {
@@ -259,15 +266,61 @@ public_functions.addObject = function( description ) {
 	if ( typeof description.collision_flags !== 'undefined' ) {
 		body.setCollisionFlags( description.collision_flags );
 	}
-	
-	world.addRigidBody( body );
-	
+
+	if ( description.id !== 1 ) {
+		world.addRigidBody( body );
+	}
+
 	body.id = description.id;
 	_objects[ body.id ] = body;
 	_objects_ammo[body.a] = body.id;
 	_num_objects++;
-	
-	transferableMessage({ cmd: 'objectReady', params: body.id });
+};
+
+public_functions.addVehicle = function( description ) {
+	var
+		vehicle_tuning = new Ammo.btVehicleTuning(),
+		/*vehicle_tuning = new Ammo.btVehicleTuning(
+			description.suspension_stiffness,
+			description.suspension_compression,
+			description.suspension_damping,
+			description.max_suspension_travel,
+			description.friction_slip,
+			description.max_suspension_force
+		),*/
+		vehicle = new Ammo.btRaycastVehicle( vehicle_tuning, _objects[ description.rigidBody ], new Ammo.btDefaultVehicleRaycaster( world ) );
+
+	_objects[ description.rigidBody ].setActivationState( 4 );
+	vehicle.setCoordinateSystem( 0, 1, 2 );
+
+	/*
+	vehicle.addWheel(
+		new Ammo.btVector3( 0, 0, 0 ),
+		new Ammo.btVector3( -1, 0, 0 ),
+		new Ammo.btVector3( 0, 0, 1 ),
+		0.2,
+		4,
+		vehicle_tuning,
+		true
+	);
+	*/
+
+	/*
+	vehicle.addWheel(
+		new Ammo.btVector3( -5, 1.5, -3 ),
+		new Ammo.btVector3( -1, 0, 0 ),
+		new Ammo.btVector3( 0, 0, 1 ),
+		0.2,
+		0.5,
+		vehicle_tuning,
+		false
+	);
+	*/
+
+	world.addVehicle( vehicle );
+	//vehicle.applyEngineForce( 50, 0 );
+
+	_vehicles[ description.id ] = vehicle;
 };
 
 public_functions.removeObject = function( details ) {
@@ -524,8 +577,8 @@ public_functions.simulate = function simulate( params ) {
 		if ( !params.timeStep ) {
 			if ( last_simulation_time ) {
 				params.timeStep = 0;
-				while ( params.timeStep < fixedTimeStep ) {
-					params.timeStep = ( new Date().getTime() - last_simulation_time ) / 1000; // time since last simulation
+				while ( params.timeStep + last_simulation_duration <= fixedTimeStep ) {
+					params.timeStep = ( Date.now() - last_simulation_time ) / 1000; // time since last simulation
 				}
 			} else {
 				params.timeStep = fixedTimeStep; // handle first frame
@@ -537,12 +590,15 @@ public_functions.simulate = function simulate( params ) {
 		}
 
 		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
-		
+
+		last_simulation_duration = Date.now();
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
 		reportWorld();
+		//reportVehicles();
 		reportCollisions();
+		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
 		
-		last_simulation_time = new Date().getTime();
+		last_simulation_time = Date.now();
 	}
 };
 
@@ -730,11 +786,13 @@ reportWorld = function() {
 	}
 	
 	worldreport[1] = _num_objects; // record how many objects we're reporting on
-	
+
 	//for ( i = 0; i < worldreport[1]; i++ ) {
 	for ( index in _objects ) {
 		if ( _objects.hasOwnProperty( index ) ) {
 			object = _objects[index];
+
+			//transferableMessage({ cmd: index });
 			
 			// #TODO: we can't use center of mass transform when center of mass can change,
 			//        but getMotionState().getWorldTransform() screws up on objects that have been moved

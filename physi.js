@@ -384,6 +384,7 @@ window.Physijs = (function() {
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 		this._materials = {};
 		this._objects = {};
+		this._vehicles = {};
 		
 		this._worker.onmessage = function ( event ) {
 			var _temp;
@@ -403,7 +404,7 @@ window.Physijs = (function() {
 				
 			} else {
 				
-				if ( event.data.command ) {
+				if ( event.data.cmd ) {
 
 					// non-transferable object
 					switch ( event.data.cmd ) {
@@ -455,9 +456,8 @@ window.Physijs = (function() {
 		var num_objects = data[1],
 			object,
 			i, offset;
-			
+
 		for ( i = 0; i < num_objects; i++ ) {
-			
 			offset = 2 + i * REPORT_ITEMSIZE;
 			object = this._objects[ data[ offset ] ];
 			
@@ -684,33 +684,42 @@ window.Physijs = (function() {
 		THREE.Mesh.prototype.add.call( this, object );
 		
 		if ( object._physijs ) {
-			object.__dirtyPosition = false;
-			object.__dirtyRotation = false;
-			this._objects[object._physijs.id] = object;
-			
-			if ( object.children.length ) {
-				object._physijs.children = [];
-				addObjectChildren( object, object );
-			}
-			
+
 			object.world = this;
-			
-			if ( object.material._physijs ) {
-				if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {
-					this.execute( 'registerMaterial', object.material._physijs );
-					object._physijs.materialId = object.material._physijs.id;
+
+			if ( object instanceof Physijs.Vehicle ) {
+				this.add( object.mesh );
+				this._vehicles[ object._physijs.id ] = object;
+				this.execute( 'addVehicle', object._physijs );
+
+			} else {
+				object.__dirtyPosition = false;
+				object.__dirtyRotation = false;
+				this._objects[object._physijs.id] = object;
+
+				if ( object.children.length ) {
+					object._physijs.children = [];
+					addObjectChildren( object, object );
 				}
+
+				if ( object.material._physijs ) {
+					if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {
+						this.execute( 'registerMaterial', object.material._physijs );
+						object._physijs.materialId = object.material._physijs.id;
+					}
+				}
+
+				// Object starting position + rotation
+				object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };
+				if (!object.useQuaternion) {
+					_matrix.identity().setRotationFromEuler( object.rotation );
+					object.quaternion.setFromRotationMatrix( _matrix );
+				};
+				object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
+
+				this.execute( 'addObject', object._physijs );
+
 			}
-			
-			// Object starting position + rotation		
-			object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };	
-			if (!object.useQuaternion) {
-				_matrix.identity().setRotationFromEuler( object.rotation );
-				object.quaternion.setFromRotationMatrix( _matrix );
-			};
-			object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
-			
-			this.execute( 'addObject', object._physijs );
 		}
 	};
 	
@@ -1066,7 +1075,32 @@ window.Physijs = (function() {
 	};
 	Physijs.ConvexMesh.prototype = new Physijs.Mesh;
 	Physijs.ConvexMesh.prototype.constructor = Physijs.ConvexMesh;
-	
+
+
+	// Physijs.Vehicle
+	Physijs.Vehicle = function( mesh, tuning ) {
+		this.mesh = mesh;
+		this._physijs = {
+			id: getObjectId(),
+			rigidBody: mesh._physijs.id/*,
+			suspension_stiffness: tuning.suspension_stiffness,
+			suspension_compression: tuning.suspension_compression,
+			suspension_damping: tuning.suspension_damping,
+			max_suspension_travel: tuning.max_suspension_travel,
+			friction_slip: tuning.friction_slip,
+			max_suspension_force: tuning.max_suspension_force*/
+		};
+	};
+
+	// Physijs.VehicleTuning
+	Physijs.VehicleTuning = function( suspension_stiffness, suspension_compression, suspension_damping, max_suspension_travel, friction_slip, max_suspension_force ) {
+		this.suspension_stiffness = suspension_stiffness;
+		this.suspension_compression = suspension_compression;
+		this.suspension_damping = suspension_damping;
+		this.max_suspension_travel = max_suspension_travel;
+		this.friction_slip = friction_slip;
+		this.max_suspension_force = max_suspension_force;
+	};
 	
 	return Physijs;
 })();

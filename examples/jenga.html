@@ -99,8 +99,8 @@
 		// Materials
 		table_material = Physijs.createMaterial(
 			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/wood.jpg' ), ambient: 0xFFFFFF }),
-			.6, // medium friction
-			.4 // low restitution
+			.9, // high friction
+			.2 // low restitution
 		);
 		table_material.map.wrapS = table_material.map.wrapT = THREE.RepeatWrapping;
 		table_material.map.repeat.set( 5, 5 );
