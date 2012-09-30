@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="js/tween.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
@@ -238,7 +238,7 @@
 			
 			new TWEEN.Tween(shape.material).to({opacity: 1}, 500).start();
 			
-			document.getElementById('shapecount').textContent = (++shapes) + ' shapes created';
+			document.getElementById( 'shapecount' ).textContent = ( ++shapes ) + ' shapes created';
 		};
 		
 		return function() {

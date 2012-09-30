@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
 	
@@ -130,6 +130,7 @@
 			new THREE.PlaneGeometry( 150, 150 ),
 			new THREE.MeshBasicMaterial({ opacity: 0, transparent: true })
 		);
+		intersect_plane.rotation.x = Math.PI / -2;
 		scene.add( intersect_plane );
 
 		initEventHandling();
@@ -189,7 +190,7 @@
 			
 			ray = new THREE.Ray( camera.position, _vector.subSelf( camera.position ).normalize() );
 			intersections = ray.intersectObjects( blocks );
-			
+
 			if ( intersections.length > 0 ) {
 				selected_block = intersections[0].object;
 				
@@ -198,7 +199,7 @@
 				selected_block.setAngularVelocity( _vector );
 				selected_block.setLinearFactor( _vector );
 				selected_block.setLinearVelocity( _vector );
-				
+
 				mouse_position.copy( intersections[0].point );
 				block_offset.sub( selected_block.position, mouse_position );
 				
@@ -223,19 +224,6 @@
 				ray = new THREE.Ray( camera.position, _vector.subSelf( camera.position ).normalize() );
 				intersection = ray.intersectObject( intersect_plane );
 				mouse_position.copy( intersection[0].point );
-
-				/*
-				var _v3 = selected_block.getLinearVelocity().copy( mouse_position ).addSelf( block_offset ).subSelf( selected_block.position ).multiplyScalar( 5 );
-				v3.y = 0;
-
-				selected_block.setLinearVelocity( v3 );
-				
-				// Reactivate all of the blocks
-				_vector.set( 0, 0, 0 );
-				for ( i = 0; i < blocks.length; i++ ) {
-					blocks[i].applyCentralImpulse( _vector );
-				}
-				*/
 			}
 			
 		};

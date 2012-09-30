@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="js/tween.js"></script>
 	<script type="text/javascript" src="js/simplex-noise.js"></script>
@@ -95,18 +95,22 @@
 		ground_geometry = new THREE.PlaneGeometry( 75, 75, 50, 50 );
 		for ( var i = 0; i < ground_geometry.vertices.length; i++ ) {
 			var vertex = ground_geometry.vertices[i];
-			vertex.y = NoiseGen.noise( vertex.x / 10, vertex.z / 10 ) * 2;
+			vertex.z = NoiseGen.noise( vertex.x / 10, vertex.y / 10 ) * 2;
+			//vertex.z = (i / 75) / 2;
 		}
 		ground_geometry.computeFaceNormals();
 		ground_geometry.computeVertexNormals();
 		
 		// If your plane is not square as far as face count then the HeightfieldMesh
-		// takes two more arguments at the end: # of x faces and # of z faces that were passed to THREE.PlaneMaterial
+		// takes two more arguments at the end: # of x faces and # of y faces that were passed to THREE.PlaneMaterial
 		ground = new Physijs.HeightfieldMesh(
 			ground_geometry,
 			ground_material,
-			0 // mass
+			0, // mass
+			50,
+			50
 		);
+		ground.rotation.x = Math.PI / -2;
 		ground.receiveShadow = true;
 		scene.add( ground );
 		

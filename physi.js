@@ -20,9 +20,11 @@ window.Physijs = (function() {
 		// constants
 		MESSAGE_TYPES = {
 			WORLDREPORT: 0,
-			COLLISIONREPORT: 1
+			COLLISIONREPORT: 1,
+            VEHICLEREPORT: 2
 		},
-		REPORT_ITEMSIZE = 14;
+		REPORT_ITEMSIZE = 14,
+        VEHICLEREPORT_ITEMSIZE = 9;
 	
 	Physijs.scripts = {};
 	
@@ -80,19 +82,19 @@ window.Physijs = (function() {
 	
 	getQuatertionFromEuler = function( x, y, z ) {
 		var c1, s1, c2, s2, c3, s3, c1c2, s1s2;
-		c1 = Math.cos( y  ),
-		s1 = Math.sin( y  ),
-		c2 = Math.cos( -z ),
-		s2 = Math.sin( -z ),
-		c3 = Math.cos( x  ),
-		s3 = Math.sin( x  ),
+		c1 = Math.cos( y  );
+		s1 = Math.sin( y  );
+		c2 = Math.cos( -z );
+		s2 = Math.sin( -z );
+		c3 = Math.cos( x  );
+		s3 = Math.sin( x  );
 		
-		c1c2 = c1 * c2,
+		c1c2 = c1 * c2;
 		s1s2 = s1 * s2;
 		
 		return {
 			w: c1c2 * c3  - s1s2 * s3,
-		  	x: c1c2 * s3  + s1s2 * c3,
+			x: c1c2 * s3  + s1s2 * c3,
 			y: s1 * c2 * c3 + c1 * s2 * s3,
 			z: c1 * s2 * c3 - s1 * c2 * s3
 		};
@@ -390,16 +392,20 @@ window.Physijs = (function() {
 			var _temp;
 			
 			if ( event.data instanceof Float32Array ) {
-				
+
 				// transferable object
 				switch ( event.data[0] ) {
 					case MESSAGE_TYPES.WORLDREPORT:
 						self._updateScene( event.data );
 						break;
-					
-					case MESSAGE_TYPES.COLLISIONREPORT:
-						self._updateCollisions( event.data );
-						break;
+
+                    case MESSAGE_TYPES.COLLISIONREPORT:
+                        self._updateCollisions( event.data );
+                        break;
+
+                    case MESSAGE_TYPES.VEHICLEREPORT:
+                        self._updateVehicles( event.data );
+                        break;
 				}
 				
 			} else {
@@ -415,6 +421,10 @@ window.Physijs = (function() {
 
 						case 'worldReady':
 							self.dispatchEvent( 'ready' );
+							break;
+
+						case 'vehicle':
+							window.test = event.data;
 							break;
 						
 						default:
@@ -451,64 +461,112 @@ window.Physijs = (function() {
 	Physijs.Scene.prototype = new THREE.Scene;
 	Physijs.Scene.prototype.constructor = Physijs.Scene;
 	Eventable.make( Physijs.Scene );
-	
-	Physijs.Scene.prototype._updateScene = function( data ) {
-		var num_objects = data[1],
-			object,
-			i, offset;
 
-		for ( i = 0; i < num_objects; i++ ) {
-			offset = 2 + i * REPORT_ITEMSIZE;
-			object = this._objects[ data[ offset ] ];
-			
-			if ( object.__dirtyPosition === false ) {
-				object.position.set(
-					data[ offset + 1 ],
-					data[ offset + 2 ],
-					data[ offset + 3 ]
-				);
+    Physijs.Scene.prototype._updateScene = function( data ) {
+        var num_objects = data[1],
+            object,
+            i, offset;
+
+        for ( i = 0; i < num_objects; i++ ) {
+            offset = 2 + i * REPORT_ITEMSIZE;
+            object = this._objects[ data[ offset ] ];
+
+			if ( object === undefined ) {
+				continue;
 			}
-			
-			if ( object.__dirtyRotation === false ) {
-				if ( object.useQuaternion ) {
-					object.quaternion.set(
-						data[ offset + 4 ],
-						data[ offset + 5 ],
-						data[ offset + 6 ],
-						data[ offset + 7 ]
-					);
-				} else {
-					object.rotation = getEulerXYZFromQuaternion(
-						data[ offset + 4 ],
-						data[ offset + 5 ],
-						data[ offset + 6 ],
-						data[ offset + 7 ]
-					);
-				};
+
+            if ( object.__dirtyPosition === false ) {
+                object.position.set(
+                    data[ offset + 1 ],
+                    data[ offset + 2 ],
+                    data[ offset + 3 ]
+                );
+            }
+
+            if ( object.__dirtyRotation === false ) {
+                if ( object.useQuaternion ) {
+                    object.quaternion.set(
+                        data[ offset + 4 ],
+                        data[ offset + 5 ],
+                        data[ offset + 6 ],
+                        data[ offset + 7 ]
+                    );
+                } else {
+                    object.rotation = getEulerXYZFromQuaternion(
+                        data[ offset + 4 ],
+                        data[ offset + 5 ],
+                        data[ offset + 6 ],
+                        data[ offset + 7 ]
+                    );
+                }
+            }
+
+            object._physijs.linearVelocity.set(
+                data[ offset + 8 ],
+                data[ offset + 9 ],
+                data[ offset + 10 ]
+            );
+
+            object._physijs.angularVelocity.set(
+                data[ offset + 11 ],
+                data[ offset + 12 ],
+                data[ offset + 13 ]
+            );
+
+        }
+
+        if ( this._worker.webkitPostMessage ) {
+            // Give the typed array back to the worker
+            this._worker.webkitPostMessage( data, [data.buffer] );
+        }
+
+        _is_simulating = false;
+        this.dispatchEvent( 'update' );
+    };
+
+    Physijs.Scene.prototype._updateVehicles = function( data ) {
+        var vehicle, wheel,
+            i, offset;
+
+        for ( i = 0; i < ( data.length - 1 ) / VEHICLEREPORT_ITEMSIZE; i++ ) {
+            offset = 1 + i * VEHICLEREPORT_ITEMSIZE;
+            vehicle = this._vehicles[ data[ offset ] ];
+
+			if ( vehicle === undefined ) {
+				continue;
 			}
-			
-			object._physijs.linearVelocity.set(
-				data[ offset + 8 ],
-				data[ offset + 9 ],
-				data[ offset + 10 ]
-			);
-			
-			object._physijs.angularVelocity.set(
-				data[ offset + 11 ],
-				data[ offset + 12 ],
-				data[ offset + 13 ]
-			);
-			
-		}
-		
-		if ( this._worker.webkitPostMessage ) {
-			// Give the typed array back to the worker
-			this._worker.webkitPostMessage( data, [data.buffer] );
-		}
-		
-		_is_simulating = false;
-		this.dispatchEvent( 'update' );
-	};
+
+            wheel = vehicle.wheels[ data[ offset + 1 ] ];
+
+            wheel.position.set(
+                data[ offset + 2 ],
+                data[ offset + 3 ],
+                data[ offset + 4 ]
+            );
+
+            if ( wheel.useQuaternion ) {
+                wheel.quaternion.set(
+                    data[ offset + 5 ],
+                    data[ offset + 6 ],
+                    data[ offset + 7 ],
+                    data[ offset + 8 ]
+                );
+            } else {
+                wheel.rotation = getEulerXYZFromQuaternion(
+                    data[ offset + 5 ],
+                    data[ offset + 6 ],
+                    data[ offset + 7 ],
+                    data[ offset + 8 ]
+                );
+            }
+
+        }
+
+        if ( this._worker.webkitPostMessage ) {
+            // Give the typed array back to the worker
+            this._worker.webkitPostMessage( data, [data.buffer] );
+        }
+    };
 	
 	Physijs.Scene.prototype._updateCollisions = function( data ) {
 		/**
@@ -688,11 +746,13 @@ window.Physijs = (function() {
 			object.world = this;
 
 			if ( object instanceof Physijs.Vehicle ) {
+
 				this.add( object.mesh );
 				this._vehicles[ object._physijs.id ] = object;
 				this.execute( 'addVehicle', object._physijs );
 
 			} else {
+
 				object.__dirtyPosition = false;
 				object.__dirtyRotation = false;
 				this._objects[object._physijs.id] = object;
@@ -714,7 +774,7 @@ window.Physijs = (function() {
 				if (!object.useQuaternion) {
 					_matrix.identity().setRotationFromEuler( object.rotation );
 					object.quaternion.setFromRotationMatrix( _matrix );
-				};
+				}
 				object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 
 				this.execute( 'addObject', object._physijs );
@@ -724,10 +784,19 @@ window.Physijs = (function() {
 	};
 	
 	Physijs.Scene.prototype.remove = function( object ) {
-		THREE.Mesh.prototype.remove.call( this, object );
-		
-		if ( object._physijs ) {
-			this.execute( 'removeObject', { id: object._physijs.id } );
+		if ( object instanceof Physijs.Vehicle ) {
+			this.execute( 'removeVehicle', { id: object._physijs.id } );
+			while( object.wheels.length ) {
+				this.remove( object.wheels.pop() );
+			}
+			this.remove( object.mesh );
+			delete this._vehicles[ object._physijs.id ];
+		} else {
+			THREE.Mesh.prototype.remove.call( this, object );
+			if ( object._physijs ) {
+				delete this._objects[object._physijs.id];
+				this.execute( 'removeObject', { id: object._physijs.id } );
+			}
 		}
 	};
 	
@@ -926,25 +995,27 @@ window.Physijs = (function() {
 	Physijs.PlaneMesh.prototype.constructor = Physijs.PlaneMesh;
 
 	// Physijs.HeightfieldMesh
-	Physijs.HeightfieldMesh = function ( geometry, material, mass, xdiv, zdiv) {
-
-		var points = [];
-		
+	Physijs.HeightfieldMesh = function ( geometry, material, mass, xdiv, ydiv) {
 		Physijs.Mesh.call( this, geometry, material, mass );
 
-		for ( var i = 0; i < geometry.vertices.length; i++ ) {
-
-			points[i] = geometry.vertices[i].y;
-		}
-		
 		this._physijs.type   = 'heightfield';
-		this._physijs.points = points;
 		this._physijs.xsize  = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-		this._physijs.zsize  = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
-		// note - this assumes our plane geometry is square, unless we pass in specific xdiv and zdiv
+		this._physijs.ysize  = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
 		this._physijs.xpts = (typeof xdiv === 'undefined') ? Math.sqrt(geometry.vertices.length) : xdiv + 1;
-		this._physijs.zpts = (typeof zdiv === 'undefined') ? Math.sqrt(geometry.vertices.length) : zdiv + 1;
-		this._physijs.absMaxHeight = Math.max(geometry.boundingBox.max.y,Math.abs(geometry.boundingBox.min.y));
+		this._physijs.ypts = (typeof ydiv === 'undefined') ? Math.sqrt(geometry.vertices.length) : ydiv + 1;
+		// note - this assumes our plane geometry is square, unless we pass in specific xdiv and ydiv
+		this._physijs.absMaxHeight = Math.max(geometry.boundingBox.max.z,Math.abs(geometry.boundingBox.min.z));
+
+		var points = [];
+
+		var a, b;
+		for ( var i = 0; i < geometry.vertices.length; i++ ) {
+			a = i % this._physijs.xpts;
+			b = Math.round( ( i / this._physijs.xpts ) - ( (i % this._physijs.xpts) / this._physijs.xpts ) );
+			points[i] = geometry.vertices[ a + ( ( this._physijs.ypts - b - 1 ) * this._physijs.ypts ) ].z;
+		}
+
+		this._physijs.points = points;
 	};
 	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
 	Physijs.HeightfieldMesh.prototype.constructor = Physijs.HeightfieldMesh;	
@@ -1079,27 +1150,74 @@ window.Physijs = (function() {
 
 	// Physijs.Vehicle
 	Physijs.Vehicle = function( mesh, tuning ) {
+		tuning = tuning || new Physijs.VehicleTuning;
 		this.mesh = mesh;
+        this.wheels = [];
 		this._physijs = {
 			id: getObjectId(),
-			rigidBody: mesh._physijs.id/*,
+			rigidBody: mesh._physijs.id,
 			suspension_stiffness: tuning.suspension_stiffness,
 			suspension_compression: tuning.suspension_compression,
 			suspension_damping: tuning.suspension_damping,
 			max_suspension_travel: tuning.max_suspension_travel,
 			friction_slip: tuning.friction_slip,
-			max_suspension_force: tuning.max_suspension_force*/
+			max_suspension_force: tuning.max_suspension_force
 		};
+	};
+	Physijs.Vehicle.prototype.addWheel = function( wheel_geometry, wheel_material, connection_point, wheel_direction, wheel_axle, suspension_rest_length, wheel_radius, is_front_wheel, tuning ) {
+        var wheel = new THREE.Mesh( wheel_geometry, wheel_material );
+		wheel.castShadow = wheel.receiveShadow = true;
+        wheel.position.copy( wheel_direction ).multiplyScalar( suspension_rest_length / 100 ).addSelf( connection_point );
+		this.world.add( wheel );
+        this.wheels.push( wheel );
+
+		this.world.execute( 'addWheel', {
+			id: this._physijs.id,
+			connection_point: { x: connection_point.x, y: connection_point.y, z: connection_point.z },
+			wheel_direction: { x: wheel_direction.x, y: wheel_direction.y, z: wheel_direction.z },
+			wheel_axle: { x: wheel_axle.x, y: wheel_axle.y, z: wheel_axle.z },
+			suspension_rest_length: suspension_rest_length,
+			wheel_radius: wheel_radius,
+            is_front_wheel: is_front_wheel,
+			tuning: tuning
+		});
+	};
+	Physijs.Vehicle.prototype.setSteering = function( amount, wheel ) {
+		if ( wheel !== undefined && this.wheels[ wheel ] !== undefined ) {
+			this.world.execute( 'setSteering', { id: this._physijs.id, wheel: wheel, steering: amount } );
+		} else if ( this.wheels.length > 0 ) {
+			for ( var i = 0; i < this.wheels.length; i++ ) {
+				this.world.execute( 'setSteering', { id: this._physijs.id, wheel: i, steering: amount } );
+			}
+		}
+	};
+	Physijs.Vehicle.prototype.setBrake = function( amount, wheel ) {
+		if ( wheel !== undefined && this.wheels[ wheel ] !== undefined ) {
+			this.world.execute( 'setBrake', { id: this._physijs.id, wheel: wheel, brake: amount } );
+		} else if ( this.wheels.length > 0 ) {
+			for ( var i = 0; i < this.wheels.length; i++ ) {
+				this.world.execute( 'setBrake', { id: this._physijs.id, wheel: i, brake: amount } );
+			}
+		}
+	};
+	Physijs.Vehicle.prototype.applyEngineForce = function( amount, wheel ) {
+		if ( wheel !== undefined && this.wheels[ wheel ] !== undefined ) {
+			this.world.execute( 'applyEngineForce', { id: this._physijs.id, wheel: wheel, force: amount } );
+		} else if ( this.wheels.length > 0 ) {
+			for ( var i = 0; i < this.wheels.length; i++ ) {
+				this.world.execute( 'applyEngineForce', { id: this._physijs.id, wheel: i, force: amount } );
+			}
+		}
 	};
 
 	// Physijs.VehicleTuning
 	Physijs.VehicleTuning = function( suspension_stiffness, suspension_compression, suspension_damping, max_suspension_travel, friction_slip, max_suspension_force ) {
-		this.suspension_stiffness = suspension_stiffness;
-		this.suspension_compression = suspension_compression;
-		this.suspension_damping = suspension_damping;
-		this.max_suspension_travel = max_suspension_travel;
-		this.friction_slip = friction_slip;
-		this.max_suspension_force = max_suspension_force;
+		this.suspension_stiffness = suspension_stiffness !== undefined ? suspension_stiffness : 5.88;
+		this.suspension_compression = suspension_compression !== undefined ? suspension_compression : 0.83;
+		this.suspension_damping = suspension_damping !== undefined ? suspension_damping : 0.88;
+		this.max_suspension_travel = max_suspension_travel !== undefined ? max_suspension_travel : 500;
+		this.friction_slip = friction_slip !== undefined ? friction_slip : 10.5;
+		this.max_suspension_force = max_suspension_force !== undefined ? max_suspension_force : 6000;
 	};
 	
 	return Physijs;

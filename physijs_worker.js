@@ -38,6 +38,7 @@ var
 	_materials = {},
 	_objects_ammo = {},
 	_num_objects = 0,
+    _num_wheels = 0,
 	_object_shapes = {},
 	
 	// object reporting
@@ -49,7 +50,7 @@ var
 	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
 	collisionreport,
 
-	VEHICLEREPORT_ITEMSIZE = 2, // one float for each object id
+	VEHICLEREPORT_ITEMSIZE = 9, // vehicle id, wheel index, 3 for position, 4 for rotation
 	vehiclereport;
 
 
@@ -137,25 +138,25 @@ createShape = function( description ) {
 
 		case 'heightfield':
 
-			var ptr = Ammo.allocate(description.xpts * description.zpts, "float", Ammo.ALLOC_NORMAL);
+			var ptr = Ammo.allocate(description.xpts * description.ypts, "float", Ammo.ALLOC_NORMAL);
 
 			for (var f = 0; f < description.points.length; f++) {
-				
 				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
 			}
 
 			shape = new Ammo.btHeightfieldTerrainShape(
 					description.xpts,
-					description.zpts,
+					description.ypts,
 					ptr,
 					1,
 					-description.absMaxHeight,
 					description.absMaxHeight,
-					1,
+					2,
 					0,
-					false);
+					false
+				);
 
-			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts),1,description.zsize/(description.zpts));
+			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts - 1),description.ysize/(description.ypts - 1),1);
 			shape.setLocalScaling(localScaling);
 			break;
 		
@@ -267,60 +268,85 @@ public_functions.addObject = function( description ) {
 		body.setCollisionFlags( description.collision_flags );
 	}
 
-	if ( description.id !== 1 ) {
-		world.addRigidBody( body );
-	}
+	world.addRigidBody( body );
 
 	body.id = description.id;
 	_objects[ body.id ] = body;
 	_objects_ammo[body.a] = body.id;
 	_num_objects++;
+
+	transferableMessage({ cmd: 'objectReady', params: body.id });
 };
 
 public_functions.addVehicle = function( description ) {
-	var
-		vehicle_tuning = new Ammo.btVehicleTuning(),
-		/*vehicle_tuning = new Ammo.btVehicleTuning(
-			description.suspension_stiffness,
-			description.suspension_compression,
-			description.suspension_damping,
-			description.max_suspension_travel,
-			description.friction_slip,
-			description.max_suspension_force
-		),*/
-		vehicle = new Ammo.btRaycastVehicle( vehicle_tuning, _objects[ description.rigidBody ], new Ammo.btDefaultVehicleRaycaster( world ) );
+	var vehicle_tuning = new Ammo.btVehicleTuning(),
+		vehicle;
+
+	vehicle_tuning.set_m_suspensionStiffness( description.suspension_stiffness );
+	vehicle_tuning.set_m_suspensionCompression( description.suspension_compression );
+	vehicle_tuning.set_m_suspensionDamping( description.suspension_damping );
+	vehicle_tuning.set_m_maxSuspensionTravelCm( description.max_suspension_travel );
+	vehicle_tuning.set_m_maxSuspensionForce( description.max_suspension_force );
+
+	vehicle = new Ammo.btRaycastVehicle( vehicle_tuning, _objects[ description.rigidBody ], new Ammo.btDefaultVehicleRaycaster( world ) );
+	vehicle.tuning = vehicle_tuning;
 
 	_objects[ description.rigidBody ].setActivationState( 4 );
 	vehicle.setCoordinateSystem( 0, 1, 2 );
 
-	/*
-	vehicle.addWheel(
-		new Ammo.btVector3( 0, 0, 0 ),
-		new Ammo.btVector3( -1, 0, 0 ),
-		new Ammo.btVector3( 0, 0, 1 ),
-		0.2,
-		4,
-		vehicle_tuning,
-		true
-	);
-	*/
-
-	/*
-	vehicle.addWheel(
-		new Ammo.btVector3( -5, 1.5, -3 ),
-		new Ammo.btVector3( -1, 0, 0 ),
-		new Ammo.btVector3( 0, 0, 1 ),
-		0.2,
-		0.5,
-		vehicle_tuning,
-		false
-	);
-	*/
-
 	world.addVehicle( vehicle );
-	//vehicle.applyEngineForce( 50, 0 );
-
 	_vehicles[ description.id ] = vehicle;
+};
+public_functions.removeVehicle = function( description ) {
+	delete _vehicles[ description.id ];
+};
+
+public_functions.addWheel = function( description ) {
+    if ( _vehicles[description.id] !== undefined ) {
+		var tuning = _vehicles[description.id].tuning;
+		if ( description.tuning !== undefined ) {
+			tuning = new Ammo.btVehicleTuning();
+			tuning.set_m_suspensionStiffness( description.tuning.suspension_stiffness );
+			tuning.set_m_suspensionCompression( description.tuning.suspension_compression );
+			tuning.set_m_suspensionDamping( description.tuning.suspension_damping );
+			tuning.set_m_maxSuspensionTravelCm( description.tuning.max_suspension_travel );
+			tuning.set_m_maxSuspensionForce( description.tuning.max_suspension_force );
+		}
+        _vehicles[description.id].addWheel(
+            new Ammo.btVector3( description.connection_point.x, description.connection_point.y, description.connection_point.z ),
+            new Ammo.btVector3( description.wheel_direction.x, description.wheel_direction.y, description.wheel_direction.z ),
+            new Ammo.btVector3( description.wheel_axle.x, description.wheel_axle.y, description.wheel_axle.z ),
+            description.suspension_rest_length,
+            description.wheel_radius,
+            tuning,
+            description.is_front_wheel
+        );
+    }
+
+    _num_wheels++;
+
+    if ( self.webkitPostMessage ) {
+        vehiclereport = new Float32Array(1 + _num_wheels * VEHICLEREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+        vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+    } else {
+        vehiclereport = [ MESSAGE_TYPES.VEHICLEREPORT ];
+    }
+};
+
+public_functions.setSteering = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setSteeringValue( details.steering, details.wheel );
+	}
+};
+public_functions.setBrake = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setBrake( details.brake, details.wheel );
+	}
+};
+public_functions.applyEngineForce = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].applyEngineForce( details.force, details.wheel );
+	}
 };
 
 public_functions.removeObject = function( details ) {
@@ -593,9 +619,9 @@ public_functions.simulate = function simulate( params ) {
 
 		last_simulation_duration = Date.now();
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
+        reportVehicles();
+        reportCollisions();
 		reportWorld();
-		//reportVehicles();
-		reportCollisions();
 		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
 		
 		last_simulation_time = Date.now();
@@ -791,8 +817,6 @@ reportWorld = function() {
 	for ( index in _objects ) {
 		if ( _objects.hasOwnProperty( index ) ) {
 			object = _objects[index];
-
-			//transferableMessage({ cmd: index });
 			
 			// #TODO: we can't use center of mass transform when center of mass can change,
 			//        but getMotionState().getWorldTransform() screws up on objects that have been moved
@@ -854,7 +878,9 @@ reportCollisions = function() {
 		manifold = dp.getManifoldByIndexInternal( i );
 		
 		num_contacts = manifold.getNumContacts();
-		if ( num_contacts == 0 ) continue;
+		if ( num_contacts === 0 ) {
+			continue;
+		}
 		
 		for ( j = 0; j < num_contacts; j++ ) {
 			pt = manifold.getContactPoint( j );
@@ -870,6 +896,50 @@ reportCollisions = function() {
 	transferableMessage( collisionreport, [collisionreport.buffer] );
 };
 
+reportVehicles = function() {
+    var index, vehicle,
+        transform = new Ammo.btTransform, origin, rotation,
+        offset = 0,
+        i = 0, j = 0;
+    for ( index in _vehicles ) {
+        if ( _vehicles.hasOwnProperty( index ) ) {
+            vehicle = _vehicles[index];
+
+            for ( j = 0; j < vehicle.getNumWheels(); j++ ) {
+
+				//vehicle.updateWheelTransform( j, true );
+
+                //transform = vehicle.getWheelTransformWS( j );
+				transform = vehicle.getWheelInfo( j ).get_m_worldTransform();
+
+                origin = transform.getOrigin();
+                rotation = transform.getRotation();
+
+                // add values to report
+                offset = 1 + (i++) * VEHICLEREPORT_ITEMSIZE;
+
+                vehiclereport[ offset ] = index;
+                vehiclereport[ offset + 1 ] = j;
+
+                vehiclereport[ offset + 2 ] = origin.x();
+                vehiclereport[ offset + 3 ] = origin.y();
+                vehiclereport[ offset + 4 ] = origin.z();
+
+                vehiclereport[ offset + 5 ] = rotation.x();
+                vehiclereport[ offset + 6 ] = rotation.y();
+                vehiclereport[ offset + 7 ] = rotation.z();
+                vehiclereport[ offset + 8 ] = rotation.w();
+
+            }
+
+        }
+    }
+
+	if ( j !== 0 ) {
+		transferableMessage( vehiclereport, [vehiclereport.buffer] );
+	}
+};
+
 self.onmessage = function( event ) {
 	
 	if ( event.data instanceof Float32Array ) {
@@ -879,10 +949,14 @@ self.onmessage = function( event ) {
 			case MESSAGE_TYPES.WORLDREPORT:
 				worldreport = event.data;
 				break;
-			
-			case MESSAGE_TYPES.COLLISIONREPORT:
-				collisionreport = event.data;
-				break;
+
+            case MESSAGE_TYPES.COLLISIONREPORT:
+                collisionreport = event.data;
+                break;
+
+            case MESSAGE_TYPES.VEHICLEREPORT:
+                vehiclereport = event.data;
+                break;
 		}
 		
 		return;
