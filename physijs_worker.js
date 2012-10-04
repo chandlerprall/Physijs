@@ -111,21 +111,24 @@ createShape = function( description ) {
 			}
 			break;
 		
-		case 'triangle':
+		case 'concave':
 			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
 			for ( i = 0; i < description.triangles.length; i++ ) {
 				triangle = description.triangles[i];
 				triangle_mesh.addTriangle(
-					new Ammo.btVector3( triangle[0][0], triangle[0][1], triangle[0][2] ),
-					new Ammo.btVector3( triangle[1][0], triangle[1][1], triangle[1][2] ),
-					new Ammo.btVector3( triangle[2][0], triangle[2][1], triangle[2][2] ),
+					new Ammo.btVector3( triangle[0].x, triangle[0].y, triangle[0].z ),
+					new Ammo.btVector3( triangle[1].x, triangle[1].y, triangle[1].z ),
+					new Ammo.btVector3( triangle[2].x, triangle[2].y, triangle[2].z ),
 					true
 				);
 			}
-			shape = new Ammo.btConvexTriangleMeshShape(
+
+			shape = new Ammo.btBvhTriangleMeshShape(
 				triangle_mesh,
+				true,
 				true
 			);
+			
 			break;
 		
 		case 'convex':
