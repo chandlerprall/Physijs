@@ -785,6 +785,18 @@ window.Physijs = (function() {
 				}
 				object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 
+				// Check for scaling
+				var mass_scaling = new THREE.Vector3( 1, 1, 1 );
+				if ( object._physijs.width ) {
+					object._physijs.width *= object.scale.x;
+				}
+				if ( object._physijs.height ) {
+					object._physijs.height *= object.scale.y;
+				}
+				if ( object._physijs.depth ) {
+					object._physijs.depth *= object.scale.z;
+				}
+				
 				this.execute( 'addObject', object._physijs );
 
 			}
