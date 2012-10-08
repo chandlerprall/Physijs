@@ -1113,6 +1113,29 @@ window.Physijs = (function() {
 	Physijs.CylinderMesh.prototype.constructor = Physijs.CylinderMesh;
 	
 	
+	// Physijs.CapsuleMesh
+	Physijs.CapsuleMesh = function( geometry, material, mass ) {
+		var width, height, depth;
+		
+		Physijs.Mesh.call( this, geometry, material, mass );
+		
+		if ( !geometry.boundingBox ) {
+			geometry.computeBoundingBox();
+		}
+		
+		width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
+		height = geometry.boundingBox.max.y - geometry.boundingBox.min.y;
+		depth = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+		
+		this._physijs.type = 'capsule';
+		this._physijs.radius = Math.max(width / 2, depth / 2);
+		this._physijs.height = height;
+		this._physijs.mass = (typeof mass === 'undefined') ? width * height * depth : mass;
+	};
+	Physijs.CapsuleMesh.prototype = new Physijs.Mesh;
+	Physijs.CapsuleMesh.prototype.constructor = Physijs.CapsuleMesh;
+	
+	
 	// Physijs.ConeMesh
 	Physijs.ConeMesh = function( geometry, material, mass ) {
 		var width, height, depth;
