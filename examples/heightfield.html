@@ -96,7 +96,6 @@
 		for ( var i = 0; i < ground_geometry.vertices.length; i++ ) {
 			var vertex = ground_geometry.vertices[i];
 			vertex.z = NoiseGen.noise( vertex.x / 10, vertex.y / 10 ) * 2;
-			//vertex.z = (i / 75) / 2;
 		}
 		ground_geometry.computeFaceNormals();
 		ground_geometry.computeVertexNormals();

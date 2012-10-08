@@ -44,7 +44,7 @@ var
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
 	
-	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
+	WORLDREPORT_ITEMSIZE = 17, // how many float values each reported item needs
 	worldreport,
 
 	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
@@ -141,7 +141,7 @@ createShape = function( description ) {
 
 		case 'heightfield':
 
-			var ptr = Ammo.allocate(description.xpts * description.ypts, "float", Ammo.ALLOC_NORMAL);
+			var ptr = Ammo.allocate(4 * description.xpts * description.ypts, "float", Ammo.ALLOC_NORMAL);
 
 			for (var f = 0; f < description.points.length; f++) {
 				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
@@ -625,6 +625,7 @@ public_functions.simulate = function simulate( params ) {
         reportVehicles();
         reportCollisions();
 		reportWorld();
+		world.clearForces();
 		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
 		
 		last_simulation_time = Date.now();
@@ -852,6 +853,11 @@ reportWorld = function() {
 			worldreport[ offset + 11 ] = _vector.x();
 			worldreport[ offset + 12 ] = _vector.y();
 			worldreport[ offset + 13 ] = _vector.z()
+
+			_vector = object.getTotalForce();
+			worldreport[ offset + 14 ] = _vector.x();
+			worldreport[ offset + 15 ] = _vector.y();
+			worldreport[ offset + 16 ] = _vector.z()
 		}
 	}
 	
