@@ -190,6 +190,7 @@ window.Physijs = (function() {
 		this.scene = objecta.parent;
 		this.objecta = objecta._physijs.id;
 		this.positiona = convertWorldPositionToObject( position, objecta ).clone();
+		this.position = position.clone();
 		this.axis = axis;
 
 		if ( objectb ) {
@@ -693,6 +694,7 @@ window.Physijs = (function() {
 	};
 
 	Physijs.Scene.prototype.addConstraint = function ( constraint, show_marker ) {
+		this._constraints[ constraint.id ] = constraint;
 		this.execute( 'addConstraint', constraint.getDefinition() );
 
 		if ( show_marker ) {
