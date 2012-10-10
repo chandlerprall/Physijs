@@ -7,7 +7,8 @@ var
 	MESSAGE_TYPES = {
 		WORLDREPORT: 0,
 		COLLISIONREPORT: 1,
-		VEHICLEREPORT: 2
+		VEHICLEREPORT: 2,
+		CONSTRAINTREPORT: 3
 	},
 	
 	// temp variables
@@ -23,6 +24,7 @@ var
 	reportWorld,
 	reportVehicles,
 	reportCollisions,
+	reportConstraints,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
@@ -39,19 +41,23 @@ var
 	_objects_ammo = {},
 	_num_objects = 0,
 	_num_wheels = 0,
+	_num_constraints = 0,
 	_object_shapes = {},
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
 	
-	WORLDREPORT_ITEMSIZE = 17, // how many float values each reported item needs
+	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
 	worldreport,
 
 	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
 	collisionreport,
 
 	VEHICLEREPORT_ITEMSIZE = 9, // vehicle id, wheel index, 3 for position, 4 for rotation
-	vehiclereport;
+	vehiclereport,
+
+	CONSTRAINTREPORT_ITEMSIZE = 6, // constraint id, offset object, offset, applied impulse
+	constraintreport;
 
 
 getShapeFromCache = function ( cache_key ) {
@@ -604,8 +610,33 @@ public_functions.addConstraint = function ( details ) {
 	};
 	
 	world.addConstraint( constraint );
-	
+
+	constraint.enableFeedback();
 	_constraints[ details.id ] = constraint;
+	_num_constraints++;
+
+	if ( self.webkitPostMessage ) {
+		constraintreport = new Float32Array(1 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+		constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+	} else {
+		constraintreport = [ MESSAGE_TYPES.CONSTRAINTREPORT ];
+	}
+};
+
+public_functions.removeConstraint = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefined ) {
+		world.removeConstraint( constraint );
+		delete _constraints[ details.id ];
+		_num_constraints--;
+	}
+};
+
+public_functions.constraint_setBreakingImpulseThreshold = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefind ) {
+		constraint.setBreakingImpulseThreshold( details.threshold );
+	}
 };
 
 public_functions.simulate = function simulate( params ) {
@@ -633,6 +664,7 @@ public_functions.simulate = function simulate( params ) {
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
 		reportVehicles();
 		reportCollisions();
+		reportConstraints();
 		reportWorld();
 		world.clearForces();
 		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
@@ -861,12 +893,7 @@ reportWorld = function() {
 			_vector = object.getAngularVelocity();
 			worldreport[ offset + 11 ] = _vector.x();
 			worldreport[ offset + 12 ] = _vector.y();
-			worldreport[ offset + 13 ] = _vector.z()
-
-			_vector = object.getTotalForce();
-			worldreport[ offset + 14 ] = _vector.x();
-			worldreport[ offset + 15 ] = _vector.y();
-			worldreport[ offset + 16 ] = _vector.z()
+			worldreport[ offset + 13 ] = _vector.z();
 		}
 	}
 	
@@ -958,6 +985,37 @@ reportVehicles = function() {
 	}
 };
 
+reportConstraints = function() {
+	var index, constraint,
+		offset_body,
+		transform = new Ammo.btTransform, origin,
+		offset = 0,
+		i = 0;
+
+	for ( index in _constraints ) {
+		if ( _constraints.hasOwnProperty( index ) ) {
+			constraint = _constraints[index];
+			offset_body = constraint.getRigidBodyA();
+			transform = constraint.getFrameOffsetA();
+			origin = transform.getOrigin();
+
+			// add values to report
+			offset = 1 + (i++) * CONSTRAINTREPORT_ITEMSIZE;
+
+			constraintreport[ offset ] = index;
+			constraintreport[ offset + 1 ] = offset_body.id;
+			constraintreport[ offset + 2 ] = origin.getX();
+			constraintreport[ offset + 3 ] = origin.getY();
+			constraintreport[ offset + 4 ] = origin.getZ();
+			constraintreport[ offset + 5 ] = constraint.getAppliedImpulse();
+		}
+	}
+
+	if ( i !== 0 ) {
+		transferableMessage( constraintreport, [constraintreport.buffer] );
+	}
+};
+
 self.onmessage = function( event ) {
 	
 	if ( event.data instanceof Float32Array ) {
@@ -974,6 +1032,10 @@ self.onmessage = function( event ) {
 
 			case MESSAGE_TYPES.VEHICLEREPORT:
 				vehiclereport = event.data;
+				break;
+
+			case MESSAGE_TYPES.CONSTRAINTREPORT:
+				constraintreport = event.data;
 				break;
 		}
 		
