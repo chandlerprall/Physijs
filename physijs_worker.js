@@ -59,6 +59,9 @@ var
 	CONSTRAINTREPORT_ITEMSIZE = 6, // constraint id, offset object, offset, applied impulse
 	constraintreport;
 
+var ab = new ArrayBuffer(1);
+transferableMessage(ab, [ab]);
+var SUPPORT_TRANSFERABLE = (ab.byteLength === 0);
 
 getShapeFromCache = function ( cache_key ) {
 	if ( _object_shapes[ cache_key ] !== undefined ) {
@@ -192,7 +195,7 @@ public_functions.init = function( params ) {
 	_transform = new Ammo.btTransform;
 	
 	REPORT_CHUNKSIZE = params.reportsize || 50;
-	if ( self.webkitPostMessage ) {
+	if ( SUPPORT_TRANSFERABLE ) {
 		// Transferable messages are supported, take advantage of them with TypedArrays
 		worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 		collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
@@ -343,7 +346,7 @@ public_functions.addWheel = function( description ) {
 
 	_num_wheels++;
 
-	if ( self.webkitPostMessage ) {
+	if ( SUPPORT_TRANSFERABLE ) {
 		vehiclereport = new Float32Array(1 + _num_wheels * VEHICLEREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
 		vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
 	} else {
@@ -615,7 +618,7 @@ public_functions.addConstraint = function ( details ) {
 	_constraints[ details.id ] = constraint;
 	_num_constraints++;
 
-	if ( self.webkitPostMessage ) {
+	if ( SUPPORT_TRANSFERABLE ) {
 		constraintreport = new Float32Array(1 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
 		constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
 	} else {
@@ -846,7 +849,7 @@ reportWorld = function() {
 		offset = 0,
 		i = 0;
 	
-	if ( self.webkitPostMessage ) {
+	if ( SUPPORT_TRANSFERABLE ) {
 		if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
 			worldreport = new Float32Array(
 				2 + // message id & # objects in report
@@ -907,7 +910,7 @@ reportCollisions = function() {
 		manifold, num_contacts, j, pt,
 		_collided = false;
 	
-	if ( self.webkitPostMessage ) {
+	if ( SUPPORT_TRANSFERABLE ) {
 		if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
 			collisionreport = new Float32Array(
 				2 + // message id & # objects in report
