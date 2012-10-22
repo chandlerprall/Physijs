@@ -612,7 +612,7 @@ window.Physijs = (function() {
 			_temp_matrix4_1.extractRotation( object.matrix );
 			_temp_matrix4_1.multiplyVector3( _temp_vector3_1 );
 
-			constraint.position.add( object.position, _temp_vector3_1 );
+			constraint.positiona.add( object.position, _temp_vector3_1 );
 			constraint.appliedImpulse = data[ offset + 5 ] ;
 		}
 
