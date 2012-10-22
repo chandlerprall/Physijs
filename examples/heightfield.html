@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="js/tween.js"></script>
 	<script type="text/javascript" src="js/simplex-noise.js"></script>
@@ -21,7 +21,7 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, createShape, NoiseGen,
-		renderer, stats, scene, light, ground, ground_geometry, ground_material, camera;
+		renderer, render_stats, physics_stats, scene, light, ground, ground_geometry, ground_material, camera;
 	
 	initScene = function() {
 		TWEEN.start();
@@ -32,14 +32,27 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '0px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
 		
-		scene = new Physijs.Scene;
-		scene.setGravity({ x: 0, y: -10, z: 0 });
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
+		
+		scene = new Physijs.Scene({ fixedTimeStep: 1 / 120 });
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				scene.simulate( undefined, 2 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -82,31 +95,34 @@
 		ground_geometry = new THREE.PlaneGeometry( 75, 75, 50, 50 );
 		for ( var i = 0; i < ground_geometry.vertices.length; i++ ) {
 			var vertex = ground_geometry.vertices[i];
-			vertex.y = NoiseGen.noise( vertex.x / 10, vertex.z / 10 ) * 2;
+			vertex.z = NoiseGen.noise( vertex.x / 10, vertex.y / 10 ) * 2;
 		}
 		ground_geometry.computeFaceNormals();
 		ground_geometry.computeVertexNormals();
 		
 		// If your plane is not square as far as face count then the HeightfieldMesh
-		// takes two more arguments at the end: # of x faces and # of z faces that were passed to THREE.PlaneMaterial
+		// takes two more arguments at the end: # of x faces and # of y faces that were passed to THREE.PlaneMaterial
 		ground = new Physijs.HeightfieldMesh(
 			ground_geometry,
 			ground_material,
-			0 // mass
+			0, // mass
+			50,
+			50
 		);
+		ground.rotation.x = Math.PI / -2;
 		ground.receiveShadow = true;
 		scene.add( ground );
 		
 		requestAnimationFrame( render );
+		scene.simulate();
 		
 		createShape();
 	};
 	
 	render = function() {
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera );
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	createShape = (function() {
@@ -197,6 +213,20 @@
 		</p>
 	</div>
 	<div id="viewport"></div>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31289553-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
 </body>
 
 </html>

@@ -6,7 +6,9 @@ var
 	// enum
 	MESSAGE_TYPES = {
 		WORLDREPORT: 0,
-		COLLISIONREPORT: 1
+		COLLISIONREPORT: 1,
+		VEHICLEREPORT: 2,
+		CONSTRAINTREPORT: 3
 	},
 	
 	// temp variables
@@ -20,20 +22,26 @@ var
 	setShapeCache,
 	createShape,
 	reportWorld,
+	reportVehicles,
 	reportCollisions,
+	reportConstraints,
 	
 	// world variables
 	fixedTimeStep, // used when calling stepSimulation
-	last_simulation_time, // store in *seconds*
+	rateLimit, // sets whether or not to sync the simulation rate with fixedTimeStep
+	last_simulation_time,
+	last_simulation_duration = 0,
 	world,
 	
 	// private cache
-	_now,
 	_objects = {},
+	_vehicles = {},
 	_constraints = {},
 	_materials = {},
 	_objects_ammo = {},
 	_num_objects = 0,
+	_num_wheels = 0,
+	_num_constraints = 0,
 	_object_shapes = {},
 	
 	// object reporting
@@ -41,10 +49,19 @@ var
 	
 	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
 	worldreport,
-	
-	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
-	collisionreport;
 
+	COLLISIONREPORT_ITEMSIZE = 2, // one float for each object id
+	collisionreport,
+
+	VEHICLEREPORT_ITEMSIZE = 9, // vehicle id, wheel index, 3 for position, 4 for rotation
+	vehiclereport,
+
+	CONSTRAINTREPORT_ITEMSIZE = 6, // constraint id, offset object, offset, applied impulse
+	constraintreport;
+
+var ab = new ArrayBuffer(1);
+transferableMessage(ab, [ab]);
+var SUPPORT_TRANSFERABLE = (ab.byteLength === 0);
 
 getShapeFromCache = function ( cache_key ) {
 	if ( _object_shapes[ cache_key ] !== undefined ) {
@@ -95,6 +112,15 @@ createShape = function( description ) {
 			}
 			break;
 		
+		case 'capsule':
+			cache_key = 'capsule_' + description.radius + '_' + description.height;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				// In Bullet, capsule height excludes the end spheres
+				shape = new Ammo.btCapsuleShape( description.radius, description.height - 2 * description.radius );
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
 		case 'cone':
 			cache_key = 'cone_' + description.radius + '_' + description.height;
 			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
@@ -103,21 +129,24 @@ createShape = function( description ) {
 			}
 			break;
 		
-		case 'triangle':
+		case 'concave':
 			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
 			for ( i = 0; i < description.triangles.length; i++ ) {
 				triangle = description.triangles[i];
 				triangle_mesh.addTriangle(
-					new Ammo.btVector3( triangle[0][0], triangle[0][1], triangle[0][2] ),
-					new Ammo.btVector3( triangle[1][0], triangle[1][1], triangle[1][2] ),
-					new Ammo.btVector3( triangle[2][0], triangle[2][1], triangle[2][2] ),
+					new Ammo.btVector3( triangle[0].x, triangle[0].y, triangle[0].z ),
+					new Ammo.btVector3( triangle[1].x, triangle[1].y, triangle[1].z ),
+					new Ammo.btVector3( triangle[2].x, triangle[2].y, triangle[2].z ),
 					true
 				);
 			}
-			shape = new Ammo.btConvexTriangleMeshShape(
+
+			shape = new Ammo.btBvhTriangleMeshShape(
 				triangle_mesh,
+				true,
 				true
 			);
+			
 			break;
 		
 		case 'convex':
@@ -130,25 +159,25 @@ createShape = function( description ) {
 
 		case 'heightfield':
 
-			var ptr = Ammo.allocate(description.xpts * description.zpts, "float", Ammo.ALLOC_NORMAL);
+			var ptr = Ammo.allocate(4 * description.xpts * description.ypts, "float", Ammo.ALLOC_NORMAL);
 
 			for (var f = 0; f < description.points.length; f++) {
-				
 				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
 			}
 
 			shape = new Ammo.btHeightfieldTerrainShape(
 					description.xpts,
-					description.zpts,
+					description.ypts,
 					ptr,
 					1,
 					-description.absMaxHeight,
 					description.absMaxHeight,
-					1,
+					2,
 					0,
-					false);
+					false
+				);
 
-			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts),1,description.zsize/(description.zpts));
+			var localScaling = new Ammo.btVector3(description.xsize/(description.xpts - 1),description.ysize/(description.ypts - 1),1);
 			shape.setLocalScaling(localScaling);
 			break;
 		
@@ -166,10 +195,16 @@ public_functions.init = function( params ) {
 	_transform = new Ammo.btTransform;
 	
 	REPORT_CHUNKSIZE = params.reportsize || 50;
-	worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+	if ( SUPPORT_TRANSFERABLE ) {
+		// Transferable messages are supported, take advantage of them with TypedArrays
+		worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+	} else {
+		// Transferable messages are not supported, send data as normal arrays
+		worldreport = [];
+		collisionreport = [];
+	}
 	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
-	
-	collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
 	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
@@ -194,7 +229,8 @@ public_functions.init = function( params ) {
 	
 	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
 	
-	fixedTimeStep = params.fixedTimeStep || 1 / 60;
+	fixedTimeStep = params.fixedTimeStep;
+	rateLimit = params.rateLimit;
 
 	transferableMessage({ cmd: 'worldReady' });
 };
@@ -252,15 +288,86 @@ public_functions.addObject = function( description ) {
 	if ( typeof description.collision_flags !== 'undefined' ) {
 		body.setCollisionFlags( description.collision_flags );
 	}
-	
+
 	world.addRigidBody( body );
-	
+
 	body.id = description.id;
 	_objects[ body.id ] = body;
 	_objects_ammo[body.a] = body.id;
 	_num_objects++;
-	
+
 	transferableMessage({ cmd: 'objectReady', params: body.id });
+};
+
+public_functions.addVehicle = function( description ) {
+	var vehicle_tuning = new Ammo.btVehicleTuning(),
+		vehicle;
+
+	vehicle_tuning.set_m_suspensionStiffness( description.suspension_stiffness );
+	vehicle_tuning.set_m_suspensionCompression( description.suspension_compression );
+	vehicle_tuning.set_m_suspensionDamping( description.suspension_damping );
+	vehicle_tuning.set_m_maxSuspensionTravelCm( description.max_suspension_travel );
+	vehicle_tuning.set_m_maxSuspensionForce( description.max_suspension_force );
+
+	vehicle = new Ammo.btRaycastVehicle( vehicle_tuning, _objects[ description.rigidBody ], new Ammo.btDefaultVehicleRaycaster( world ) );
+	vehicle.tuning = vehicle_tuning;
+
+	_objects[ description.rigidBody ].setActivationState( 4 );
+	vehicle.setCoordinateSystem( 0, 1, 2 );
+
+	world.addVehicle( vehicle );
+	_vehicles[ description.id ] = vehicle;
+};
+public_functions.removeVehicle = function( description ) {
+	delete _vehicles[ description.id ];
+};
+
+public_functions.addWheel = function( description ) {
+	if ( _vehicles[description.id] !== undefined ) {
+		var tuning = _vehicles[description.id].tuning;
+		if ( description.tuning !== undefined ) {
+			tuning = new Ammo.btVehicleTuning();
+			tuning.set_m_suspensionStiffness( description.tuning.suspension_stiffness );
+			tuning.set_m_suspensionCompression( description.tuning.suspension_compression );
+			tuning.set_m_suspensionDamping( description.tuning.suspension_damping );
+			tuning.set_m_maxSuspensionTravelCm( description.tuning.max_suspension_travel );
+			tuning.set_m_maxSuspensionForce( description.tuning.max_suspension_force );
+		}
+		_vehicles[description.id].addWheel(
+			new Ammo.btVector3( description.connection_point.x, description.connection_point.y, description.connection_point.z ),
+			new Ammo.btVector3( description.wheel_direction.x, description.wheel_direction.y, description.wheel_direction.z ),
+			new Ammo.btVector3( description.wheel_axle.x, description.wheel_axle.y, description.wheel_axle.z ),
+			description.suspension_rest_length,
+			description.wheel_radius,
+			tuning,
+			description.is_front_wheel
+		);
+	}
+
+	_num_wheels++;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		vehiclereport = new Float32Array(1 + _num_wheels * VEHICLEREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+		vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+	} else {
+		vehiclereport = [ MESSAGE_TYPES.VEHICLEREPORT ];
+	}
+};
+
+public_functions.setSteering = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setSteeringValue( details.steering, details.wheel );
+	}
+};
+public_functions.setBrake = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setBrake( details.brake, details.wheel );
+	}
+};
+public_functions.applyEngineForce = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].applyEngineForce( details.force, details.wheel );
+	}
 };
 
 public_functions.removeObject = function( details ) {
@@ -506,30 +613,66 @@ public_functions.addConstraint = function ( details ) {
 	};
 	
 	world.addConstraint( constraint );
-	
+
+	constraint.enableFeedback();
 	_constraints[ details.id ] = constraint;
+	_num_constraints++;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		constraintreport = new Float32Array(1 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+		constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+	} else {
+		constraintreport = [ MESSAGE_TYPES.CONSTRAINTREPORT ];
+	}
 };
 
-public_functions.simulate = function( params ) {
+public_functions.removeConstraint = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefined ) {
+		world.removeConstraint( constraint );
+		delete _constraints[ details.id ];
+		_num_constraints--;
+	}
+};
+
+public_functions.constraint_setBreakingImpulseThreshold = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefind ) {
+		constraint.setBreakingImpulseThreshold( details.threshold );
+	}
+};
+
+public_functions.simulate = function simulate( params ) {
 	if ( world ) {
 		params = params || {};
-		_now = new Date().getTime() / 1000; // store in *seconds*
 		
 		if ( !params.timeStep ) {
 			if ( last_simulation_time ) {
-				params.timeStep = _now - last_simulation_time; // time since last simulation
+				params.timeStep = 0;
+				while ( params.timeStep + last_simulation_duration <= fixedTimeStep ) {
+					params.timeStep = ( Date.now() - last_simulation_time ) / 1000; // time since last simulation
+				}
 			} else {
 				params.timeStep = fixedTimeStep; // handle first frame
 			}
+		} else {
+			if ( params.timeStep < fixedTimeStep ) {
+				params.timeStep = fixedTimeStep;
+			}
 		}
-		
+
 		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
-		
+
+		last_simulation_duration = Date.now();
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
-		reportWorld();
+		reportVehicles();
 		reportCollisions();
+		reportConstraints();
+		reportWorld();
+		world.clearForces();
+		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
 		
-		last_simulation_time = _now;
+		last_simulation_time = Date.now();
 	}
 };
 
@@ -706,16 +849,18 @@ reportWorld = function() {
 		offset = 0,
 		i = 0;
 	
-	if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
-		worldreport = new Float32Array(
-			2 + // message id & # objects in report
-			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
-		);
-		worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
+			worldreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
+			);
+			worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+		}
 	}
 	
 	worldreport[1] = _num_objects; // record how many objects we're reporting on
-	
+
 	//for ( i = 0; i < worldreport[1]; i++ ) {
 	for ( index in _objects ) {
 		if ( _objects.hasOwnProperty( index ) ) {
@@ -751,7 +896,7 @@ reportWorld = function() {
 			_vector = object.getAngularVelocity();
 			worldreport[ offset + 11 ] = _vector.x();
 			worldreport[ offset + 12 ] = _vector.y();
-			worldreport[ offset + 13 ] = _vector.z()
+			worldreport[ offset + 13 ] = _vector.z();
 		}
 	}
 	
@@ -765,12 +910,14 @@ reportCollisions = function() {
 		manifold, num_contacts, j, pt,
 		_collided = false;
 	
-	if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
-		collisionreport = new Float32Array(
-			2 + // message id & # objects in report
-			( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
-		);
-		collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
+			collisionreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
+			);
+			collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+		}
 	}
 	
 	collisionreport[1] = 0; // how many collisions we're reporting on
@@ -779,7 +926,9 @@ reportCollisions = function() {
 		manifold = dp.getManifoldByIndexInternal( i );
 		
 		num_contacts = manifold.getNumContacts();
-		if ( num_contacts == 0 ) continue;
+		if ( num_contacts === 0 ) {
+			continue;
+		}
 		
 		for ( j = 0; j < num_contacts; j++ ) {
 			pt = manifold.getContactPoint( j );
@@ -795,6 +944,81 @@ reportCollisions = function() {
 	transferableMessage( collisionreport, [collisionreport.buffer] );
 };
 
+reportVehicles = function() {
+	var index, vehicle,
+		transform = new Ammo.btTransform, origin, rotation,
+		offset = 0,
+		i = 0, j = 0;
+	for ( index in _vehicles ) {
+		if ( _vehicles.hasOwnProperty( index ) ) {
+			vehicle = _vehicles[index];
+
+			for ( j = 0; j < vehicle.getNumWheels(); j++ ) {
+
+				//vehicle.updateWheelTransform( j, true );
+
+				//transform = vehicle.getWheelTransformWS( j );
+				transform = vehicle.getWheelInfo( j ).get_m_worldTransform();
+
+				origin = transform.getOrigin();
+				rotation = transform.getRotation();
+
+				// add values to report
+				offset = 1 + (i++) * VEHICLEREPORT_ITEMSIZE;
+
+				vehiclereport[ offset ] = index;
+				vehiclereport[ offset + 1 ] = j;
+
+				vehiclereport[ offset + 2 ] = origin.x();
+				vehiclereport[ offset + 3 ] = origin.y();
+				vehiclereport[ offset + 4 ] = origin.z();
+
+				vehiclereport[ offset + 5 ] = rotation.x();
+				vehiclereport[ offset + 6 ] = rotation.y();
+				vehiclereport[ offset + 7 ] = rotation.z();
+				vehiclereport[ offset + 8 ] = rotation.w();
+
+			}
+
+		}
+	}
+
+	if ( j !== 0 ) {
+		transferableMessage( vehiclereport, [vehiclereport.buffer] );
+	}
+};
+
+reportConstraints = function() {
+	var index, constraint,
+		offset_body,
+		transform = new Ammo.btTransform, origin,
+		offset = 0,
+		i = 0;
+
+	for ( index in _constraints ) {
+		if ( _constraints.hasOwnProperty( index ) ) {
+			constraint = _constraints[index];
+			offset_body = constraint.getRigidBodyA();
+			transform = constraint.getFrameOffsetA();
+			origin = transform.getOrigin();
+
+			// add values to report
+			offset = 1 + (i++) * CONSTRAINTREPORT_ITEMSIZE;
+
+			constraintreport[ offset ] = index;
+			constraintreport[ offset + 1 ] = offset_body.id;
+			constraintreport[ offset + 2 ] = origin.getX();
+			constraintreport[ offset + 3 ] = origin.getY();
+			constraintreport[ offset + 4 ] = origin.getZ();
+			constraintreport[ offset + 5 ] = constraint.getAppliedImpulse();
+		}
+	}
+
+	if ( i !== 0 ) {
+		transferableMessage( constraintreport, [constraintreport.buffer] );
+	}
+};
+
 self.onmessage = function( event ) {
 	
 	if ( event.data instanceof Float32Array ) {
@@ -804,9 +1028,17 @@ self.onmessage = function( event ) {
 			case MESSAGE_TYPES.WORLDREPORT:
 				worldreport = event.data;
 				break;
-			
+
 			case MESSAGE_TYPES.COLLISIONREPORT:
 				collisionreport = event.data;
+				break;
+
+			case MESSAGE_TYPES.VEHICLEREPORT:
+				vehiclereport = event.data;
+				break;
+
+			case MESSAGE_TYPES.CONSTRAINTREPORT:
+				constraintreport = event.data;
 				break;
 		}
 		

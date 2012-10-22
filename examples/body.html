@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
 	
@@ -20,7 +20,7 @@
 	
 	var initScene, render, applyForce, setMousePosition, mouse_position,
 		ground_material, box_material,
-		projector, renderer, stats, scene, ground, light, camera, box, boxes = [];
+		projector, renderer, render_stats, physics_stats, scene, ground, light, camera, box, boxes = [];
 	
 	initScene = function() {
 		projector = new THREE.Projector;
@@ -31,13 +31,28 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '1px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
+
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
 		
 		scene = new Physijs.Scene;
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				applyForce();
+				scene.simulate( undefined, 1 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -91,8 +106,6 @@
 		ground.receiveShadow = true;
 		scene.add( ground );
 		
-		requestAnimationFrame( render );
-		
 		for ( var i = 0; i < 10; i++ ) {
 			box = new Physijs.BoxMesh(
 				new THREE.CubeGeometry( 4, 4, 4 ),
@@ -108,20 +121,26 @@
 				Math.random() * Math.PI * 2,
 				Math.random() * Math.PI * 2
 			);
+			box.scale.set(
+				Math.random() * 1 + .5,
+				Math.random() * 1 + .5,
+				Math.random() * 1 + .5
+			);
 			box.castShadow = true;
 			scene.add( box );
 			boxes.push( box );
 		}
 		
 		renderer.domElement.addEventListener( 'mousemove', setMousePosition );
+
+		requestAnimationFrame( render );
+		scene.simulate();
 	};
 	
 	render = function() {
-		applyForce();
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera);
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	setMousePosition = function( evt ) {
@@ -162,6 +181,20 @@
 		<p>Move your cursor near the boxes to push them.</p>
 	</div>
 	<div id="viewport"></div>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31289553-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
 </body>
 
 </html>

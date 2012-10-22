@@ -7,7 +7,7 @@
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	
-	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
 	
@@ -20,7 +20,7 @@
 	
 	var initScene, render,
 		ground_material, car_material, wheel_material, wheel_geometry,
-		projector, renderer, stats, scene, ground, light, camera,
+		projector, renderer, render_stats, physics_stats, scene, ground_geometry, ground, light, camera,
 		car = {};
 	
 	initScene = function() {
@@ -32,13 +32,27 @@
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.top = '0px';
-		stats.domElement.style.zIndex = 100;
-		document.getElementById( 'viewport' ).appendChild( stats.domElement );
+		render_stats = new Stats();
+		render_stats.domElement.style.position = 'absolute';
+		render_stats.domElement.style.top = '0px';
+		render_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
+		
+		physics_stats = new Stats();
+		physics_stats.domElement.style.position = 'absolute';
+		physics_stats.domElement.style.top = '50px';
+		physics_stats.domElement.style.zIndex = 100;
+		document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
 		
 		scene = new Physijs.Scene;
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		scene.addEventListener(
+			'update',
+			function() {
+				scene.simulate( undefined, 2 );
+				physics_stats.update();
+			}
+		);
 		
 		camera = new THREE.PerspectiveCamera(
 			35,
@@ -66,7 +80,7 @@
 		light.shadowDarkness = .7;
 		scene.add( light );
 		
-		// Ground
+		// Materials
 		ground_material = Physijs.createMaterial(
 			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
 			.8, // high friction
@@ -75,6 +89,7 @@
 		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
 		ground_material.map.repeat.set( 3, 3 );
 		
+		// Ground
 		ground = new Physijs.BoxMesh(
 			new THREE.CubeGeometry(100, 1, 100),
 			ground_material,
@@ -103,7 +118,7 @@
 			car_material,
 			1000
 		);
-		car.body.position.y = 4;
+		car.body.position.y = 10;
 		car.body.receiveShadow = car.body.castShadow = true;
 		scene.add( car.body );
 		
@@ -113,11 +128,11 @@
 			500
 		);
 		car.wheel_fl.rotation.x = Math.PI / 2;
-		car.wheel_fl.position.set( -3.5, 2.5, 5 );
+		car.wheel_fl.position.set( -3.5, 6.5, 5 );
 		car.wheel_fl.receiveShadow = car.wheel_fl.castShadow = true;
 		scene.add( car.wheel_fl );
 		car.wheel_fl_constraint = new Physijs.DOFConstraint(
-			car.wheel_fl, car.body, new THREE.Vector3( -3.5, 2.5, 5 )
+			car.wheel_fl, car.body, new THREE.Vector3( -3.5, 6.5, 5 )
 		);
 		scene.addConstraint( car.wheel_fl_constraint );
 		car.wheel_fl_constraint.setAngularLowerLimit({ x: 0, y: -Math.PI / 8, z: 1 });
@@ -129,11 +144,11 @@
 			500
 		);
 		car.wheel_fr.rotation.x = Math.PI / 2;
-		car.wheel_fr.position.set( -3.5, 2.5, -5 );
+		car.wheel_fr.position.set( -3.5, 6.5, -5 );
 		car.wheel_fr.receiveShadow = car.wheel_fr.castShadow = true;
 		scene.add( car.wheel_fr );
 		car.wheel_fr_constraint = new Physijs.DOFConstraint(
-			car.wheel_fr, car.body, new THREE.Vector3( -3.5, 2.5, -5 )
+			car.wheel_fr, car.body, new THREE.Vector3( -3.5, 6.5, -5 )
 		);
 		scene.addConstraint( car.wheel_fr_constraint );
 		car.wheel_fr_constraint.setAngularLowerLimit({ x: 0, y: -Math.PI / 8, z: 1 });
@@ -145,11 +160,11 @@
 			500
 		);
 		car.wheel_bl.rotation.x = Math.PI / 2;
-		car.wheel_bl.position.set( 3.5, 2.5, 5 );
+		car.wheel_bl.position.set( 3.5, 6.5, 5 );
 		car.wheel_bl.receiveShadow = car.wheel_bl.castShadow = true;
 		scene.add( car.wheel_bl );
 		car.wheel_bl_constraint = new Physijs.DOFConstraint(
-			car.wheel_bl, car.body, new THREE.Vector3( 3.5, 2.5, 5 )
+			car.wheel_bl, car.body, new THREE.Vector3( 3.5, 6.5, 5 )
 		);
 		scene.addConstraint( car.wheel_bl_constraint );
 		car.wheel_bl_constraint.setAngularLowerLimit({ x: 0, y: 0, z: 0 });
@@ -161,19 +176,15 @@
 			500
 		);
 		car.wheel_br.rotation.x = Math.PI / 2;
-		car.wheel_br.position.set( 3.5, 2.5, -5 );
+		car.wheel_br.position.set( 3.5, 6.5, -5 );
 		car.wheel_br.receiveShadow = car.wheel_br.castShadow = true;
 		scene.add( car.wheel_br );
 		car.wheel_br_constraint = new Physijs.DOFConstraint(
-			car.wheel_br, car.body, new THREE.Vector3( 3.5, 2.5, -5 )
+			car.wheel_br, car.body, new THREE.Vector3( 3.5, 6.5, -5 )
 		);
 		scene.addConstraint( car.wheel_br_constraint );
 		car.wheel_br_constraint.setAngularLowerLimit({ x: 0, y: 0, z: 0 });
 		car.wheel_br_constraint.setAngularUpperLimit({ x: 0, y: 0, z: 0 });
-		
-		
-		window.cons = car.wheel_fl_constraint;
-		
 		
 		document.addEventListener(
 			'keydown',
@@ -181,32 +192,32 @@
 				switch( ev.keyCode ) {
 					case 37:
 						// Left
-						car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 20 );
-						car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 20 );
+						car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 200 );
+						car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 200 );
 						car.wheel_fl_constraint.enableAngularMotor( 1 );
 						car.wheel_fr_constraint.enableAngularMotor( 1 );
 						break;
 					
 					case 39:
 						// Right
-						car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 20 );
-						car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 20 );
+						car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 200 );
+						car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 200 );
 						car.wheel_fl_constraint.enableAngularMotor( 1 );
 						car.wheel_fr_constraint.enableAngularMotor( 1 );
 						break;
 					
 					case 38:
 						// Up
-						car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, 5, 200 );
-						car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, 5, 200 );
+						car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, 5, 2000 );
+						car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, 5, 2000 );
 						car.wheel_bl_constraint.enableAngularMotor( 2 );
 						car.wheel_br_constraint.enableAngularMotor( 2 );
 						break;
 					
 					case 40:
 						// Down
-						car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, -5, 200 );
-						car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, -5, 200 );
+						car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, -5, 2000 );
+						car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, -5, 2000 );
 						car.wheel_bl_constraint.enableAngularMotor( 2 );
 						//car.wheel_br_constraint.enableAngularMotor( 2 );
 						break;
@@ -247,13 +258,13 @@
 		
 		
 		requestAnimationFrame( render );
+		scene.simulate();
 	};
 	
 	render = function() {
-		scene.simulate(undefined, 2);
-		renderer.render( scene, camera);
-		stats.update();
 		requestAnimationFrame( render );
+		renderer.render( scene, camera );
+		render_stats.update();
 	};
 	
 	window.onload = initScene;
@@ -267,6 +278,20 @@
 		<p>Use the arrow keys to drive around.</p>
 	</div>
 	<div id="viewport"></div>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31289553-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
 </body>
 
 </html>
