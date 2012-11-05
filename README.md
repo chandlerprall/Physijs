@@ -20,18 +20,19 @@ If you need (or want) a feature not already included then add it to the [issue t
 [![compound shapes](http://chandlerprall.github.com/Physijs/examples/compound.jpg)](http://chandlerprall.github.com/Physijs/examples/compound.html)
 [![all shapes](http://chandlerprall.github.com/Physijs/examples/shapes.jpg)](http://chandlerprall.github.com/Physijs/examples/shapes.html)
 [![jenga](http://chandlerprall.github.com/Physijs/examples/jenga.jpg)](http://chandlerprall.github.com/Physijs/examples/jenga.html)
+[![car constraints](http://chandlerprall.github.com/Physijs/examples/constraints_car.jpg)](http://chandlerprall.github.com/Physijs/examples/constraints_car.html)
+[![vehicle](http://chandlerprall.github.com/Physijs/examples/vehicle.jpg)](http://chandlerprall.github.com/Physijs/examples/vehicle.html)
 
 ### Features
-* Support for [multiple object shapes](https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes), including custom convex objects.
-* Material system provides simple control over friction and restitution ("bounciness")
+* Support for [multiple object shapes](https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes), including custom convex or concave objects as well as heightmaps
+* [Material system](https://github.com/chandlerprall/Physijs/wiki/Materials) provides simple control over friction and restitution ("bounciness")
 * Integrated collision detection and events
 * Compound objects using the hierarchy system in three.js
+* Vehicle system
+* [Constraint systems](https://github.com/chandlerprall/Physijs/wiki/Constraints) such as point-to-point and hinge
 * Rotations using either euler or quaternion systems - your preference
 * Built seamlessly on top of three.js to keep the same convention and coding style
 
 ### In the Future
 * More (and better) optimizations
-* Constraint systems such as point-to-point and hinge.
-* Vehicle systems
-* Heightfield/heightmap shape
 * It would be awesome to have concave shape decomposition
