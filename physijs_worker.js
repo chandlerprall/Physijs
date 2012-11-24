@@ -239,6 +239,10 @@ public_functions.registerMaterial = function( description ) {
 	_materials[ description.id ] = description;
 };
 
+public_functions.setFixedTimeStep = function( description ) {
+	fixedTimeStep = description;
+};
+
 public_functions.setGravity = function( description ) {
 	world.setGravity(new Ammo.btVector3( description.x, description.y, description.z ));
 };
