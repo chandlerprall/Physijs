@@ -874,6 +874,12 @@ window.Physijs = (function() {
 		}
 	};
 
+	Physijs.Scene.prototype.setFixedTimeStep = function( fixedTimeStep ) {
+		if ( fixedTimeStep ) {
+			this.execute( 'setFixedTimeStep', fixedTimeStep );
+		}
+	};
+
 	Physijs.Scene.prototype.setGravity = function( gravity ) {
 		if ( gravity ) {
 			this.execute( 'setGravity', gravity );
