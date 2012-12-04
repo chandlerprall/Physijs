@@ -199,13 +199,19 @@ public_functions.init = function( params ) {
 		// Transferable messages are supported, take advantage of them with TypedArrays
 		worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
 		collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+		vehiclereport = new Float32Array(2 + REPORT_CHUNKSIZE * VEHICLEREPORT_ITEMSIZE); // message id + # of vehicles to report + chunk size * # of values per object
+		constraintreport = new Float32Array(2 + REPORT_CHUNKSIZE * CONSTRAINTREPORT_ITEMSIZE); // message id + # of constraints to report + chunk size * # of values per object
 	} else {
 		// Transferable messages are not supported, send data as normal arrays
 		worldreport = [];
 		collisionreport = [];
+		vehiclereport = [];
+		constraintreport = [];
 	}
 	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
 	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+	constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
 	
 	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
 		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
@@ -953,6 +959,17 @@ reportVehicles = function() {
 		transform = new Ammo.btTransform, origin, rotation,
 		offset = 0,
 		i = 0, j = 0;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( vehiclereport.length < 2 + _num_wheels * VEHICLEREPORT_ITEMSIZE ) {
+			vehiclereport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_wheels / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * VEHICLEREPORT_ITEMSIZE // # of values needed * item size
+			);
+			vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+		}
+	}
+
 	for ( index in _vehicles ) {
 		if ( _vehicles.hasOwnProperty( index ) ) {
 			vehicle = _vehicles[index];
@@ -998,6 +1015,16 @@ reportConstraints = function() {
 		transform = new Ammo.btTransform, origin,
 		offset = 0,
 		i = 0;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( constraintreport.length < 2 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE ) {
+			constraintreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_constraints / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * CONSTRAINTREPORT_ITEMSIZE // # of values needed * item size
+			);
+			constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+		}
+	}
 
 	for ( index in _constraints ) {
 		if ( _constraints.hasOwnProperty( index ) ) {
