@@ -59,9 +59,9 @@ var
 	CONSTRAINTREPORT_ITEMSIZE = 6, // constraint id, offset object, offset, applied impulse
 	constraintreport;
 
-var ab = new ArrayBuffer(1);
-transferableMessage(ab, [ab]);
-var SUPPORT_TRANSFERABLE = (ab.byteLength === 0);
+var ab = new ArrayBuffer( 1 );
+transferableMessage( ab, [ab] );
+var SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
 
 getShapeFromCache = function ( cache_key ) {
 	if ( _object_shapes[ cache_key ] !== undefined ) {
@@ -909,8 +909,8 @@ reportWorld = function() {
 			worldreport[ offset + 13 ] = _vector.z();
 		}
 	}
-	
-	transferableMessage( worldreport, [worldreport.buffer] );
+
+	transferableMessage( worldreport.buffer, [worldreport.buffer] );
 };
 
 reportCollisions = function() {
@@ -951,7 +951,7 @@ reportCollisions = function() {
 		}
 	}
 	
-	transferableMessage( collisionreport, [collisionreport.buffer] );
+	transferableMessage( collisionreport.buffer, [collisionreport.buffer] );
 };
 
 reportVehicles = function() {
@@ -1005,7 +1005,7 @@ reportVehicles = function() {
 	}
 
 	if ( j !== 0 ) {
-		transferableMessage( vehiclereport, [vehiclereport.buffer] );
+		transferableMessage( vehiclereport.buffer, [vehiclereport.buffer] );
 	}
 };
 
@@ -1046,7 +1046,7 @@ reportConstraints = function() {
 	}
 
 	if ( i !== 0 ) {
-		transferableMessage( constraintreport, [constraintreport.buffer] );
+		transferableMessage( constraintreport.buffer, [constraintreport.buffer] );
 	}
 };
 
@@ -1057,19 +1057,19 @@ self.onmessage = function( event ) {
 		
 		switch ( event.data[0] ) {
 			case MESSAGE_TYPES.WORLDREPORT:
-				worldreport = event.data;
+				worldreport = new Float32Array( event.data );
 				break;
 
 			case MESSAGE_TYPES.COLLISIONREPORT:
-				collisionreport = event.data;
+				collisionreport = new Float32Array( event.data );
 				break;
 
 			case MESSAGE_TYPES.VEHICLEREPORT:
-				vehiclereport = event.data;
+				vehiclereport = new Float32Array( event.data );
 				break;
 
 			case MESSAGE_TYPES.CONSTRAINTREPORT:
-				constraintreport = event.data;
+				constraintreport = new Float32Array( event.data );
 				break;
 		}
 		

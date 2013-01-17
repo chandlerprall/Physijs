@@ -2,6 +2,7 @@
 
 window.Physijs = (function() {
 	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
+		SUPPORT_TRANSFERABLE,
 		_matrix = new THREE.Matrix4, _is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
@@ -17,7 +18,7 @@ window.Physijs = (function() {
 		_temp_matrix4_1 = new THREE.Matrix4,
 		_quaternion_1 = new THREE.Quaternion,
 
-		// constants
+	// constants
 		MESSAGE_TYPES = {
 			WORLDREPORT: 0,
 			COLLISIONREPORT: 1,
@@ -113,7 +114,7 @@ window.Physijs = (function() {
 		}
 
 		// Invert rotation matrix in order to "unrotate" a point back to object space
-		_temp_matrix4_1.getInverse( _temp_matrix4_1 ); 
+		_temp_matrix4_1.getInverse( _temp_matrix4_1 );
 
 		// Yay! Temp vars!
 		_temp_vector3_1.copy( position );
@@ -392,43 +393,53 @@ window.Physijs = (function() {
 		THREE.Scene.call( this );
 
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
+		this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
 		this._materials = {};
 		this._objects = {};
 		this._vehicles = {};
 		this._constraints = {};
-		
-		this._worker.onmessage = function ( event ) {
-			var _temp;
 
-			if ( event.data instanceof Float32Array ) {
+		var ab = new ArrayBuffer( 1 );
+		this._worker.transferableMessage( ab, [ab] );
+		SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
+
+		this._worker.onmessage = function ( event ) {
+			var _temp,
+				data = event.data;
+
+			if ( data instanceof ArrayBuffer && data.byteLength !== 1 ) { // byteLength === 1 is the worker making a SUPPORT_TRANSFERABLE test
+				data = new Float32Array( data );
+			}
+
+			if ( data instanceof Float32Array ) {
 
 				// transferable object
-				switch ( event.data[0] ) {
+				switch ( data[0] ) {
 					case MESSAGE_TYPES.WORLDREPORT:
-						self._updateScene( event.data );
+						self._updateScene( data );
 						break;
 
 					case MESSAGE_TYPES.COLLISIONREPORT:
-						self._updateCollisions( event.data );
+						self._updateCollisions( data );
 						break;
 
 					case MESSAGE_TYPES.VEHICLEREPORT:
-						self._updateVehicles( event.data );
+						self._updateVehicles( data );
 						break;
 
 					case MESSAGE_TYPES.CONSTRAINTREPORT:
-						self._updateConstraints( event.data );
+						self._updateConstraints( data );
 						break;
 				}
 
 			} else {
 
-				if ( event.data.cmd ) {
+				if ( data.cmd ) {
 
 					// non-transferable object
-					switch ( event.data.cmd ) {
+					switch ( data.cmd ) {
 						case 'objectReady':
-							_temp = event.data.params;
+							_temp = data.params;
 							if ( self._objects[ _temp ] ) {
 								self._objects[ _temp ].dispatchEvent( 'ready' );
 							}
@@ -439,33 +450,33 @@ window.Physijs = (function() {
 							break;
 
 						case 'vehicle':
-							window.test = event.data;
+							window.test = data;
 							break;
 
 						default:
 							// Do nothing, just show the message
-							console.debug('Received: ' + event.data.cmd);
-							console.dir(event.data.params);
+							console.debug('Received: ' + data.cmd);
+							console.dir(data.params);
 							break;
 					}
 
 				} else {
 
-					switch ( event.data[0] ) {
+					switch ( data[0] ) {
 						case MESSAGE_TYPES.WORLDREPORT:
-							self._updateScene( event.data );
+							self._updateScene( data );
 							break;
 
 						case MESSAGE_TYPES.COLLISIONREPORT:
-							self._updateCollisions( event.data );
+							self._updateCollisions( data );
 							break;
 
 						case MESSAGE_TYPES.VEHICLEREPORT:
-							self._updateVehicles( event.data );
+							self._updateVehicles( data );
 							break;
 
 						case MESSAGE_TYPES.CONSTRAINTREPORT:
-							self._updateConstraints( event.data );
+							self._updateConstraints( data );
 							break;
 					}
 
@@ -538,9 +549,9 @@ window.Physijs = (function() {
 
 		}
 
-		if ( this._worker.webkitPostMessage ) {
+		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
-			this._worker.webkitPostMessage( data, [data.buffer] );
+			this._worker.transferableMessage( data.buffer, [data.buffer] );
 		}
 
 		_is_simulating = false;
@@ -585,9 +596,9 @@ window.Physijs = (function() {
 
 		}
 
-		if ( this._worker.webkitPostMessage ) {
+		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
-			this._worker.webkitPostMessage( data, [data.buffer] );
+			this._worker.transferableMessage( data.buffer, [data.buffer] );
 		}
 	};
 
@@ -616,9 +627,9 @@ window.Physijs = (function() {
 			constraint.appliedImpulse = data[ offset + 5 ] ;
 		}
 
-		if ( this._worker.webkitPostMessage ) {
+		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
-			this._worker.webkitPostMessage( data, [data.buffer] );
+			this._worker.transferableMessage( data.buffer, [data.buffer] );
 		}
 	};
 
@@ -687,9 +698,9 @@ window.Physijs = (function() {
 
 		}
 
-		if ( this._worker.webkitPostMessage ) {
+		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
-			this._worker.webkitPostMessage( data, [data.buffer] );
+			this._worker.transferableMessage( data.buffer, [data.buffer] );
 		}
 	};
 
@@ -1101,7 +1112,7 @@ window.Physijs = (function() {
 		this._physijs.points = points;
 	};
 	Physijs.HeightfieldMesh.prototype = new Physijs.Mesh;
-	Physijs.HeightfieldMesh.prototype.constructor = Physijs.HeightfieldMesh;	
+	Physijs.HeightfieldMesh.prototype.constructor = Physijs.HeightfieldMesh;
 
 	// Physijs.BoxMesh
 	Physijs.BoxMesh = function( geometry, material, mass ) {
