@@ -679,7 +679,6 @@ public_functions.simulate = function simulate( params ) {
 		reportCollisions();
 		reportConstraints();
 		reportWorld();
-		world.clearForces();
 		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
 		
 		last_simulation_time = Date.now();
@@ -910,7 +909,11 @@ reportWorld = function() {
 		}
 	}
 
-	transferableMessage( worldreport.buffer, [worldreport.buffer] );
+	if ( SUPPORT_TRANSFERABLE ) {
+		transferableMessage( worldreport.buffer, [worldreport.buffer] );
+	} else {
+		transferableMessage( worldreport );
+	}
 };
 
 reportCollisions = function() {
@@ -951,7 +954,11 @@ reportCollisions = function() {
 		}
 	}
 	
-	transferableMessage( collisionreport.buffer, [collisionreport.buffer] );
+	if ( SUPPORT_TRANSFERABLE ) {
+		transferableMessage( collisionreport.buffer, [collisionreport.buffer] );
+	} else {
+		transferableMessage( collisionreport );
+	}
 };
 
 reportVehicles = function() {
@@ -1005,7 +1012,11 @@ reportVehicles = function() {
 	}
 
 	if ( j !== 0 ) {
-		transferableMessage( vehiclereport.buffer, [vehiclereport.buffer] );
+		if ( SUPPORT_TRANSFERABLE ) {
+			transferableMessage( vehiclereport.buffer, [vehiclereport.buffer] );
+		} else {
+			transferableMessage( vehiclereport );
+		}
 	}
 };
 
@@ -1046,7 +1057,11 @@ reportConstraints = function() {
 	}
 
 	if ( i !== 0 ) {
-		transferableMessage( constraintreport.buffer, [constraintreport.buffer] );
+		if ( SUPPORT_TRANSFERABLE ) {
+			transferableMessage( constraintreport.buffer, [constraintreport.buffer] );
+		} else {
+			transferableMessage( constraintreport );
+		}
 	}
 };
 
