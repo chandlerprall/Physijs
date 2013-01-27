@@ -69,7 +69,7 @@ window.Physijs = (function() {
 	};
 
 	getObjectId = (function() {
-		var _id = 0;
+		var _id = 1;
 		return function() {
 			return _id++;
 		};
