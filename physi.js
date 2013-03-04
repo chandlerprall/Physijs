@@ -700,12 +700,14 @@ window.Physijs = (function() {
 
     // if A is in B's collision list, then B should be in A's collision list
     for (var id in collisions) {
-      for (var j=0; j < collisions[id].length; j++) {
-        if (id && collisions[id][j]) {
-          collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
-          collisions[ collisions[id][j] ].push(id);
-        }
-      }
+		if ( collisions.hasOwnProperty( id ) && collisions[id] ) {
+			for (var j=0; j < collisions[id].length; j++) {
+				if (collisions[id][j]) {
+					collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
+					collisions[ collisions[id][j] ].push(id);
+				}
+			}
+		}
     }
 
     this.collisions = collisions;
