@@ -131,6 +131,8 @@ createShape = function( description ) {
 		
 		case 'concave':
 			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
+			if (!description.triangles.length) return false
+
 			for ( i = 0; i < description.triangles.length; i++ ) {
 				triangle = description.triangles[i];
 				triangle_mesh.addTriangle(
@@ -258,7 +260,7 @@ public_functions.addObject = function( description ) {
 		localInertia, shape, motionState, rbInfo, body;
 	
 	shape = createShape( description );
-	
+	if (!shape) return
 	// If there are children then this is a compound shape
 	if ( description.children ) {
 		var compound_shape = new Ammo.btCompoundShape, _child;
