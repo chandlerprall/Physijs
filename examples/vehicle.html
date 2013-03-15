@@ -160,11 +160,11 @@
 
 		var loader = new THREE.JSONLoader();
 
-		loader.load( "models/mustang.js", function( car ) {
-			loader.load( "models/mustang_wheel.js", function( wheel ) {
+		loader.load( "models/mustang.js", function( car, car_materials ) {
+			loader.load( "models/mustang_wheel.js", function( wheel, wheel_materials ) {
 				var mesh = new Physijs.BoxMesh(
 					car,
-					new THREE.MeshFaceMaterial
+					new THREE.MeshFaceMaterial( car_materials )
 				);
 				mesh.position.y = 2;
 				mesh.castShadow = mesh.receiveShadow = true;
@@ -179,10 +179,7 @@
 				));
 				scene.add( vehicle );
 
-				window.vehicle = vehicle;
-				window.scene = scene;
-
-				var wheel_material = new THREE.MeshFaceMaterial;
+				var wheel_material = new THREE.MeshFaceMaterial( wheel_materials );
 
 				for ( var i = 0; i < 4; i++ ) {
 					vehicle.addWheel(
@@ -247,49 +244,6 @@
 			});
 		});
 
-
-		/*
-		var chassis = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 6, 2, 10 ),
-				box_material
-		);
-		chassis.castShadow = true;
-		chassis.position.y = 5;
-
-		var wheelShape = new THREE.CylinderGeometry( 1.2, 1.2, 1.5 );
-		wheelShape.applyMatrix( new THREE.Matrix4().setRotationFromEuler( new THREE.Vector3( 0, 0, Math.PI / 2 ) ) );
-        var wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-
-
-		var tuning = new Physijs.VehicleTuning(
-			10,
-			0.88,
-			0.83,
-			1000,
-			10.5,
-			6000
-		);
-		vehicle = new Physijs.Vehicle( chassis, tuning );
-		scene.add( vehicle );
-
-		for ( var i = 0; i < 4; i++ ) {
-			vehicle.addWheel(
-				wheelShape,
-	            wheelMaterial,
-				new THREE.Vector3(
-					i % 2 === 0 ? -3 : 3,
-					0,
-					i < 2 ? -4 : 4
-				),
-	            new THREE.Vector3( 0, -1, 0 ),
-	            new THREE.Vector3( -1, 0, 0 ),
-	            2,
-	            1,
-	            i < 2 ? true : false
-			);
-		}
-		*/
-
 		requestAnimationFrame( render );
 		scene.simulate();
 	};
@@ -297,11 +251,11 @@
 	render = function() {
 		requestAnimationFrame( render );
 		if ( vehicle ) {
-			camera.position.copy( vehicle.mesh.position ).addSelf( new THREE.Vector3( 40, 25, 40 ) );
+			camera.position.copy( vehicle.mesh.position ).add( new THREE.Vector3( 40, 25, 40 ) );
 			camera.lookAt( vehicle.mesh.position );
 
 			light.target.position.copy( vehicle.mesh.position );
-			light.position.add( light.target.position, new THREE.Vector3( 20, 20, -15 ) );
+			light.position.addVectors( light.target.position, new THREE.Vector3( 20, 20, -15 ) );
 		}
 		renderer.render( scene, camera );
 		render_stats.update();

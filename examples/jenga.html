@@ -50,7 +50,7 @@
 
 				if ( selected_block !== null ) {
 					
-					_v3.copy( mouse_position ).addSelf( block_offset ).subSelf( selected_block.position ).multiplyScalar( 5 );
+					_v3.copy( mouse_position ).add( block_offset ).sub( selected_block.position ).multiplyScalar( 5 );
 					_v3.y = 0;
 					selected_block.setLinearVelocity( _v3 );
 					
@@ -188,7 +188,7 @@
 
 			projector.unprojectVector( _vector, camera );
 			
-			ray = new THREE.Ray( camera.position, _vector.subSelf( camera.position ).normalize() );
+			ray = new THREE.Raycaster( camera.position, _vector.sub( camera.position ).normalize() );
 			intersections = ray.intersectObjects( blocks );
 
 			if ( intersections.length > 0 ) {
@@ -201,7 +201,7 @@
 				selected_block.setLinearVelocity( _vector );
 
 				mouse_position.copy( intersections[0].point );
-				block_offset.sub( selected_block.position, mouse_position );
+				block_offset.subVectors( selected_block.position, mouse_position );
 				
 				intersect_plane.position.y = mouse_position.y;
 			}
@@ -221,7 +221,7 @@
 				);
 				projector.unprojectVector( _vector, camera );
 				
-				ray = new THREE.Ray( camera.position, _vector.subSelf( camera.position ).normalize() );
+				ray = new THREE.Raycaster( camera.position, _vector.sub( camera.position ).normalize() );
 				intersection = ray.intersectObject( intersect_plane );
 				mouse_position.copy( intersection[0].point );
 			}
