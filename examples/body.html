@@ -151,10 +151,10 @@
 			.5
 		);
 		projector.unprojectVector( vector, camera );
-		vector.subSelf( camera.position ).normalize();
+		vector.sub( camera.position ).normalize();
 		
 		var coefficient = (box.position.y - camera.position.y) / vector.y
-		mouse_position = camera.position.clone().addSelf( vector.multiplyScalar( coefficient ) );
+		mouse_position = camera.position.clone().add( vector.multiplyScalar( coefficient ) );
 	};
 	
 	applyForce = function() {
@@ -164,8 +164,8 @@
 		for ( var i = 0; i < boxes.length; i++ ) {
 			box = boxes[i];
 			distance = mouse_position.distanceTo( box.position ),
-			effect = mouse_position.clone().subSelf( box.position ).normalize().multiplyScalar( strength / distance ).negate(),
-			offset = mouse_position.clone().subSelf( box.position );
+			effect = mouse_position.clone().sub( box.position ).normalize().multiplyScalar( strength / distance ).negate(),
+			offset = mouse_position.clone().sub( box.position );
 			box.applyImpulse( effect, offset );
 		}
 	};
