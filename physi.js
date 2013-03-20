@@ -669,20 +669,22 @@ window.Physijs = (function() {
 				for ( j = 0; j < collisions[ object._physijs.id ].length; j++ ) {
 					object2 = this._objects[ collisions[ object._physijs.id ][j] ];
 
-					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
-						object._physijs.touches.push( object2._physijs.id );
+					if ( object2 ) {
+						if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
+							object._physijs.touches.push( object2._physijs.id );
 
-						_temp_vector3_1.subVectors( object.getLinearVelocity(), object2.getLinearVelocity() );
-						_temp1 = _temp_vector3_1.clone();
+							_temp_vector3_1.subVectors( object.getLinearVelocity(), object2.getLinearVelocity() );
+							_temp1 = _temp_vector3_1.clone();
 
-						_temp_vector3_1.subVectors( object.getAngularVelocity(), object2.getAngularVelocity() );
-						_temp2 = _temp_vector3_1;
+							_temp_vector3_1.subVectors( object.getAngularVelocity(), object2.getAngularVelocity() );
+							_temp2 = _temp_vector3_1;
 
-						object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
-						object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
+							object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
+							object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
+						}
+
+						collided_with.push( object2._physijs.id );
 					}
-
-					collided_with.push( object2._physijs.id );
 				}
 				for ( j = 0; j < object._physijs.touches.length; j++ ) {
 					if ( collided_with.indexOf( object._physijs.touches[j] ) === -1 ) {
