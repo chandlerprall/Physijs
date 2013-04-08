@@ -16,7 +16,8 @@
 	'use strict';
 	
 	Physijs.scripts.worker = '../physijs_worker.js';
-	Physijs.scripts.ammo = 'examples/js/ammo.js';
+	Physijs.scripts.glMatrix = 'examples/js/gl-matrix-min.js';
+	Physijs.scripts.goblin = 'examples/js/goblin.js';
 	
 	var initScene, initEventHandling, render, createTower,
 		renderer, render_stats, physics_stats, scene, dir_light, am_light, camera,
@@ -49,16 +50,9 @@
 			function() {
 
 				if ( selected_block !== null ) {
-					
 					_v3.copy( mouse_position ).add( block_offset ).sub( selected_block.position ).multiplyScalar( 5 );
 					_v3.y = 0;
 					selected_block.setLinearVelocity( _v3 );
-					
-					// Reactivate all of the blocks
-					_v3.set( 0, 0, 0 );
-					for ( _i = 0; _i < blocks.length; _i++ ) {
-						blocks[_i].applyCentralImpulse( _v3 );
-					}
 				}
 
 				scene.simulate( undefined, 1 );
@@ -195,9 +189,9 @@
 				selected_block = intersections[0].object;
 				
 				_vector.set( 0, 0, 0 );
-				selected_block.setAngularFactor( _vector );
+				//selected_block.setAngularFactor( _vector );
 				selected_block.setAngularVelocity( _vector );
-				selected_block.setLinearFactor( _vector );
+				//selected_block.setLinearFactor( _vector );
 				selected_block.setLinearVelocity( _vector );
 
 				mouse_position.copy( intersections[0].point );

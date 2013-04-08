@@ -6,7 +6,7 @@
 	<title>Rigid body - Physijs</title>
 	
 	<link rel="stylesheet" type="text/css" href="css/styles.css" />
-	
+
 	<script type="text/javascript" src="js/three.min.js"></script>
 	<script type="text/javascript" src="js/stats.js"></script>
 	<script type="text/javascript" src="../physi.js"></script>
@@ -16,7 +16,8 @@
 	'use strict';
 	
 	Physijs.scripts.worker = '../physijs_worker.js';
-	Physijs.scripts.ammo = 'examples/js/ammo.js';
+	Physijs.scripts.glMatrix = 'examples/js/gl-matrix-min.js';
+	Physijs.scripts.goblin = 'examples/js/goblin.js';
 	
 	var initScene, render, applyForce, setMousePosition, mouse_position,
 		ground_material, box_material,
@@ -159,7 +160,7 @@
 	
 	applyForce = function() {
 		if (!mouse_position) return;
-		var strength = 35, distance, effect, offset, box;
+		var strength = 1, distance, effect, offset, box;
 		
 		for ( var i = 0; i < boxes.length; i++ ) {
 			box = boxes[i];

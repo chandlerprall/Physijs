@@ -1,8 +1,7 @@
 'use strict';
 
 window.Physijs = (function() {
-	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
-		SUPPORT_TRANSFERABLE,
+	var SUPPORT_TRANSFERABLE,
 		_matrix = new THREE.Matrix4, _is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
@@ -488,7 +487,8 @@ window.Physijs = (function() {
 
 
 		params = params || {};
-		params.ammo = Physijs.scripts.ammo || 'ammo.js';
+		params.glMatrix = Physijs.scripts.glMatrix || 'gl-matrix-min.js';
+		params.goblin = Physijs.scripts.goblin || 'goblin.js';
 		params.fixedTimeStep = params.fixedTimeStep || 1 / 60;
 		params.rateLimit = params.rateLimit || true;
 		this.execute( 'init', params );
