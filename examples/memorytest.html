@@ -53,6 +53,8 @@
 				physics_stats.update();
 				while(cubes.length > max_on_screen) {
 					scene.remove(cubes[0]);
+					cubes[0].geometry.dispose();
+					cubes[0].material.dispose();
 					cubes.splice( 0, 1 );
 				}
 				document.getElementById( 'totalcubecount' ).textContent = ( total_cubes );
