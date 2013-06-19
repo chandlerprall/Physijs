@@ -369,6 +369,7 @@ if ( description.children ) {
 	}
 	
 	body = new Ammo.btRigidBody( rbInfo );
+	Ammo.destroy(rbInfo);
 	
 	if ( typeof description.collision_flags !== 'undefined' ) {
 		body.setCollisionFlags( description.collision_flags );
