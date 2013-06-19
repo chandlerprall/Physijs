@@ -474,6 +474,8 @@ public_functions.applyEngineForce = function( details ) {
 public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
 	Ammo.destroy(_objects[details.id]);
+	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
+	delete _objects_ammo[ptr];
 	delete _objects[details.id];
 	_num_objects--;
 };
