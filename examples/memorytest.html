@@ -18,12 +18,13 @@
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
-	var initScene, render, _boxes = [], spawnBox,
-		renderer, render_stats, physics_stats, scene, ground_material, ground, light, camera;
+	var initScene, render, _boxes = [], spawnBox, inc_ready, renderer, render_stats, physics_stats, scene, ground_material, ground, light, camera;
 
 	var cubes = [];
 	var total_cubes = 0;
+	var total_ready = 0;
 	var max_on_screen = 100;
+	var spawn_per_tick = 25;
 	
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -60,6 +61,12 @@
 				document.getElementById( 'totalcubecount' ).textContent = ( total_cubes );
         		document.getElementById( 'currentcubecount' ).textContent = ( cubes.length );
         		document.getElementById( 'totalobjects' ).textContent = ( scene.__objects.length );
+        		if(total_cubes > total_ready){
+        			return;
+        		}
+        		for (var i=0;i<spawn_per_tick;i++) { 
+					spawnBox();
+				}
 			}
 
 		);
@@ -146,7 +153,7 @@
 				);
 				
 				box.castShadow = true;
-				box.addEventListener( 'ready', spawnBox );
+				box.addEventListener( 'ready', inc_ready );
 
 				cubes.push( box );
 				scene.add( box );
@@ -157,6 +164,10 @@
 		};
 	})();
 	
+	inc_ready = function() {
+		total_ready++;
+	}
+
 	render = function() {
 		requestAnimationFrame( render );
 		renderer.render( scene, camera );
