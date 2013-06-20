@@ -295,6 +295,10 @@ public_functions.registerMaterial = function( description ) {
 	_materials[ description.id ] = description;
 };
 
+public_functions.unRegisterMaterial = function( description ) {
+	delete _materials[ description.id ];
+};
+
 public_functions.setFixedTimeStep = function( description ) {
 	fixedTimeStep = description;
 };
