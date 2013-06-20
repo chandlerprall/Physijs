@@ -295,6 +295,10 @@ public_functions.registerMaterial = function( description ) {
 	_materials[ description.id ] = description;
 };
 
+public_functions.unRegisterMaterial = function( description ) {
+	delete _materials[ description.id ];
+};
+
 public_functions.setFixedTimeStep = function( description ) {
 	fixedTimeStep = description;
 };
@@ -369,6 +373,7 @@ if ( description.children ) {
 	}
 	
 	body = new Ammo.btRigidBody( rbInfo );
+	Ammo.destroy(rbInfo);
 	
 	if ( typeof description.collision_flags !== 'undefined' ) {
 		body.setCollisionFlags( description.collision_flags );
@@ -472,6 +477,9 @@ public_functions.applyEngineForce = function( details ) {
 
 public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
+	Ammo.destroy(_objects[details.id]);
+	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
+	delete _objects_ammo[ptr];
 	delete _objects[details.id];
 	_num_objects--;
 };
