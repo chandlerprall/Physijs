@@ -49,6 +49,7 @@ var
     // btDefaultMotionState is not cleaned up by ammo.js, so we have to do it
     // track them and clean them up.
 	_motion_states = {}, 
+    _compound_shapes = {}, // ditto for compound shapes
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -348,6 +349,7 @@ if ( description.children ) {
 	}
 	
 	shape = compound_shape;
+    _compound_shapes[ description.id ] = shape;
 	}
 	_vec3_1.setX(0);
 	_vec3_1.setY(0);
@@ -483,10 +485,12 @@ public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
 	Ammo.destroy(_objects[details.id]);
 	Ammo.destroy(_motion_states[details.id]);
+    if (_compound_shapes[details.id]) Ammo.destroy(_compound_shapes[details.id]);
 	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
 	delete _objects_ammo[ptr];
 	delete _objects[details.id];
 	delete _motion_states[details.id];
+    if (_compound_shapes[details.id]) delete _compound_shapes[details.id];
 	_num_objects--;
 };
 
