@@ -46,10 +46,17 @@ var
 	_num_wheels = 0,
 	_num_constraints = 0,
 	_object_shapes = {},
-    // btDefaultMotionState is not cleaned up by ammo.js, so we have to do it
-    // track them and clean them up.
+
+	// The following objects are to track objects that ammo.js doesn't clean
+	// up. All are cleaned up when they're corresponding body is destroyed.
+	// Unfortunately, it's very difficult to get at these objects from the
+	// body, so we have to track them ourselves.
 	_motion_states = {}, 
-    _compound_shapes = {}, // ditto for compound shapes
+	// Don't need to worry about it for cached shapes.
+    _noncached_shapes = {},
+	// A body with a compound shape always has a regular shape as well, so we
+	// have track them separately.
+    _compound_shapes = {}, 
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -177,6 +184,7 @@ createShape = function( description ) {
 				true,
 				true
 			);
+			_noncached_shapes[description.id] = shape;
 			break;
 		
 		case 'convex':
@@ -191,6 +199,7 @@ createShape = function( description ) {
 				shape.addPoint(_vec3_1);
 				
 			}
+			_noncached_shapes[description.id] = shape;
 			break;
 
 		case 'heightfield':
@@ -218,6 +227,7 @@ createShape = function( description ) {
 			_vec3_1.setZ(1);
 			
 			shape.setLocalScaling(_vec3_1);
+			_noncached_shapes[description.id] = shape;
 			break;
 		
 		default:
@@ -486,11 +496,13 @@ public_functions.removeObject = function( details ) {
 	Ammo.destroy(_objects[details.id]);
 	Ammo.destroy(_motion_states[details.id]);
     if (_compound_shapes[details.id]) Ammo.destroy(_compound_shapes[details.id]);
+	if (_noncached_shapes[details.id]) Ammo.destroy(_noncached_shapes[details.id]);
 	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
 	delete _objects_ammo[ptr];
 	delete _objects[details.id];
 	delete _motion_states[details.id];
     if (_compound_shapes[details.id]) delete _compound_shapes[details.id];
+	if (_noncached_shapes[details.id]) delete _noncached_shapes[details.id];
 	_num_objects--;
 };
 
