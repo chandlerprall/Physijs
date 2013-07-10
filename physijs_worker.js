@@ -46,6 +46,9 @@ var
 	_num_wheels = 0,
 	_num_constraints = 0,
 	_object_shapes = {},
+    // btDefaultMotionState is not cleaned up by ammo.js, so we have to do it
+    // track them and clean them up.
+	_motion_states = {}, 
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -383,6 +386,7 @@ if ( description.children ) {
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
+	_motion_states[ body.id ] = motionState;
 	
 	var ptr = body.a != undefined ? body.a : body.ptr;
 	_objects_ammo[ptr] = body.id;
@@ -478,9 +482,11 @@ public_functions.applyEngineForce = function( details ) {
 public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
 	Ammo.destroy(_objects[details.id]);
+	Ammo.destroy(_motion_states[details.id]);
 	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
 	delete _objects_ammo[ptr];
 	delete _objects[details.id];
+	delete _motion_states[details.id];
 	_num_objects--;
 };
 
