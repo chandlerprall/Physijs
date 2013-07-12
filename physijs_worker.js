@@ -46,6 +46,17 @@ var
 	_num_wheels = 0,
 	_num_constraints = 0,
 	_object_shapes = {},
+
+	// The following objects are to track objects that ammo.js doesn't clean
+	// up. All are cleaned up when they're corresponding body is destroyed.
+	// Unfortunately, it's very difficult to get at these objects from the
+	// body, so we have to track them ourselves.
+	_motion_states = {}, 
+	// Don't need to worry about it for cached shapes.
+    _noncached_shapes = {},
+	// A body with a compound shape always has a regular shape as well, so we
+	// have track them separately.
+    _compound_shapes = {}, 
 	
 	// object reporting
 	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
@@ -173,6 +184,7 @@ createShape = function( description ) {
 				true,
 				true
 			);
+			_noncached_shapes[description.id] = shape;
 			break;
 		
 		case 'convex':
@@ -187,6 +199,7 @@ createShape = function( description ) {
 				shape.addPoint(_vec3_1);
 				
 			}
+			_noncached_shapes[description.id] = shape;
 			break;
 
 		case 'heightfield':
@@ -214,6 +227,7 @@ createShape = function( description ) {
 			_vec3_1.setZ(1);
 			
 			shape.setLocalScaling(_vec3_1);
+			_noncached_shapes[description.id] = shape;
 			break;
 		
 		default:
@@ -295,6 +309,10 @@ public_functions.registerMaterial = function( description ) {
 	_materials[ description.id ] = description;
 };
 
+public_functions.unRegisterMaterial = function( description ) {
+	delete _materials[ description.id ];
+};
+
 public_functions.setFixedTimeStep = function( description ) {
 	fixedTimeStep = description;
 };
@@ -341,6 +359,7 @@ if ( description.children ) {
 	}
 	
 	shape = compound_shape;
+    _compound_shapes[ description.id ] = shape;
 	}
 	_vec3_1.setX(0);
 	_vec3_1.setY(0);
@@ -369,6 +388,7 @@ if ( description.children ) {
 	}
 	
 	body = new Ammo.btRigidBody( rbInfo );
+	Ammo.destroy(rbInfo);
 	
 	if ( typeof description.collision_flags !== 'undefined' ) {
 		body.setCollisionFlags( description.collision_flags );
@@ -378,6 +398,7 @@ if ( description.children ) {
 	
 	body.id = description.id;
 	_objects[ body.id ] = body;
+	_motion_states[ body.id ] = motionState;
 	
 	var ptr = body.a != undefined ? body.a : body.ptr;
 	_objects_ammo[ptr] = body.id;
@@ -472,7 +493,16 @@ public_functions.applyEngineForce = function( details ) {
 
 public_functions.removeObject = function( details ) {
 	world.removeRigidBody( _objects[details.id] );
+	Ammo.destroy(_objects[details.id]);
+	Ammo.destroy(_motion_states[details.id]);
+    if (_compound_shapes[details.id]) Ammo.destroy(_compound_shapes[details.id]);
+	if (_noncached_shapes[details.id]) Ammo.destroy(_noncached_shapes[details.id]);
+	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
+	delete _objects_ammo[ptr];
 	delete _objects[details.id];
+	delete _motion_states[details.id];
+    if (_compound_shapes[details.id]) delete _compound_shapes[details.id];
+	if (_noncached_shapes[details.id]) delete _noncached_shapes[details.id];
 	_num_objects--;
 };
 
