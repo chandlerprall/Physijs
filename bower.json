@@ -1,0 +1,15 @@
+{
+  "name": "Physijs",
+  "version": "0.1.0",
+  "main": [
+    "physi.js",
+    "phsijs_worker.js"
+  ],
+  "ignore": [
+    ".jshintrc"
+  ],
+  "dependencies": {
+    "threejs": "r59",
+    "ammo.js": "kripken/ammo.js"
+  }
+}
