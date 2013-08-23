@@ -109,7 +109,7 @@ window.Physijs = (function() {
 
 		// Set the temp matrix's rotation to the object's rotation
 		if ( object.useQuaternion ) {
-			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
+			_temp_matrix4_1.identity().makeRotationFromQuaternion( object.quaternion );
 		} else {
 			_temp_matrix4_1.identity().makeRotationFromEuler( object.rotation );
 		}
