@@ -896,7 +896,7 @@ window.Physijs = (function() {
 				this.execute( 'removeObject', { id: object._physijs.id } );
 			}
 		}
-		if ( this._materials_ref_counts.hasOwnProperty( object.material._physijs.id ) ) {
+		if ( object.material._physijs && this._materials_ref_counts.hasOwnProperty( object.material._physijs.id ) ) {
 			this._materials_ref_counts[object.material._physijs.id]--;
 			if(this._materials_ref_counts[object.material._physijs.id] == 0) {
 				this.execute( 'unRegisterMaterial', object.material._physijs );
