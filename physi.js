@@ -621,46 +621,47 @@ window.Physijs = (function() {
 		 * If you feel inclined to make this better, please do so.
 		 */
 
-		var i, j, offset, object, object2,
+		var i, j, offset, object1, object2, id1, id2,
 			collisions = {}, collided_with = [], normal_offsets = {};
 
 		// Build collision manifest
 		for ( i = 0; i < data[1]; i++ ) {
 			offset = 2 + i * COLLISIONREPORT_ITEMSIZE;
-			object = data[ offset ];
+			object1 = data[ offset ];
 			object2 = data[ offset + 1 ];
 
-			normal_offsets[ object + '-' + object2 ] = offset + 2;
-			normal_offsets[ object2 + '-' + object ] = -1 * ( offset + 2 );
+			normal_offsets[ object1 + '-' + object2 ] = offset + 2;
+			normal_offsets[ object2 + '-' + object1 ] = -1 * ( offset + 2 );
 
-			if ( !collisions[ object ] ) collisions[ object ] = [];
-			collisions[ object ].push( object2 );
+			if ( !collisions[ object1 ] ) collisions[ object1 ] = [];
+			collisions[ object1 ].push( object2 );
 		}
 
 		// Deal with collisions
-		for ( object in this._objects ) {
-			if ( !this._objects.hasOwnProperty( object ) ) return;
-			object = this._objects[ object ];
+		for ( id1 in collisions ) {
+			if ( !collisions.hasOwnProperty( id1 ) ) continue;
 
-			if ( collisions[ object._physijs.id ] ) {
+			object1 = this._objects[ id1 ];
 
-				// this object is touching others
-				collided_with.length = 0;
+			// If object1 touches anything, ...
+			if ( collisions[ id1 ] ) {
 
-				for ( j = 0; j < collisions[ object._physijs.id ].length; j++ ) {
-					object2 = this._objects[ collisions[ object._physijs.id ][j] ];
+				// Handle each colliding object
+				for ( j = 0; j < collisions[ id1 ].length; j++ ) {
+					id2 = collisions[ id1 ][ j ];
+					object2 = this._objects[ id2 ];
 
 					if ( object2 ) {
-						if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
-							object._physijs.touches.push( object2._physijs.id );
 
-							_temp_vector3_1.subVectors( object.getLinearVelocity(), object2.getLinearVelocity() );
+						// If object1 was not already touching object2, notify objects
+						if ( object1._physijs.touches.indexOf( id2 ) === -1 ) {
+							_temp_vector3_1.subVectors( object1.getLinearVelocity(), object2.getLinearVelocity() );
 							_temp1 = _temp_vector3_1.clone();
 
-							_temp_vector3_1.subVectors( object.getAngularVelocity(), object2.getAngularVelocity() );
+							_temp_vector3_1.subVectors( object1.getAngularVelocity(), object2.getAngularVelocity() );
 							_temp2 = _temp_vector3_1.clone();
 
-							var normal_offset = normal_offsets[ object._physijs.id + '-' + object2._physijs.id ];
+							var normal_offset = normal_offsets[ object1._physijs.id + '-' + object2._physijs.id ];
 							if ( normal_offset > 0 ) {
 								_temp_vector3_1.set(
 									-data[ normal_offset ],
@@ -676,41 +677,35 @@ window.Physijs = (function() {
 								);
 							}
 
-							object.dispatchEvent( 'collision', object2, _temp1, _temp2, _temp_vector3_1 );
-							object2.dispatchEvent( 'collision', object, _temp1, _temp2, _temp_vector3_1.negate() );
+							object1.dispatchEvent( 'collision', object2, _temp1, _temp2, _temp_vector3_1 );
+							object2.dispatchEvent( 'collision', object1, _temp1, _temp2, _temp_vector3_1.negate() );
 						}
-
-						collided_with.push( object2._physijs.id );
 					}
-				}
-				for ( j = 0; j < object._physijs.touches.length; j++ ) {
-					if ( collided_with.indexOf( object._physijs.touches[j] ) === -1 ) {
-						object._physijs.touches.splice( j--, 1 );
-					}
-				}
-
-			} else {
-
-				// not touching other objects
-				object._physijs.touches.length = 0;
-
-			}
-
-		}
-
-	// if A is in B's collision list, then B should be in A's collision list
-	for (var id in collisions) {
-		if ( collisions.hasOwnProperty( id ) && collisions[id] ) {
-			for ( j = 0; j < collisions[id].length; j++) {
-				if (collisions[id][j]) {
-					collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
-					collisions[ collisions[id][j] ].push(id);
 				}
 			}
 		}
-	}
 
-	this.collisions = collisions;
+		// If A is in B's collision list, then B should be in A's collision list
+		for (var id in collisions) {
+			if ( collisions.hasOwnProperty( id ) && collisions[id] ) {
+				for ( j = 0; j < collisions[id].length; j++) {
+					if (collisions[id][j]) {
+						collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
+						collisions[ collisions[id][j] ].push(id>>0);
+					}
+				}
+			}
+		}
+
+		// Update touches arrays
+		for ( id1 in this._objects ) {
+			object1 = this._objects[ id1 ];
+			object1._physijs.touches.length = 0;
+
+			collisions[ id1 ] && object1._physijs.touches.push.apply( object1._physijs.touches, collisions[ id1 ] );
+		}
+
+		this.collisions = collisions;
 
 		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
