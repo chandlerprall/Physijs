@@ -635,6 +635,17 @@ window.Physijs = (function() {
 
 			if ( !collisions[ object1 ] ) collisions[ object1 ] = [];
 			collisions[ object1 ].push( object2 );
+
+			if ( !collisions[ object2 ] ) collisions[ object2 ] = [];
+			collisions[ object2 ].push( object1 );
+		}
+
+		// Update touches arrays
+		for ( id1 in this._objects ) {
+			object1 = this._objects[ id1 ];
+			object1._physijs.touches.length = 0;
+
+			collisions[ id1 ] && object1._physijs.touches.push.apply( object1._physijs.touches, collisions[ id1 ] );
 		}
 
 		// Deal with collisions
@@ -653,7 +664,7 @@ window.Physijs = (function() {
 
 					if ( object2 ) {
 
-						// If object1 was not already touching object2, notify objects
+						// If object1 was not already touching object2, notify object1
 						if ( object1._physijs.touches.indexOf( id2 ) === -1 ) {
 							_temp_vector3_1.subVectors( object1.getLinearVelocity(), object2.getLinearVelocity() );
 							_temp1 = _temp_vector3_1.clone();
@@ -678,31 +689,10 @@ window.Physijs = (function() {
 							}
 
 							object1.dispatchEvent( 'collision', object2, _temp1, _temp2, _temp_vector3_1 );
-							object2.dispatchEvent( 'collision', object1, _temp1, _temp2, _temp_vector3_1.negate() );
 						}
 					}
 				}
 			}
-		}
-
-		// If A is in B's collision list, then B should be in A's collision list
-		for (var id in collisions) {
-			if ( collisions.hasOwnProperty( id ) && collisions[id] ) {
-				for ( j = 0; j < collisions[id].length; j++) {
-					if (collisions[id][j]) {
-						collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
-						collisions[ collisions[id][j] ].push(id>>0);
-					}
-				}
-			}
-		}
-
-		// Update touches arrays
-		for ( id1 in this._objects ) {
-			object1 = this._objects[ id1 ];
-			object1._physijs.touches.length = 0;
-
-			collisions[ id1 ] && object1._physijs.touches.push.apply( object1._physijs.touches, collisions[ id1 ] );
 		}
 
 		this.collisions = collisions;
