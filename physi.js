@@ -622,7 +622,7 @@ window.Physijs = (function() {
 		 */
 
 		var i, j, offset, object1, object2, id1, id2,
-			collisions = {}, collided_with = [], normal_offsets = {};
+			collisions = {}, normal_offsets = {};
 
 		// Build collision manifest
 		for ( i = 0; i < data[1]; i++ ) {
