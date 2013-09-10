@@ -633,6 +633,7 @@ window.Physijs = (function() {
 			normal_offsets[ object1 + '-' + object2 ] = offset + 2;
 			normal_offsets[ object2 + '-' + object1 ] = -1 * ( offset + 2 );
 
+			// Register collisions for both the object colliding and the object being collided with
 			if ( !collisions[ object1 ] ) collisions[ object1 ] = [];
 			collisions[ object1 ].push( object2 );
 
@@ -640,22 +641,20 @@ window.Physijs = (function() {
 			collisions[ object2 ].push( object1 );
 		}
 
-		// Update touches arrays
-		for ( id1 in this._objects ) {
-			object1 = this._objects[ id1 ];
-			object1._physijs.touches.length = 0;
-
-			collisions[ id1 ] && object1._physijs.touches.push.apply( object1._physijs.touches, collisions[ id1 ] );
-		}
-
 		// Deal with collisions
-		for ( id1 in collisions ) {
-			if ( !collisions.hasOwnProperty( id1 ) ) continue;
-
+		for ( id1 in this._objects ) {
+			if ( !this._objects.hasOwnProperty( id1 ) ) return;
 			object1 = this._objects[ id1 ];
 
 			// If object1 touches anything, ...
 			if ( collisions[ id1 ] ) {
+
+				// Clean up touches array
+				for ( j = 0; j < object1._physijs.touches.length; j++ ) {
+					if ( collisions[ id1 ].indexOf( object1._physijs.touches[j] ) === -1 ) {
+						object1._physijs.touches.splice( j--, 1 );
+					}
+				}
 
 				// Handle each colliding object
 				for ( j = 0; j < collisions[ id1 ].length; j++ ) {
@@ -663,9 +662,10 @@ window.Physijs = (function() {
 					object2 = this._objects[ id2 ];
 
 					if ( object2 ) {
-
 						// If object1 was not already touching object2, notify object1
 						if ( object1._physijs.touches.indexOf( id2 ) === -1 ) {
+							object1._physijs.touches.push( id2 );
+
 							_temp_vector3_1.subVectors( object1.getLinearVelocity(), object2.getLinearVelocity() );
 							_temp1 = _temp_vector3_1.clone();
 
@@ -692,7 +692,14 @@ window.Physijs = (function() {
 						}
 					}
 				}
+
+			} else {
+
+				// not touching other objects
+				object1._physijs.touches.length = 0;
+
 			}
+
 		}
 
 		this.collisions = collisions;
