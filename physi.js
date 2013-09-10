@@ -643,7 +643,7 @@ window.Physijs = (function() {
 
 		// Deal with collisions
 		for ( id1 in this._objects ) {
-			if ( !this._objects.hasOwnProperty( id1 ) ) return;
+			if ( !this._objects.hasOwnProperty( id1 ) ) continue;
 			object = this._objects[ id1 ];
 
 			// If object touches anything, ...
