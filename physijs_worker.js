@@ -20,6 +20,7 @@ var
 	getShapeFromCache,
 	setShapeCache,
 	createShape,
+	reportInternalTick,
 	reportWorld,
 	reportVehicles,
 	reportCollisions,
@@ -298,6 +299,7 @@ public_functions.init = function( params ) {
 	}
 	
 	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
+	world.setInternalTickCallback( Runtime.addFunction( reportInternalTick ) );
 	
 	fixedTimeStep = params.fixedTimeStep;
 	rateLimit = params.rateLimit;
@@ -932,7 +934,6 @@ public_functions.simulate = function simulate( params ) {
 		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
 		
 		reportVehicles();
-		reportCollisions();
 		reportConstraints();
 		reportWorld();
 		
@@ -1137,6 +1138,10 @@ public_functions.dof_disableAngularMotor = function( params ) {
 	if ( constraint.getRigidBodyB() ) {
 		constraint.getRigidBodyB().activate();
 	}
+};
+
+reportInternalTick = function() {
+	reportCollisions();
 };
 
 reportWorld = function() {
