@@ -5,7 +5,7 @@ Physijs
 Physijs brings a very easy to use interface to the three.js framework. One of the reasons three.js is so popular is because it is so incredibly easy for graphics newbies to get into 3D programming. Physijs takes that philosophy to heart and makes physics simulations just as easy to run. In fact, there are just [five easy steps](https://github.com/chandlerprall/Physijs/wiki/Basic-Setup) that must be taken to make a 3D scene come alive.
 
 #### How does Physijs work?
-Physijs is built on top of [ammo.js](https://github.com/kripken/ammo.js/) (although there is also a [cannon.js branch](https://github.com/chandlerprall/Physijs/tree/cannon)) and runs the physics simulation in a separate thread (via web worker) to avoid impacting in your application's performance and taking up your your 3D rendering time.
+Physijs is built on top of [ammo.js](https://github.com/kripken/ammo.js/) (although there is also a [cannon.js branch](https://github.com/chandlerprall/Physijs/tree/cannon)) and runs the physics simulation in a separate thread (via web worker) to avoid impacting in your application's performance and taking up your 3D rendering time.
 
 A lot of effort has been made to keep the style of code the same when using Physijs. Apart from [updating an object's position](https://github.com/chandlerprall/Physijs/wiki/Updating-an-object's-position-&-rotation), all of the normal three.js conventions remain the same. If you are used to three.js, you already know how to use the Physijs plugin.
 
