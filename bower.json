@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": [
     "physi.js",
-    "phsijs_worker.js"
+    "phsyijs_worker.js"
   ],
   "ignore": [
     ".jshintrc"
