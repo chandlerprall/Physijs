@@ -197,7 +197,7 @@ var Physijs = (function() {
 			}
 			
 			if ( object.__dirtyRotation === false ) {
-				if ( object.useQuaternion ) {
+				if ( object ) {
 					object.quaternion.set(
 						data[ offset + 4 ],
 						data[ offset + 5 ],
@@ -329,7 +329,7 @@ var Physijs = (function() {
 					z: object.children[i].position.z + offset.z
 				};
 				
-				if ( object.children[i].useQuaternion !== true ) {
+				if ( object.children[i] !== true ) {
 					object.children[i].quaternion.copy(getQuatertionFromEuler( object.children[i].rotation.x, object.children[i].rotation.y, object.children[i].rotation.z ));
 				}
 				object.children[i]._physijs.rotation = {
@@ -374,8 +374,8 @@ var Physijs = (function() {
 			
 			// Object starting position + rotation		
 			object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };	
-			if (!object.useQuaternion) {
-				_matrix.identity().setRotationFromEuler( object.rotation );
+			if (!object) {
+				_matrix.identity().makeRotationFromEuler( object.rotation );
 				object.quaternion.setFromRotationMatrix( _matrix );
 			};
 			object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
@@ -421,8 +421,8 @@ var Physijs = (function() {
 				}
 				
 				if ( object.__dirtyRotation ) {
-					if (!object.useQuaternion) {
-						_matrix.identity().setRotationFromEuler( object.rotation );
+					if (!object) {
+						_matrix.identity().makeRotationFromEuler( object.rotation );
 						object.quaternion.setFromRotationMatrix( _matrix );
 					};
 					rotation = { id: object._physijs.id, x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
