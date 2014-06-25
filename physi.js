@@ -106,10 +106,10 @@ window.Physijs = (function() {
 		_temp_matrix4_1.identity(); // reset temp matrix
 
 		// Set the temp matrix's rotation to the object's rotation
-		if ( object.useQuaternion ) {
+		if ( object ) {
 			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
 		} else {
-			_temp_matrix4_1.identity().setRotationFromEuler( object.rotation );
+			_temp_matrix4_1.identity().makeRotationFromEuler( object.rotation );
 		}
 
 		// Invert rotation matrix in order to "unrotate" a point back to object space
@@ -519,7 +519,7 @@ window.Physijs = (function() {
 			}
 
 			if ( object.__dirtyRotation === false ) {
-				if ( object.useQuaternion ) {
+				if ( object ) {
 					object.quaternion.set(
 						data[ offset + 4 ],
 						data[ offset + 5 ],
@@ -579,7 +579,7 @@ window.Physijs = (function() {
 				data[ offset + 4 ]
 			);
 
-			if ( wheel.useQuaternion ) {
+			if ( wheel ) {
 				wheel.quaternion.set(
 					data[ offset + 5 ],
 					data[ offset + 6 ],
@@ -861,8 +861,8 @@ window.Physijs = (function() {
 
 				// Object starting position + rotation
 				object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };
-				if (!object.useQuaternion) {
-					_matrix.identity().setRotationFromEuler( object.rotation );
+				if (!object) {
+					_matrix.identity().makeRotationFromEuler( object.rotation );
 					object.quaternion.setFromRotationMatrix( _matrix );
 				}
 				object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
@@ -937,8 +937,8 @@ window.Physijs = (function() {
 				}
 
 				if ( object.__dirtyRotation ) {
-					if (!object.useQuaternion) {
-						_matrix.identity().setRotationFromEuler( object.rotation );
+					if (!object) {
+						_matrix.identity().makeRotationFromEuler( object.rotation );
 						object.quaternion.setFromRotationMatrix( _matrix );
 					};
 					update.quat = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
