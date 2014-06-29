@@ -1,9 +1,8 @@
-'use strict';
-
 window.Physijs = (function() {
-	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),
-		SUPPORT_TRANSFERABLE,
-		_matrix = new THREE.Matrix4, _is_simulating = false,
+	'use strict';
+
+	var SUPPORT_TRANSFERABLE,
+		_is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
 		Eventable, // class to provide simple event methods
@@ -18,7 +17,7 @@ window.Physijs = (function() {
 		_temp_matrix4_1 = new THREE.Matrix4,
 		_quaternion_1 = new THREE.Quaternion,
 
-	// constants
+		// constants
 		MESSAGE_TYPES = {
 			WORLDREPORT: 0,
 			COLLISIONREPORT: 1,
@@ -26,6 +25,7 @@ window.Physijs = (function() {
 			CONSTRAINTREPORT: 3
 		},
 		REPORT_ITEMSIZE = 14,
+		COLLISIONREPORT_ITEMSIZE = 5,
 		VEHICLEREPORT_ITEMSIZE = 9,
 		CONSTRAINTREPORT_ITEMSIZE = 6;
 
@@ -107,11 +107,7 @@ window.Physijs = (function() {
 		_temp_matrix4_1.identity(); // reset temp matrix
 
 		// Set the temp matrix's rotation to the object's rotation
-		if ( object ) {
-			_temp_matrix4_1.identity().setRotationFromQuaternion( object.quaternion );
-		} else {
-			_temp_matrix4_1.identity().makeRotationFromEuler( object.rotation );
-		}
+		_temp_matrix4_1.identity().makeRotationFromQuaternion( object.quaternion );
 
 		// Invert rotation matrix in order to "unrotate" a point back to object space
 		_temp_matrix4_1.getInverse( _temp_matrix4_1 );
@@ -322,7 +318,8 @@ window.Physijs = (function() {
 	};
 	Physijs.ConeTwistConstraint.prototype.setMotorTarget = function( target ) {
 		if ( target instanceof THREE.Vector3 ) {
-			throw 'Wait for Three.js r50 to setMotorTarget from Vector3 - use Matrix4 or Quaternion instead';
+			target = new THREE.Quaternion().setFromEuler( new THREE.Euler( target.x, target.y, target.z ) );
+		} else if ( target instanceof THREE.Euler ) {
 			target = new THREE.Quaternion().setFromEuler( target );
 		} else if ( target instanceof THREE.Matrix4 ) {
 			target = new THREE.Quaternion().setFromRotationMatrix( target );
@@ -395,7 +392,7 @@ window.Physijs = (function() {
 
 		this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 		this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
-		this._materials = {};
+		this._materials_ref_counts = {};
 		this._objects = {};
 		this._vehicles = {};
 		this._constraints = {};
@@ -519,21 +516,12 @@ window.Physijs = (function() {
 			}
 
 			if ( object.__dirtyRotation === false ) {
-				if ( object ) {
-					object.quaternion.set(
-						data[ offset + 4 ],
-						data[ offset + 5 ],
-						data[ offset + 6 ],
-						data[ offset + 7 ]
-					);
-				} else {
-					object.rotation = getEulerXYZFromQuaternion(
-						data[ offset + 4 ],
-						data[ offset + 5 ],
-						data[ offset + 6 ],
-						data[ offset + 7 ]
-					);
-				}
+				object.quaternion.set(
+					data[ offset + 4 ],
+					data[ offset + 5 ],
+					data[ offset + 6 ],
+					data[ offset + 7 ]
+				);
 			}
 
 			object._physijs.linearVelocity.set(
@@ -579,22 +567,12 @@ window.Physijs = (function() {
 				data[ offset + 4 ]
 			);
 
-			if ( wheel ) {
-				wheel.quaternion.set(
-					data[ offset + 5 ],
-					data[ offset + 6 ],
-					data[ offset + 7 ],
-					data[ offset + 8 ]
-				);
-			} else {
-				wheel.rotation = getEulerXYZFromQuaternion(
-					data[ offset + 5 ],
-					data[ offset + 6 ],
-					data[ offset + 7 ],
-					data[ offset + 8 ]
-				);
-			}
-
+			wheel.quaternion.set(
+				data[ offset + 5 ],
+				data[ offset + 6 ],
+				data[ offset + 7 ],
+				data[ offset + 8 ]
+			);
 		}
 
 		if ( SUPPORT_TRANSFERABLE ) {
@@ -643,50 +621,75 @@ window.Physijs = (function() {
 		 * If you feel inclined to make this better, please do so.
 		 */
 
-		var i, j, offset, object, object2,
-			collisions = {}, collided_with = [];
+		var i, j, offset, object, object2, id1, id2,
+			collisions = {}, normal_offsets = {};
 
 		// Build collision manifest
 		for ( i = 0; i < data[1]; i++ ) {
-			offset = 2 + i * 2;
+			offset = 2 + i * COLLISIONREPORT_ITEMSIZE;
 			object = data[ offset ];
 			object2 = data[ offset + 1 ];
 
+			normal_offsets[ object + '-' + object2 ] = offset + 2;
+			normal_offsets[ object2 + '-' + object ] = -1 * ( offset + 2 );
+
+			// Register collisions for both the object colliding and the object being collided with
 			if ( !collisions[ object ] ) collisions[ object ] = [];
 			collisions[ object ].push( object2 );
+
+			if ( !collisions[ object2 ] ) collisions[ object2 ] = [];
+			collisions[ object2 ].push( object );
 		}
 
 		// Deal with collisions
-		for ( object in this._objects ) {
-			if ( !this._objects.hasOwnProperty( object ) ) return;
-			object = this._objects[ object ];
+		for ( id1 in this._objects ) {
+			if ( !this._objects.hasOwnProperty( id1 ) ) continue;
+			object = this._objects[ id1 ];
 
-			if ( collisions[ object._physijs.id ] ) {
+			// If object touches anything, ...
+			if ( collisions[ id1 ] ) {
 
-				// this object is touching others
-				collided_with.length = 0;
-
-				for ( j = 0; j < collisions[ object._physijs.id ].length; j++ ) {
-					object2 = this._objects[ collisions[ object._physijs.id ][j] ];
-
-					if ( object._physijs.touches.indexOf( object2._physijs.id ) === -1 ) {
-						object._physijs.touches.push( object2._physijs.id );
-
-						_temp_vector3_1.subVectors( object.getLinearVelocity(), object2.getLinearVelocity() );
-						_temp1 = _temp_vector3_1.clone();
-
-						_temp_vector3_1.subVectors( object.getAngularVelocity(), object2.getAngularVelocity() );
-						_temp2 = _temp_vector3_1;
-
-						object.dispatchEvent( 'collision', object2, _temp1, _temp2 );
-						object2.dispatchEvent( 'collision', object, _temp1, _temp2 );
-					}
-
-					collided_with.push( object2._physijs.id );
-				}
+				// Clean up touches array
 				for ( j = 0; j < object._physijs.touches.length; j++ ) {
-					if ( collided_with.indexOf( object._physijs.touches[j] ) === -1 ) {
+					if ( collisions[ id1 ].indexOf( object._physijs.touches[j] ) === -1 ) {
 						object._physijs.touches.splice( j--, 1 );
+					}
+				}
+
+				// Handle each colliding object
+				for ( j = 0; j < collisions[ id1 ].length; j++ ) {
+					id2 = collisions[ id1 ][ j ];
+					object2 = this._objects[ id2 ];
+
+					if ( object2 ) {
+						// If object was not already touching object2, notify object
+						if ( object._physijs.touches.indexOf( id2 ) === -1 ) {
+							object._physijs.touches.push( id2 );
+
+							_temp_vector3_1.subVectors( object.getLinearVelocity(), object2.getLinearVelocity() );
+							_temp1 = _temp_vector3_1.clone();
+
+							_temp_vector3_1.subVectors( object.getAngularVelocity(), object2.getAngularVelocity() );
+							_temp2 = _temp_vector3_1.clone();
+
+							var normal_offset = normal_offsets[ object._physijs.id + '-' + object2._physijs.id ];
+							if ( normal_offset > 0 ) {
+								_temp_vector3_1.set(
+									-data[ normal_offset ],
+									-data[ normal_offset + 1 ],
+									-data[ normal_offset + 2 ]
+								);
+							} else {
+								normal_offset *= -1;
+								_temp_vector3_1.set(
+									data[ normal_offset ],
+									data[ normal_offset + 1 ],
+									data[ normal_offset + 2 ]
+								);
+							}
+
+							object.dispatchEvent( 'collision', object2, _temp1, _temp2, _temp_vector3_1 );
+						}
 					}
 				}
 
@@ -699,19 +702,7 @@ window.Physijs = (function() {
 
 		}
 
-    // if A is in B's collision list, then B should be in A's collision list
-    for (var id in collisions) {
-		if ( collisions.hasOwnProperty( id ) && collisions[id] ) {
-			for (var j=0; j < collisions[id].length; j++) {
-				if (collisions[id][j]) {
-					collisions[ collisions[id][j] ] = collisions[ collisions[id][j] ] || [];
-					collisions[ collisions[id][j] ].push(id);
-				}
-			}
-		}
-    }
-
-    this.collisions = collisions;
+		this.collisions = collisions;
 
 		if ( SUPPORT_TRANSFERABLE ) {
 			// Give the typed array back to the worker
@@ -851,18 +842,17 @@ window.Physijs = (function() {
 				}
 
 				if ( object.material._physijs ) {
-					if ( !this._materials.hasOwnProperty( object.material._physijs.id ) ) {
+					if ( !this._materials_ref_counts.hasOwnProperty( object.material._physijs.id ) ) {
 						this.execute( 'registerMaterial', object.material._physijs );
 						object._physijs.materialId = object.material._physijs.id;
+						this._materials_ref_counts[object.material._physijs.id] = 1;
+					} else {
+						this._materials_ref_counts[object.material._physijs.id]++;
 					}
 				}
 
 				// Object starting position + rotation
 				object._physijs.position = { x: object.position.x, y: object.position.y, z: object.position.z };
-				if (!object) {
-					_matrix.identity().makeRotationFromEuler( object.rotation );
-					object.quaternion.setFromRotationMatrix( _matrix );
-				}
 				object._physijs.rotation = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 
 				// Check for scaling
@@ -896,6 +886,13 @@ window.Physijs = (function() {
 			if ( object._physijs ) {
 				delete this._objects[object._physijs.id];
 				this.execute( 'removeObject', { id: object._physijs.id } );
+			}
+		}
+		if ( object.material && object.material._physijs && this._materials_ref_counts.hasOwnProperty( object.material._physijs.id ) ) {
+			this._materials_ref_counts[object.material._physijs.id]--;
+			if(this._materials_ref_counts[object.material._physijs.id] == 0) {
+				this.execute( 'unRegisterMaterial', object.material._physijs );
+				delete this._materials_ref_counts[object.material._physijs.id];
 			}
 		}
 	};
@@ -935,16 +932,12 @@ window.Physijs = (function() {
 				}
 
 				if ( object.__dirtyRotation ) {
-					if (!object) {
-						_matrix.identity().makeRotationFromEuler( object.rotation );
-						object.quaternion.setFromRotationMatrix( _matrix );
-					};
 					update.quat = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
 					object.__dirtyRotation = false;
 				}
 
 				this.execute( 'updateTransform', update );
-			};
+			}
 		}
 
 		this.execute( 'simulate', { timeStep: timeStep, maxSubSteps: maxSubSteps } );
