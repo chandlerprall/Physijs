@@ -91,7 +91,7 @@
 		
 		// Ground
 		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(100, 1, 100),
+			new THREE.BoxGeometry(100, 1, 100),
 			ground_material,
 			0 // mass
 		);
@@ -114,7 +114,7 @@
 		wheel_geometry = new THREE.CylinderGeometry( 2, 2, 1, 8 );
 		
 		car.body = new Physijs.BoxMesh(
-			new THREE.CubeGeometry( 10, 5, 7 ),
+			new THREE.BoxGeometry( 10, 5, 7 ),
 			car_material,
 			1000
 		);

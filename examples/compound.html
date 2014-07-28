@@ -95,7 +95,7 @@
 		
 		// Ground
 		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(100, 1, 100),
+			new THREE.BoxGeometry(100, 1, 100),
 			ground_material,
 			0 // mass
 		);;
@@ -115,7 +115,7 @@
 			var back, _object;
 			
 			back = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 5, 1, .5 ),
+				new THREE.BoxGeometry( 5, 1, .5 ),
 				chair_material
 			);
 			back.position.y = 5;
@@ -125,7 +125,7 @@
 			
 			// rungs - relative to back
 			_object = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 1, 5, .5 ),
+				new THREE.BoxGeometry( 1, 5, .5 ),
 				chair_material
 			);
 			_object.position.y = -3;
@@ -135,7 +135,7 @@
 			back.add( _object );
 			
 			_object = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 1, 5, .5 ),
+				new THREE.BoxGeometry( 1, 5, .5 ),
 				chair_material
 			);
 			_object.position.y = -3;
@@ -144,7 +144,7 @@
 			back.add( _object );
 			
 			_object = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 1, 5, .5 ),
+				new THREE.BoxGeometry( 1, 5, .5 ),
 				chair_material
 			);
 			_object.position.y = -3;
@@ -161,7 +161,7 @@
 			
 			// back left
 			leg = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( .5, 4, .5 ),
+				new THREE.BoxGeometry( .5, 4, .5 ),
 				chair_material
 			);
 			leg.position.x = 2.25;
@@ -172,7 +172,7 @@
 			
 			// back right - relative to back left leg
 			_leg = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( .5, 4, .5 ),
+				new THREE.BoxGeometry( .5, 4, .5 ),
 				chair_material
 			);
 			_leg.position.x = -4.5;
@@ -182,7 +182,7 @@
 			
 			// front left - relative to back left leg
 			_leg = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( .5, 4, .5 ),
+				new THREE.BoxGeometry( .5, 4, .5 ),
 				chair_material
 			);
 			_leg.position.z = 4.5;
@@ -192,7 +192,7 @@
 			
 			// front right - relative to back left leg
 			_leg = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( .5, 4, .5 ),
+				new THREE.BoxGeometry( .5, 4, .5 ),
 				chair_material
 			);
 			_leg.position.x = -4.5;
@@ -209,7 +209,7 @@
 			
 			// seat of the chair
 			chair = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 5, 1, 5 ),
+				new THREE.BoxGeometry( 5, 1, 5 ),
 				chair_material
 			);
 			chair.castShadow = true;

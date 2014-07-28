@@ -86,7 +86,7 @@
 		ground_material.map.repeat.set( 3, 3 );
 		
 		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(100, 1, 100),
+			new THREE.BoxGeometry(100, 1, 100),
 			ground_material,
 			0 // mass
 		);
@@ -100,7 +100,7 @@
 	};
 	
 	spawnBox = (function() {
-		var box_geometry = new THREE.CubeGeometry( 4, 4, 4 ),
+		var box_geometry = new THREE.BoxGeometry( 4, 4, 4 ),
 			handleCollision = function( collided_with, linearVelocity, angularVelocity ) {
 				switch ( ++this.collisions ) {
 					

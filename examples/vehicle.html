@@ -145,7 +145,7 @@
 		for ( i = 0; i < 50; i++ ) {
 			var size = Math.random() * 2 + .5;
 			var box = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( size, size, size ),
+				new THREE.BoxGeometry( size, size, size ),
 				box_material
 			);
 			box.castShadow = box.receiveShadow = true;
