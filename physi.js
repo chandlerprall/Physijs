@@ -738,7 +738,7 @@ window.Physijs = (function() {
 
 				case 'slider':
 					marker = new THREE.Mesh(
-						new THREE.CubeGeometry( 10, 1, 1 ),
+						new THREE.BoxGeometry( 10, 1, 1 ),
 						new THREE.MeshNormalMaterial
 					);
 					marker.position.copy( constraint.positiona );
