@@ -90,7 +90,7 @@
 		
 		// Ground
 		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(50, 1, 50),
+			new THREE.BoxGeometry(50, 1, 50),
 			//new THREE.PlaneGeometry(50, 50),
 			ground_material,
 			0 // mass
@@ -100,7 +100,7 @@
 		
 		// Bumpers
 		var bumper,
-			bumper_geom = new THREE.CubeGeometry(2, 1, 50);
+			bumper_geom = new THREE.BoxGeometry(2, 1, 50);
 		
 		bumper = new Physijs.BoxMesh( bumper_geom, ground_material, 0, { restitution: .2 } );
 		bumper.position.y = 1;
@@ -147,7 +147,7 @@
 	createShape = (function() {
 		var addshapes = true,
 			shapes = 0,
-			box_geometry = new THREE.CubeGeometry( 3, 3, 3 ),
+			box_geometry = new THREE.BoxGeometry( 3, 3, 3 ),
 			sphere_geometry = new THREE.SphereGeometry( 1.5, 32, 32 ),
 			cylinder_geometry = new THREE.CylinderGeometry( 2, 2, 1, 32 ),
 			cone_geometry = new THREE.CylinderGeometry( 0, 2, 4, 32 ),

@@ -115,7 +115,7 @@
 		
 		// Table
 		table = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(50, 1, 50),
+			new THREE.BoxGeometry(50, 1, 50),
 			table_material,
 			0, // mass
 			{ restitution: .2, friction: .8 }
@@ -147,7 +147,7 @@
 	
 	createTower = (function() {
 		var block_length = 6, block_height = 1, block_width = 1.5, block_offset = 2,
-			block_geometry = new THREE.CubeGeometry( block_length, block_height, block_width );
+			block_geometry = new THREE.BoxGeometry( block_length, block_height, block_width );
 		
 		return function() {
 			var i, j, rows = 16,

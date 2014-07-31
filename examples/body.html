@@ -99,7 +99,7 @@
 		
 		// Ground
 		ground = new Physijs.BoxMesh(
-			new THREE.CubeGeometry(100, 1, 100),
+			new THREE.BoxGeometry(100, 1, 100),
 			ground_material,
 			0 // mass
 		);
@@ -108,7 +108,7 @@
 		
 		for ( var i = 0; i < 10; i++ ) {
 			box = new Physijs.BoxMesh(
-				new THREE.CubeGeometry( 4, 4, 4 ),
+				new THREE.BoxGeometry( 4, 4, 4 ),
 				box_material
 			);
 			box.position.set(
