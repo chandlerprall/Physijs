@@ -775,6 +775,10 @@ window.Physijs = (function() {
 		return constraint;
 	};
 
+	Physijs.Scene.prototype.onSimulationResume = function() {
+		this.execute( 'onSimulationResume', { } );
+	};
+
 	Physijs.Scene.prototype.removeConstraint = function( constraint ) {
 		if ( this._constraints[constraint.id ] !== undefined ) {
 			this.execute( 'removeConstraint', { id: constraint.id } );
