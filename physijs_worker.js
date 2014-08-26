@@ -599,6 +599,10 @@ public_functions.applyForce = function ( details ) {
 	_objects[details.id].activate();
 };
 
+public_functions.onSimulationResume = function( params ) {
+	last_simulation_time = Date.now();
+};
+
 public_functions.setAngularVelocity = function ( details ) {
 
 	_vec3_1.setX(details.x);
