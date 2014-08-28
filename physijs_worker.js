@@ -1371,29 +1371,28 @@ reportConstraints = function() {
 
 self.onmessage = function( event ) {
 	
-	if ( event.data instanceof Float32Array ) {
-		// transferable object
-		
-		switch ( event.data[0] ) {
-			case MESSAGE_TYPES.WORLDREPORT:
-				worldreport = new Float32Array( event.data );
-				break;
+	 if (event.data instanceof ArrayBuffer) {
+            var f32 = new Float32Array(event.data);
+            switch (f32[0]) {
+                case MESSAGE_TYPES.WORLDREPORT:
+                    worldreport = f32;
+                    break;
 
-			case MESSAGE_TYPES.COLLISIONREPORT:
-				collisionreport = new Float32Array( event.data );
-				break;
+                case MESSAGE_TYPES.COLLISIONREPORT:
+                    collisionreport = f32;
+                    break;
 
-			case MESSAGE_TYPES.VEHICLEREPORT:
-				vehiclereport = new Float32Array( event.data );
-				break;
+                case MESSAGE_TYPES.VEHICLEREPORT:
+                    vehiclereport = f32;
+                    break;
 
-			case MESSAGE_TYPES.CONSTRAINTREPORT:
-				constraintreport = new Float32Array( event.data );
-				break;
-		}
-		
-		return;
-	}
+                case MESSAGE_TYPES.CONSTRAINTREPORT:
+                    constraintreport = f32;
+                    break;
+            }
+
+            return;
+        }
 	
 	if ( event.data.cmd && public_functions[event.data.cmd] ) {
 		//if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
