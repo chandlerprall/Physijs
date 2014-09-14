@@ -1370,7 +1370,12 @@ reportConstraints = function() {
 };
 
 self.onmessage = function( event ) {
-	
+	if (event.data instanceof ArrayBuffer) {
+		try {
+			event.data = new Float32Array(event.data);
+		} catch (e) {
+		}
+	}
 	if ( event.data instanceof Float32Array ) {
 		// transferable object
 		
