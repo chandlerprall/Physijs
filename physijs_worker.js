@@ -958,13 +958,13 @@ public_functions.hinge_enableAngularMotor = function( params ) {
 		constraint.getRigidBodyB().activate();
 	}
 };
-public_functions.hinge_disableMotor = function( params ) {
-	_constraints[ params.constraint ].enableMotor( false );
-	if ( constraint.getRigidBodyB() ) {
-		constraint.getRigidBodyB().activate();
-	}
+public_functions.hinge_disableMotor = function (params) {
+        var constraint = _constraints[ params.constraint ];
+        constraint.enableMotor(false);
+        if (constraint.getRigidBodyB()) {
+            constraint.getRigidBodyB().activate();
+        }
 };
-
 public_functions.slider_setLimits = function( params ) {
 	var constraint = _constraints[ params.constraint ];
 	constraint.setLowerLinLimit( params.lin_lower || 0 );
