@@ -9,7 +9,7 @@
     ".jshintrc"
   ],
   "dependencies": {
-    "threejs": "r59",
+    "threejs": "r70",
     "ammo.js": "kripken/ammo.js"
   }
 }
