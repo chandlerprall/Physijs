@@ -572,6 +572,18 @@ public_functions.applyImpulse = function ( details ) {
 	_objects[details.id].activate();
 };
 
+public_functions.applyTorque = function ( details ) {
+
+	_vec3_1.setX(details.torque_x);
+	_vec3_1.setY(details.torque_y);
+	_vec3_1.setZ(details.torque_z);
+
+	_objects[details.id].applyTorque(
+		_vec3_1
+	);
+	_objects[details.id].activate();
+};
+
 public_functions.applyCentralForce = function ( details ) {
 
 	_vec3_1.setX(details.x);
