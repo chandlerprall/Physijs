@@ -1003,6 +1003,13 @@ window.Physijs = (function() {
 		}
 	};
 
+	// Physijs.Mesh.applyTorque
+	Physijs.Mesh.prototype.applyTorque = function ( force ) {
+		if ( this.world ) {
+			this.world.execute( 'applyTorque', { id: this._physijs.id, torque_x: force.x, torque_y: force.y, torque_z: force.z } );
+		}
+	};
+
 	// Physijs.Mesh.applyCentralForce
 	Physijs.Mesh.prototype.applyCentralForce = function ( force ) {
 		if ( this.world ) {
