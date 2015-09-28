@@ -29,7 +29,7 @@
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMapEnabled = true;
+		renderer.shadowMap.enabled = true;
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
@@ -60,7 +60,7 @@
 				}
 				document.getElementById( 'totalcubecount' ).textContent = ( total_cubes );
         		document.getElementById( 'currentcubecount' ).textContent = ( cubes.length );
-        		document.getElementById( 'totalobjects' ).textContent = ( scene.__objects.length );
+        		document.getElementById( 'totalobjects' ).textContent = ( scene._objects.length );
         		if(total_cubes > total_ready){
         			return;
         		}
