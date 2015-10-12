@@ -596,9 +596,9 @@ public_functions.applyCentralForce = function ( details ) {
 
 public_functions.applyForce = function ( details ) {
 
-	_vec3_1.setX(details.impulse_x);
-	_vec3_1.setY(details.impulse_y);
-	_vec3_1.setZ(details.impulse_z);
+	_vec3_1.setX(details.force_x);
+	_vec3_1.setY(details.force_y);
+	_vec3_1.setZ(details.force_z);
 
 	_vec3_2.setX(details.x);
 	_vec3_2.setY(details.y);
