@@ -20,16 +20,14 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render,
-		ground_material, box_material,
-		projector, renderer, render_stats, physics_stats, scene, ground, light, camera,
-			vehicle_body, vehicle;
+		ground_material, box_material, 
+		renderer, render_stats, physics_stats, scene, ground, light, camera,
+			vehicle_body, vehicle, loader;
 	
 	initScene = function() {
-		projector = new THREE.Projector;
-		
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMapEnabled = true;
+		renderer.shadowMap.enabled = true;
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
@@ -102,10 +100,12 @@
 
 		var input;
 
+		// Loader
+		loader = new THREE.TextureLoader();
 		
 		// Materials
 		ground_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/rocks.jpg' ) }),
 			.8, // high friction
 			.4 // low restitution
 		);
@@ -113,7 +113,7 @@
 		ground_material.map.repeat.set( 3, 3 );
 		
 		box_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/plywood.jpg' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/plywood.jpg' ) }),
 			.4, // low friction
 			.6 // high restitution
 		);
@@ -158,10 +158,10 @@
 		}
 
 
-		var loader = new THREE.JSONLoader();
+		var json_loader = new THREE.JSONLoader();
 
-		loader.load( "models/mustang.js", function( car, car_materials ) {
-			loader.load( "models/mustang_wheel.js", function( wheel, wheel_materials ) {
+		json_loader.load( "models/mustang.js", function( car, car_materials ) {
+			json_loader.load( "models/mustang_wheel.js", function( wheel, wheel_materials ) {
 				var mesh = new Physijs.BoxMesh(
 					car,
 					new THREE.MeshFaceMaterial( car_materials )

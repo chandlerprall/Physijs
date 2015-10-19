@@ -18,7 +18,7 @@
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
-	var initScene, render, _boxes = [], spawnBox, inc_ready, renderer, render_stats, physics_stats, scene, ground_material, ground, light, camera;
+	var initScene, render, _boxes = [], spawnBox, inc_ready, renderer, render_stats, physics_stats, scene, ground_material, ground, light, loader, camera;
 
 	var cubes = [];
 	var total_cubes = 0;
@@ -29,7 +29,7 @@
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMapEnabled = true;
+		renderer.shadowMap.enabled = true;
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
@@ -60,7 +60,7 @@
 				}
 				document.getElementById( 'totalcubecount' ).textContent = ( total_cubes );
         		document.getElementById( 'currentcubecount' ).textContent = ( cubes.length );
-        		document.getElementById( 'totalobjects' ).textContent = ( scene.__objects.length );
+        		document.getElementById( 'totalobjects' ).textContent = ( Object.keys(scene._objects).length );
         		if(total_cubes > total_ready){
         			return;
         		}
@@ -96,10 +96,13 @@
 		light.shadowMapWidth = light.shadowMapHeight = 2048;
 		light.shadowDarkness = .7;
 		scene.add( light );
+
+		// Loader
+		loader = new THREE.TextureLoader();
 		
 		// Ground
 		ground_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/rocks.jpg' ) }),
 			.8, // high friction
 			.3 // low restitution
 		);

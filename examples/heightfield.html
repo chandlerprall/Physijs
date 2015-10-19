@@ -20,7 +20,7 @@
 	Physijs.scripts.worker = '../physijs_worker.js';
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
-	var initScene, render, createShape, NoiseGen,
+	var initScene, render, createShape, NoiseGen, loader,
 		renderer, render_stats, physics_stats, scene, light, ground, ground_geometry, ground_material, camera;
 	
 	initScene = function() {
@@ -28,7 +28,7 @@
 		
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMapEnabled = true;
+		renderer.shadowMap.enabled = true;
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
@@ -79,10 +79,13 @@
 		light.shadowMapWidth = light.shadowMapHeight = 2048;
 		light.shadowDarkness = .7;
 		scene.add( light );
+
+		// Loader
+		loader = new THREE.TextureLoader();
 		
 		// Materials
 		ground_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/grass.png' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/grass.png' ) }),
 			.8, // high friction
 			.4 // low restitution
 		);

@@ -18,9 +18,8 @@
 "DbgIndex" : 0,
 "DbgName"  : "glass",
 "colorDiffuse"  : [0.0000, 0.0118, 0.0275],
-"colorAmbient"  : [0.0000, 0.0118, 0.0275],
 "colorSpecular"  : [0.7843, 0.7843, 0.7843],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -29,9 +28,8 @@
 "DbgIndex" : 1,
 "DbgName"  : "default",
 "colorDiffuse"  : [0.8000, 0.8000, 0.8000],
-"colorAmbient"  : [0.0000, 0.0000, 0.0000],
 "colorSpecular"  : [0.8000, 0.8000, 0.8000],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 0.0,
 "vertexColors" : false
 },
@@ -40,9 +38,8 @@
 "DbgIndex" : 2,
 "DbgName"  : "chrome",
 "colorDiffuse"  : [0.9020, 0.9020, 0.9020],
-"colorAmbient"  : [0.9020, 0.9020, 0.9020],
 "colorSpecular"  : [0.8824, 0.8824, 0.8824],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -51,9 +48,8 @@
 "DbgIndex" : 3,
 "DbgName"  : "plastic",
 "colorDiffuse"  : [0.8275, 0.8275, 0.8275],
-"colorAmbient"  : [0.8275, 0.8275, 0.8275],
 "colorSpecular"  : [0.5000, 0.5000, 0.5000],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -62,9 +58,8 @@
 "DbgIndex" : 4,
 "DbgName"  : "black_carpaint",
 "colorDiffuse"  : [0.4000, 0.0588, 0.0588],
-"colorAmbient"  : [0.4000, 0.0588, 0.0588],
 "colorSpecular"  : [0.8863, 0.8863, 0.8863],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -73,9 +68,8 @@
 "DbgIndex" : 5,
 "DbgName"  : "rubber",
 "colorDiffuse"  : [0.0510, 0.0510, 0.0510],
-"colorAmbient"  : [0.0510, 0.0510, 0.0510],
 "colorSpecular"  : [0.5000, 0.5000, 0.5000],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 }

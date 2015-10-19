@@ -19,12 +19,12 @@
 	Physijs.scripts.ammo = 'examples/js/ammo.js';
 	
 	var initScene, render, renderer, render_stats, physics_stats, scene, ground, light, camera, spawnChair,
-		ground_material, chair_material;
+		ground_material, chair_material, loader;
 	
 	initScene = function() {
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMapEnabled = true;
+		renderer.shadowMap.enabled = true;
 		renderer.shadowMapSoft = true;
 		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
 		
@@ -75,10 +75,13 @@
 		light.shadowMapWidth = light.shadowMapHeight = 2048;
 		light.shadowDarkness = .7;
 		scene.add( light );
+
+		// Loader
+		loader = new THREE.TextureLoader();
 		
 		// Materials
 		ground_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/rocks.jpg' ) }),
 			.8, // high friction
 			.4 // low restitution
 		);
@@ -86,7 +89,7 @@
 		ground_material.map.repeat.set( 3, 3 );
 		
 		chair_material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/wood.jpg' ) }),
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/wood.jpg' ) }),
 			.6, // medium friction
 			.2 // low restitution
 		);
