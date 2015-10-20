@@ -18,9 +18,8 @@
 "DbgIndex" : 0,
 "DbgName"  : "brakes",
 "colorDiffuse"  : [0.9059, 0.9059, 0.9059],
-"colorAmbient"  : [0.9059, 0.9059, 0.9059],
 "colorSpecular"  : [0.9333, 0.9333, 0.9333],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -29,9 +28,8 @@
 "DbgIndex" : 1,
 "DbgName"  : "tyre",
 "colorDiffuse"  : [0.8431, 0.8471, 0.4784],
-"colorAmbient"  : [0.8431, 0.8471, 0.4784],
 "colorSpecular"  : [0.8706, 0.8745, 0.4863],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 },
@@ -40,9 +38,8 @@
 "DbgIndex" : 2,
 "DbgName"  : "rubber",
 "colorDiffuse"  : [0.0510, 0.0510, 0.0510],
-"colorAmbient"  : [0.0510, 0.0510, 0.0510],
 "colorSpecular"  : [0.5000, 0.5000, 0.5000],
-"transparency"  : 1.0,
+"opacity"  : 1.0,
 "specularCoef"  : 96.0784,
 "vertexColors" : false
 }
