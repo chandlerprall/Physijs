@@ -10,6 +10,6 @@
   ],
   "dependencies": {
     "threejs": "r59",
-    "ammo.js": "kripken/ammo.js"
+    "ammo.js": "kripken/ammo.js#0.0.2"
   }
 }
