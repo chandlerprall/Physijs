@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Test | Physijs</title>
+		<script type="text/javascript" src="lib/three.min.js"></script>
+		<script type="text/javascript" src="../dist/physi.js"></script>
+		<style type="text/css">
+			html, body {
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<script type="text/javascript">
+			var renderer = new THREE.WebGLRenderer({ antialias: true });
+			var camera = new THREE.PerspectiveCamera( 50, window.innerHeight / window.innerWidth, 1, 100 );
+			var scene = new physijs.Scene( '../dist/physijs-worker.js' );
+
+			var sphere1 = new physijs.SphereMesh(
+				new THREE.SphereGeometry( 5 ),
+				new THREE.MeshNormalMaterial(),
+				2
+			);
+			sphere1.mass = 10;
+			scene.add( sphere1 );
+			sphere1.mass = 100;
+		</script>
+	</body>
+</html>

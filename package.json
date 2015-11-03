@@ -1,0 +1,31 @@
+{
+  "name": "physijs",
+  "version": "2.0.0-dev.0",
+  "description": "Physics plugin for Three.js",
+  "main": "build/physi.min.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chandlerprall/Physijs.git"
+  },
+  "keywords": [
+    "threejs",
+    "physics",
+    "plugin"
+  ],
+  "author": "Chandler Prall <chandler.prall@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chandlerprall/Physijs/issues"
+  },
+  "homepage": "http://chandlerprall.github.io/Physijs/",
+  "peerDependencies": {
+    "three.js": "0.73.0",
+    "goblinphysics": "0.9.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-rollup": "^1.0.1",
+    "gulp-uglify": "^1.4.2"
+  }
+}
