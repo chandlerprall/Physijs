@@ -6,8 +6,13 @@ export default function Mesh( geometry, material, mass ) {
 	}
 
 	THREE.Mesh.call( this, geometry, material );
-	this.physijs_id = getUniqueId();
-	this._mass = mass || Infinity;
+	this.rotationAutoUpdate = false;
+	this.matrixAutoUpdate = false;
+
+	this.physijs = {
+		id: getUniqueId(),
+		mass: mass || Infinity
+	};
 }
 
 Mesh.prototype = Object.create( THREE.Mesh.prototype );
@@ -18,12 +23,12 @@ Object.defineProperty(
 	'mass',
 	{
 		get: function() {
-			return this._mass;
+			return this.physijs.mass;
 		},
 		set: function( mass ) {
-			this._mass = mass;
+			this.physijs.mass = mass;
 			if ( this.parent != null ) {
-				this.parent.setRigidBodyMass( this, mass );
+				this.parent.setRigidBodyMass( this );
 			}
 		}
 	}

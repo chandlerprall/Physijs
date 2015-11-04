@@ -15,17 +15,34 @@
 	<body>
 		<script type="text/javascript">
 			var renderer = new THREE.WebGLRenderer({ antialias: true });
-			var camera = new THREE.PerspectiveCamera( 50, window.innerHeight / window.innerWidth, 1, 100 );
-			var scene = new physijs.Scene( '../dist/physijs-worker.js' );
+			renderer.setClearColor( new THREE.Color( 0xffffff ) );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
 
-			var sphere1 = new physijs.SphereMesh(
-				new THREE.SphereGeometry( 5 ),
-				new THREE.MeshNormalMaterial(),
-				2
-			);
-			sphere1.mass = 10;
+			var scene = new physijs.Scene( '../dist/physijs-worker.js' );
+			var camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100 );
+			camera.position.z = 10;
+
+			var sphere_geometry = new THREE.SphereGeometry( 1, 12, 12 );
+			var sphere_material = new THREE.MeshNormalMaterial();
+
+			var sphere1 = new physijs.SphereMesh( sphere_geometry, sphere_material, 2 );
+			sphere1.position.set( 0.5, 3, 0.5 );
 			scene.add( sphere1 );
-			sphere1.mass = 100;
+
+			var sphere2 = new physijs.SphereMesh( sphere_geometry, sphere_material, 0 );
+			scene.add( sphere2 );
+
+			var physics_framerate = 1000 / 60;
+			function render() {
+				renderer.render( scene, camera );
+			}
+			function onStep() {
+				requestAnimationFrame( render );
+				setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
+			}
+			scene.step( physics_framerate / 1000, undefined, onStep );
+
 		</script>
 	</body>
 </html>
