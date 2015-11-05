@@ -32,11 +32,12 @@ export default {
 	SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
 
 	/**
-	 * sets the specified rigid body's position
+	 * sets the specified rigid body's position & rotation
 	 * body_id Integer unique integer id for the body
 	 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
+	 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
 	 */
-	SET_RIGIDBODY_POSITION: 'SET_RIGIDBODY_POSITION',
+	SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
 
 	/**
 	 * steps the physics simulation

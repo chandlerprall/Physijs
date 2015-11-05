@@ -128,6 +128,8 @@ function reportWorld() {
 
 			if ( parameters.body_type === BODY_TYPES.SPHERE ) {
 				shape = new Goblin.SphereShape( body_definition.radius );
+			} else if ( parameters.body_type === BODY_TYPES.BOX ) {
+				shape = new Goblin.BoxShape( body_definition.width, body_definition.height, body_definition.depth );
 			}
 
 			var body = new Goblin.RigidBody( shape, parameters.mass );
@@ -145,12 +147,19 @@ function reportWorld() {
 	);
 
 	handleMessage(
-		MESSAGE_TYPES.SET_RIGIDBODY_POSITION,
+		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 		function( parameters ) {
 			id_rigid_body_map[ parameters.body_id ].position.set(
 				parameters.position.x,
 				parameters.position.y,
 				parameters.position.z
+			);
+
+			id_rigid_body_map[ parameters.body_id ].rotation.set(
+				parameters.rotation.x,
+				parameters.rotation.y,
+				parameters.rotation.z,
+				parameters.rotation.w
 			);
 		}
 	);

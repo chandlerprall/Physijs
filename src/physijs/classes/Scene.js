@@ -1,6 +1,7 @@
 import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
 import Mesh from './mesh/Mesh';
+import BoxMesh from './mesh/BoxMesh';
 import SphereMesh from './mesh/SphereMesh';
 
 function getRigidBodyDefinition( mesh ) {
@@ -11,6 +12,12 @@ function getRigidBodyDefinition( mesh ) {
 		mesh.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
 		body_type = BODY_TYPES.SPHERE;
 		body_definition.radius = mesh.geometry.boundingSphere.radius;
+	} else if ( mesh instanceof BoxMesh ) {
+		mesh.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+		body_type = BODY_TYPES.BOX;
+		body_definition.width = mesh.geometry.boundingBox.max.x;
+		body_definition.height = mesh.geometry.boundingBox.max.y;
+		body_definition.depth = mesh.geometry.boundingBox.max.z;
 	} else {
 		throw new Error( 'Physijs: unable to determine rigid body definition for mesh' );
 	}
@@ -102,10 +109,11 @@ Scene.prototype.add = function( object ) {
 		this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 		this.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
 		this.postMessage(
-			MESSAGE_TYPES.SET_RIGIDBODY_POSITION,
+			MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 			{
 				body_id: rigid_body_definition.body_id,
-				position: { x: object.position.x, y: object.position.y, z: object.position.z }
+				position: { x: object.position.x, y: object.position.y, z: object.position.z },
+				rotation: { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w }
 			}
 		);
 	}

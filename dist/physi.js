@@ -51,11 +51,12 @@
 		SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
 
 		/**
-		 * sets the specified rigid body's position
+		 * sets the specified rigid body's position & rotation
 		 * body_id Integer unique integer id for the body
 		 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
+		 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
 		 */
-		SET_RIGIDBODY_POSITION: 'SET_RIGIDBODY_POSITION',
+		SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
 
 		/**
 		 * steps the physics simulation
@@ -127,7 +128,14 @@
 		/**
 		 * radius Float radius of the sphere
 		 */
-		SPHERE: 'SPHERE'
+		SPHERE: 'SPHERE',
+
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 * depth Float box extent on z axis
+		 */
+		BOX: 'BOX'
 	}
 
 	var nextId = 0;
@@ -169,6 +177,13 @@
 		}
 	);
 
+	function BoxMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	BoxMesh.prototype = Object.create( Mesh.prototype );
+	BoxMesh.prototype.constructor = BoxMesh;
+
 	function SphereMesh( geometry, material, mass ) {
 		Mesh.call( this, geometry, material, mass );
 	}
@@ -184,6 +199,12 @@
 			mesh.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
 			body_type = BODY_TYPES.SPHERE;
 			body_definition.radius = mesh.geometry.boundingSphere.radius;
+		} else if ( mesh instanceof BoxMesh ) {
+			mesh.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+			body_type = BODY_TYPES.BOX;
+			body_definition.width = mesh.geometry.boundingBox.max.x;
+			body_definition.height = mesh.geometry.boundingBox.max.y;
+			body_definition.depth = mesh.geometry.boundingBox.max.z;
 		} else {
 			throw new Error( 'Physijs: unable to determine rigid body definition for mesh' );
 		}
@@ -204,10 +225,11 @@
 			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 			this.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
 			this.postMessage(
-				MESSAGE_TYPES.SET_RIGIDBODY_POSITION,
+				MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 				{
 					body_id: rigid_body_definition.body_id,
-					position: { x: object.position.x, y: object.position.y, z: object.position.z }
+					position: { x: object.position.x, y: object.position.y, z: object.position.z },
+					rotation: { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w }
 				}
 			);
 		}
@@ -242,6 +264,7 @@
 
 	var index = {
 		Mesh: Mesh,
+		BoxMesh: BoxMesh,
 		SphereMesh: SphereMesh,
 
 		Scene: Scene

@@ -56,11 +56,12 @@
 		SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
 
 		/**
-		 * sets the specified rigid body's position
+		 * sets the specified rigid body's position & rotation
 		 * body_id Integer unique integer id for the body
 		 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
+		 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
 		 */
-		SET_RIGIDBODY_POSITION: 'SET_RIGIDBODY_POSITION',
+		SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
 
 		/**
 		 * steps the physics simulation
@@ -74,7 +75,14 @@
 		/**
 		 * radius Float radius of the sphere
 		 */
-		SPHERE: 'SPHERE'
+		SPHERE: 'SPHERE',
+
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 * depth Float box extent on z axis
+		 */
+		BOX: 'BOX'
 	}
 
 	var world_report = new Float32Array( 0 );
@@ -190,6 +198,8 @@
 
 				if ( parameters.body_type === BODY_TYPES.SPHERE ) {
 					shape = new Goblin.SphereShape( body_definition.radius );
+				} else if ( parameters.body_type === BODY_TYPES.BOX ) {
+					shape = new Goblin.BoxShape( body_definition.width, body_definition.height, body_definition.depth );
 				}
 
 				var body = new Goblin.RigidBody( shape, parameters.mass );
@@ -207,12 +217,19 @@
 		);
 
 		handleMessage(
-			MESSAGE_TYPES.SET_RIGIDBODY_POSITION,
+			MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 			function( parameters ) {
 				id_rigid_body_map[ parameters.body_id ].position.set(
 					parameters.position.x,
 					parameters.position.y,
 					parameters.position.z
+				);
+
+				id_rigid_body_map[ parameters.body_id ].rotation.set(
+					parameters.rotation.x,
+					parameters.rotation.y,
+					parameters.rotation.z,
+					parameters.rotation.w
 				);
 			}
 		);
