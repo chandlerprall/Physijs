@@ -26,15 +26,11 @@
 			var sphere_geometry = new THREE.SphereGeometry( 1, 12, 12 );
 			var normal_material = new THREE.MeshNormalMaterial();
 
-			var sphere1 = new physijs.SphereMesh( sphere_geometry, normal_material, 2 );
-			sphere1.position.set( 0, 3, 0 );
-			scene.add( sphere1 );
-
-			var sphere2 = new physijs.SphereMesh( sphere_geometry, normal_material, 0 );
-			scene.add( sphere2 );
+			var sphere = new physijs.SphereMesh( sphere_geometry, normal_material, 0 );
+			scene.add( sphere );
 
 			var box = new physijs.BoxMesh( new THREE.BoxGeometry( 1, 1, 1 ), normal_material, 2 );
-			box.position.set( 0.1, 5, 0 );
+			box.position.set( 0.13, 3, 0 );
 			scene.add( box );
 
 			(function render() {

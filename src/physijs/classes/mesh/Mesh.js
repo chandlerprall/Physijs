@@ -11,7 +11,9 @@ export default function Mesh( geometry, material, mass ) {
 
 	this.physijs = {
 		id: getUniqueId(),
-		mass: mass || Infinity
+		mass: mass || Infinity,
+		position: new THREE.Vector3(),
+		quaternion: new THREE.Quaternion()
 	};
 }
 

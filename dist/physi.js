@@ -89,7 +89,7 @@
 		var rigid_body_count = report[1];
 
 		for ( var i = 0; i < rigid_body_count; i++ ) {
-			var idx = 2 + i * 17; // [WORLD, # BODIES, n*17 elements ...]
+			var idx = 2 + i * 24; // [WORLD, # BODIES, n*24 elements ...]
 			var rigid_body_id = report[idx++];
 			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
 
@@ -99,6 +99,9 @@
 				report[idx++], report[idx++], report[idx++], report[idx++],
 				report[idx++], report[idx++], report[idx++], report[idx++]
 			);
+
+			rigid_body.position.copy( rigid_body.physijs.position.set( report[idx++], report[idx++], report[idx++] ) );
+			rigid_body.quaternion.copy( rigid_body.physijs.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
 		}
 
 		// send the buffer back for re-use
@@ -154,7 +157,9 @@
 
 		this.physijs = {
 			id: getUniqueId(),
-			mass: mass || Infinity
+			mass: mass || Infinity,
+			position: new THREE.Vector3(),
+			quaternion: new THREE.Quaternion()
 		};
 	}
 
@@ -224,14 +229,7 @@
 			var rigid_body_definition = getRigidBodyDefinition( object );
 			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 			this.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
-			this.postMessage(
-				MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
-				{
-					body_id: rigid_body_definition.body_id,
-					position: { x: object.position.x, y: object.position.y, z: object.position.z },
-					rotation: { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w }
-				}
-			);
+			this.setRigidBodyTransform( rigid_body_definition.body_id, object );
 		}
 	};
 
@@ -245,6 +243,17 @@
 		);
 	};
 
+	Scene.prototype.setRigidBodyTransform = function ( body_id, mesh ) {
+		this.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
+			{
+				body_id: body_id,
+				position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
+				rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+			}
+		);
+	};
+
 	Scene.prototype.step = function( time_delta, max_step, onStep ) {
 		if ( this.physijs.is_stepping === true ) {
 			throw new Error( 'Physijs: scene is already stepping, cannot call step() until it\'s finished' );
@@ -252,6 +261,16 @@
 
 		this.physijs.is_stepping = true;
 		this.physijs.onStep = onStep;
+
+		// check if any rigid bodies have been moved / rotated
+		var rigid_body_ids = Object.keys( this.physijs.id_rigid_body_map );
+		for ( var i = 0; i < rigid_body_ids.length; i++ ) {
+			var rigid_body_id = rigid_body_ids[ i ];
+			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+			if ( !rigid_body.position.equals( rigid_body.physijs.position ) || !rigid_body.quaternion.equals( rigid_body.physijs.quaternion ) ) {
+				this.setRigidBodyTransform( rigid_body_id, rigid_body );
+			}
+		}
 
 		this.postMessage(
 			MESSAGE_TYPES.STEP_SIMULATION,
