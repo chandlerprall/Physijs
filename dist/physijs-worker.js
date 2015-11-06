@@ -45,6 +45,8 @@
 		 * body_type String a constant found in `BODY_TYPES`
 		 * body_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
+		 * restitution Float body's restitution
+		 * friction Float body's friction
 		 */
 		ADD_RIGIDBODY: 'ADD_RIGIDBODY',
 
@@ -54,6 +56,20 @@
 		 * mass Float new mass value
 		 */
 		SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
+
+		/**
+		 * sets the specified rigid body's restitution
+		 * body_id Integer unique integer id for the body
+		 * mass Float new restitution value
+		 */
+		SET_RIGIDBODY_RESTITUTION: 'SET_RIGIDBODY_RESTITUTION',
+
+		/**
+		 * sets the specified rigid body's friction
+		 * body_id Integer unique integer id for the body
+		 * mass Float new friction value
+		 */
+		SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
 
 		/**
 		 * sets the specified rigid body's position & rotation
@@ -244,6 +260,20 @@
 			MESSAGE_TYPES.SET_RIGIDBODY_MASS,
 			function( parameters ) {
 				id_rigid_body_map[ parameters.body_id ].mass = parameters.mass;
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].restitution = parameters.restitution;
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
 			}
 		);
 

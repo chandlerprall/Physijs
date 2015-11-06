@@ -164,6 +164,20 @@ function reportWorld() {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].restitution = parameters.restitution;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 		function( parameters ) {
 			id_rigid_body_map[ parameters.body_id ].position.set(

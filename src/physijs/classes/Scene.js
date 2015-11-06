@@ -26,7 +26,9 @@ function getRigidBodyDefinition( mesh ) {
 		body_id: mesh.physijs.id,
 		body_type: body_type,
 		body_definition: body_definition,
-		mass: mesh.physijs.mass
+		mass: mesh.physijs.mass,
+		restitution: mesh.physijs.restitution,
+		friction: mesh.physijs.friction
 	};
 }
 
@@ -43,6 +45,8 @@ export default function Scene( worker_script_location, world_config ) {
 		postMessage: postMessage.bind( this ),
 		postReport: postReport.bind( this ),
 		setRigidBodyMass: setRigidBodyMass.bind( this ),
+		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
+		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
 		setRigidBodyTransform: setRigidBodyTransform.bind( this ),
 		setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
 		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this )
@@ -102,7 +106,7 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 			max_step: max_step
 		}
 	);
-}
+};
 
 function initializeWorker( worker_script_location, world_config ) {
 	this.physijs.worker = new Worker( worker_script_location );
@@ -173,6 +177,26 @@ function setRigidBodyMass( mesh ) {
 		{
 			body_id: mesh.physijs.id,
 			mass: mesh.physijs.mass
+		}
+	);
+}
+
+function setRigidBodyRestitution( mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
+		{
+			body_id: mesh.physijs.id,
+			restitution: mesh.physijs.restitution
+		}
+	);
+}
+
+function setRigidBodyFriction( mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+		{
+			body_id: mesh.physijs.id,
+			friction: mesh.physijs.friction
 		}
 	);
 }

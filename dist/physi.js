@@ -27,6 +27,8 @@
 		 * body_type String a constant found in `BODY_TYPES`
 		 * body_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
+		 * restitution Float body's restitution
+		 * friction Float body's friction
 		 */
 		ADD_RIGIDBODY: 'ADD_RIGIDBODY',
 
@@ -36,6 +38,20 @@
 		 * mass Float new mass value
 		 */
 		SET_RIGIDBODY_MASS: 'SET_RIGIDBODY_MASS',
+
+		/**
+		 * sets the specified rigid body's restitution
+		 * body_id Integer unique integer id for the body
+		 * mass Float new restitution value
+		 */
+		SET_RIGIDBODY_RESTITUTION: 'SET_RIGIDBODY_RESTITUTION',
+
+		/**
+		 * sets the specified rigid body's friction
+		 * body_id Integer unique integer id for the body
+		 * mass Float new friction value
+		 */
+		SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
 
 		/**
 		 * sets the specified rigid body's position & rotation
@@ -94,6 +110,26 @@
 				body_id: body_id,
 				position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
 				rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+			}
+		);
+	}
+
+	function setRigidBodyFriction( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+			{
+				body_id: mesh.physijs.id,
+				friction: mesh.physijs.friction
+			}
+		);
+	}
+
+	function setRigidBodyRestitution( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
+			{
+				body_id: mesh.physijs.id,
+				restitution: mesh.physijs.restitution
 			}
 		);
 	}
@@ -184,6 +220,8 @@
 			postMessage: postMessage.bind( this ),
 			postReport: postReport.bind( this ),
 			setRigidBodyMass: setRigidBodyMass.bind( this ),
+			setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
+			setRigidBodyFriction: setRigidBodyFriction.bind( this ),
 			setRigidBodyTransform: setRigidBodyTransform.bind( this ),
 			setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
 			setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this )
@@ -214,9 +252,9 @@
 		return nextId++;
 	}
 
-	function Mesh( geometry, material, mass ) {
-		if ( mass == null ) {
-			throw new Error( 'Physijs: attempted to create rigid body without specifying mass' );
+	function Mesh( geometry, material, physics_descriptor ) {
+		if ( physics_descriptor == null ) {
+			throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
 		}
 
 		THREE.Mesh.call( this, geometry, material );
@@ -225,7 +263,9 @@
 
 		this.physijs = {
 			id: getUniqueId(),
-			mass: mass || Infinity,
+			mass: physics_descriptor.mass || Infinity,
+			restitution: physics_descriptor.restitution || 0.1,
+			friction: physics_descriptor.friction || 0.5,
 			position: new THREE.Vector3(),
 			quaternion: new THREE.Quaternion(),
 			linear_velocity: new THREE.Vector3(),
@@ -249,7 +289,39 @@
 			set: function( mass ) {
 				this.physijs.mass = mass;
 				if ( this.parent != null ) {
-					this.parent.setRigidBodyMass( this );
+					this.parent.physijs.setRigidBodyMass( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		Mesh.prototype,
+		'restitution',
+		{
+			get: function() {
+				return this.physijs.restitution;
+			},
+			set: function( restitution ) {
+				this.physijs.restitution = restitution;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyRestitution( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		Mesh.prototype,
+		'friction',
+		{
+			get: function() {
+				return this.physijs.friction;
+			},
+			set: function( friction ) {
+				this.physijs.friction = friction;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyFriction( this );
 				}
 			}
 		}
@@ -291,7 +363,9 @@
 			body_id: mesh.physijs.id,
 			body_type: body_type,
 			body_definition: body_definition,
-			mass: mesh.physijs.mass
+			mass: mesh.physijs.mass,
+			restitution: mesh.physijs.restitution,
+			friction: mesh.physijs.friction
 		};
 	}
 
@@ -343,7 +417,7 @@
 				max_step: max_step
 			}
 		);
-	}
+	};
 
 	var index = {
 		Mesh: Mesh,
