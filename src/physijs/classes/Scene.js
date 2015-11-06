@@ -47,9 +47,13 @@ export default function Scene( worker_script_location, world_config ) {
 		setRigidBodyMass: setRigidBodyMass.bind( this ),
 		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
 		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
+		setRigidBodyLinearDamping: setRigidBodyLinearDamping.bind( this ),
+		setRigidBodyAngularDamping: setRigidBodyAngularDamping.bind( this ),
 		setRigidBodyTransform: setRigidBodyTransform.bind( this ),
 		setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
-		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this )
+		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
+		setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
+		setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this )
 	};
 
 	this.physijs.initializeWorker( worker_script_location, world_config );
@@ -96,6 +100,18 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 		// check angular velocity
 		if ( !rigid_body.angular_velocity.equals( rigid_body.physijs.angular_velocity ) ) {
 			this.physijs.setRigidBodyAngularVelocity( rigid_body_id, rigid_body );
+		}
+
+		// check linear factor
+		if ( !rigid_body.linear_factor.equals( rigid_body.physijs.linear_factor ) ) {
+			this.physijs.setRigidBodyLinearFactor( rigid_body_id, rigid_body );
+			rigid_body.physijs.linear_factor.copy( rigid_body.linear_factor );
+		}
+
+		// check angular factor
+		if ( !rigid_body.angular_factor.equals( rigid_body.physijs.angular_factor ) ) {
+			this.physijs.setRigidBodyAngularFactor( rigid_body_id, rigid_body );
+			rigid_body.physijs.angular_factor.copy( rigid_body.angular_factor );
 		}
 	}
 
@@ -201,6 +217,26 @@ function setRigidBodyFriction( mesh ) {
 	);
 }
 
+function setRigidBodyLinearDamping( mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
+		{
+			body_id: mesh.physijs.id,
+			damping: mesh.physijs.linear_damping
+		}
+	);
+}
+
+function setRigidBodyAngularDamping( mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
+		{
+			body_id: mesh.physijs.id,
+			damping: mesh.physijs.angular_damping
+		}
+	);
+}
+
 function setRigidBodyTransform ( body_id, mesh ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
@@ -228,6 +264,26 @@ function setRigidBodyAngularVelocity ( body_id, mesh ) {
 		{
 			body_id: body_id,
 			velocity: { x: mesh.angular_velocity.x, y: mesh.angular_velocity.y, z: mesh.angular_velocity.z }
+		}
+	);
+}
+
+function setRigidBodyLinearFactor ( body_id, mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
+		{
+			body_id: body_id,
+			factor: { x: mesh.linear_factor.x, y: mesh.linear_factor.y, z: mesh.linear_factor.z }
+		}
+	);
+}
+
+function setRigidBodyAngularFactor ( body_id, mesh ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
+		{
+			body_id: body_id,
+			factor: { x: mesh.angular_factor.x, y: mesh.angular_factor.y, z: mesh.angular_factor.z }
 		}
 	);
 }

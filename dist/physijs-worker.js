@@ -72,6 +72,20 @@
 		SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
 
 		/**
+		 * sets the specified rigid body's linear damping
+		 * body_id Integer unique integer id for the body
+		 * damping Float new linear damping value
+		 */
+		SET_RIGIDBODY_LINEAR_DAMPING: 'SET_RIGIDBODY_LINEAR_DAMPING',
+
+		/**
+		 * sets the specified rigid body's angular damping
+		 * body_id Integer unique integer id for the body
+		 * damping Float new angular damping value
+		 */
+		SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
+
+		/**
 		 * sets the specified rigid body's position & rotation
 		 * body_id Integer unique integer id for the body
 		 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
@@ -82,16 +96,30 @@
 		/**
 		 * sets the specified rigid body's linear velocity
 		 * body_id Integer unique integer id for the body
-		 * velocity Object new coordinates for the body's linear velocity, {x:x, y:y, z:z}
+		 * velocity Object new values for the body's linear velocity, {x:x, y:y, z:z}
 		 */
 		SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
 
 		/**
 		 * sets the specified rigid body's angular velocity
 		 * body_id Integer unique integer id for the body
-		 * velocity Object new coordinates for the body's angular velocity, {x:x, y:y, z:z}
+		 * velocity Object new values for the body's angular velocity, {x:x, y:y, z:z}
 		 */
 		SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
+
+		/**
+		 * sets the specified rigid body's linear factor
+		 * body_id Integer unique integer id for the body
+		 * factor Object new values for the body's linear factor, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_LINEAR_FACTOR: 'SET_RIGIDBODY_LINEAR_FACTOR',
+
+		/**
+		 * sets the specified rigid body's angular factor
+		 * body_id Integer unique integer id for the body
+		 * factor Object new values for the body's angular factor, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_ANGULAR_FACTOR: 'SET_RIGIDBODY_ANGULAR_FACTOR',
 
 		/**
 		 * steps the physics simulation
@@ -271,6 +299,21 @@
 		);
 
 		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
+			function( parameters ) {
+				console.log('setting linear damping to', parameters.damping);
+				id_rigid_body_map[ parameters.body_id ].linear_damping = parameters.damping;
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].angular_damping = parameters.damping;
+			}
+		);
+
+		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
 			function( parameters ) {
 				id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
@@ -313,6 +356,29 @@
 					parameters.velocity.x,
 					parameters.velocity.y,
 					parameters.velocity.z
+				);
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
+			function( parameters ) {
+				console.log('setting linear factor', parameters);
+				id_rigid_body_map[ parameters.body_id ].linear_factor.set(
+					parameters.factor.x,
+					parameters.factor.y,
+					parameters.factor.z
+				);
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].angular_factor.set(
+					parameters.factor.x,
+					parameters.factor.y,
+					parameters.factor.z
 				);
 			}
 		);

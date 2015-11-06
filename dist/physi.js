@@ -54,6 +54,20 @@
 		SET_RIGIDBODY_FRICTION: 'SET_RIGIDBODY_FRICTION',
 
 		/**
+		 * sets the specified rigid body's linear damping
+		 * body_id Integer unique integer id for the body
+		 * damping Float new linear damping value
+		 */
+		SET_RIGIDBODY_LINEAR_DAMPING: 'SET_RIGIDBODY_LINEAR_DAMPING',
+
+		/**
+		 * sets the specified rigid body's angular damping
+		 * body_id Integer unique integer id for the body
+		 * damping Float new angular damping value
+		 */
+		SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
+
+		/**
 		 * sets the specified rigid body's position & rotation
 		 * body_id Integer unique integer id for the body
 		 * position Object new coordinates for the body's position, {x:x, y:y, z:z}
@@ -64,16 +78,30 @@
 		/**
 		 * sets the specified rigid body's linear velocity
 		 * body_id Integer unique integer id for the body
-		 * velocity Object new coordinates for the body's linear velocity, {x:x, y:y, z:z}
+		 * velocity Object new values for the body's linear velocity, {x:x, y:y, z:z}
 		 */
 		SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
 
 		/**
 		 * sets the specified rigid body's angular velocity
 		 * body_id Integer unique integer id for the body
-		 * velocity Object new coordinates for the body's angular velocity, {x:x, y:y, z:z}
+		 * velocity Object new values for the body's angular velocity, {x:x, y:y, z:z}
 		 */
 		SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
+
+		/**
+		 * sets the specified rigid body's linear factor
+		 * body_id Integer unique integer id for the body
+		 * factor Object new values for the body's linear factor, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_LINEAR_FACTOR: 'SET_RIGIDBODY_LINEAR_FACTOR',
+
+		/**
+		 * sets the specified rigid body's angular factor
+		 * body_id Integer unique integer id for the body
+		 * factor Object new values for the body's angular factor, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_ANGULAR_FACTOR: 'SET_RIGIDBODY_ANGULAR_FACTOR',
 
 		/**
 		 * steps the physics simulation
@@ -82,6 +110,26 @@
 		 */
 		STEP_SIMULATION: 'STEP_SIMULATION'
 	};
+
+	function setRigidBodyAngularFactor ( body_id, mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
+			{
+				body_id: body_id,
+				factor: { x: mesh.angular_factor.x, y: mesh.angular_factor.y, z: mesh.angular_factor.z }
+			}
+		);
+	}
+
+	function setRigidBodyLinearFactor ( body_id, mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
+			{
+				body_id: body_id,
+				factor: { x: mesh.linear_factor.x, y: mesh.linear_factor.y, z: mesh.linear_factor.z }
+			}
+		);
+	}
 
 	function setRigidBodyAngularVelocity ( body_id, mesh ) {
 		this.physijs.postMessage(
@@ -110,6 +158,26 @@
 				body_id: body_id,
 				position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
 				rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+			}
+		);
+	}
+
+	function setRigidBodyAngularDamping( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
+			{
+				body_id: mesh.physijs.id,
+				damping: mesh.physijs.angular_damping
+			}
+		);
+	}
+
+	function setRigidBodyLinearDamping( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
+			{
+				body_id: mesh.physijs.id,
+				damping: mesh.physijs.linear_damping
 			}
 		);
 	}
@@ -222,9 +290,13 @@
 			setRigidBodyMass: setRigidBodyMass.bind( this ),
 			setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
 			setRigidBodyFriction: setRigidBodyFriction.bind( this ),
+			setRigidBodyLinearDamping: setRigidBodyLinearDamping.bind( this ),
+			setRigidBodyAngularDamping: setRigidBodyAngularDamping.bind( this ),
 			setRigidBodyTransform: setRigidBodyTransform.bind( this ),
 			setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
-			setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this )
+			setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
+			setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
+			setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this )
 		};
 
 		this.physijs.initializeWorker( worker_script_location, world_config );
@@ -263,17 +335,25 @@
 
 		this.physijs = {
 			id: getUniqueId(),
+
 			mass: physics_descriptor.mass || Infinity,
 			restitution: physics_descriptor.restitution || 0.1,
 			friction: physics_descriptor.friction || 0.5,
+			linear_damping: physics_descriptor.linear_damping || 0,
+			angular_damping: physics_descriptor.angular_damping || 0,
+
 			position: new THREE.Vector3(),
 			quaternion: new THREE.Quaternion(),
 			linear_velocity: new THREE.Vector3(),
-			angular_velocity: new THREE.Vector3()
+			angular_velocity: new THREE.Vector3(),
+			linear_factor: new THREE.Vector3( 1, 1, 1 ),
+			angular_factor: new THREE.Vector3( 1, 1, 1 )
 		};
 
 		this.linear_velocity = new THREE.Vector3();
 		this.angular_velocity = new THREE.Vector3();
+		this.linear_factor = new THREE.Vector3( 1, 1, 1 );
+		this.angular_factor = new THREE.Vector3( 1, 1, 1 );
 	}
 
 	Mesh.prototype = Object.create( THREE.Mesh.prototype );
@@ -322,6 +402,38 @@
 				this.physijs.friction = friction;
 				if ( this.parent != null ) {
 					this.parent.physijs.setRigidBodyFriction( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		Mesh.prototype,
+		'linear_damping',
+		{
+			get: function() {
+				return this.physijs.linear_damping;
+			},
+			set: function( linear_damping ) {
+				this.physijs.linear_damping = linear_damping;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyLinearDamping( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		Mesh.prototype,
+		'angular_damping',
+		{
+			get: function() {
+				return this.physijs.angular_damping;
+			},
+			set: function( angular_damping ) {
+				this.physijs.angular_damping = angular_damping;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyAngularDamping( this );
 				}
 			}
 		}
@@ -407,6 +519,18 @@
 			// check angular velocity
 			if ( !rigid_body.angular_velocity.equals( rigid_body.physijs.angular_velocity ) ) {
 				this.physijs.setRigidBodyAngularVelocity( rigid_body_id, rigid_body );
+			}
+
+			// check linear factor
+			if ( !rigid_body.linear_factor.equals( rigid_body.physijs.linear_factor ) ) {
+				this.physijs.setRigidBodyLinearFactor( rigid_body_id, rigid_body );
+				rigid_body.physijs.linear_factor.copy( rigid_body.linear_factor );
+			}
+
+			// check angular factor
+			if ( !rigid_body.angular_factor.equals( rigid_body.physijs.angular_factor ) ) {
+				this.physijs.setRigidBodyAngularFactor( rigid_body_id, rigid_body );
+				rigid_body.physijs.angular_factor.copy( rigid_body.angular_factor );
 			}
 		}
 

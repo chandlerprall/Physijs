@@ -11,17 +11,25 @@ export default function Mesh( geometry, material, physics_descriptor ) {
 
 	this.physijs = {
 		id: getUniqueId(),
+
 		mass: physics_descriptor.mass || Infinity,
 		restitution: physics_descriptor.restitution || 0.1,
 		friction: physics_descriptor.friction || 0.5,
+		linear_damping: physics_descriptor.linear_damping || 0,
+		angular_damping: physics_descriptor.angular_damping || 0,
+
 		position: new THREE.Vector3(),
 		quaternion: new THREE.Quaternion(),
 		linear_velocity: new THREE.Vector3(),
-		angular_velocity: new THREE.Vector3()
+		angular_velocity: new THREE.Vector3(),
+		linear_factor: new THREE.Vector3( 1, 1, 1 ),
+		angular_factor: new THREE.Vector3( 1, 1, 1 )
 	};
 
 	this.linear_velocity = new THREE.Vector3();
 	this.angular_velocity = new THREE.Vector3();
+	this.linear_factor = new THREE.Vector3( 1, 1, 1 );
+	this.angular_factor = new THREE.Vector3( 1, 1, 1 );
 }
 
 Mesh.prototype = Object.create( THREE.Mesh.prototype );
@@ -70,6 +78,38 @@ Object.defineProperty(
 			this.physijs.friction = friction;
 			if ( this.parent != null ) {
 				this.parent.physijs.setRigidBodyFriction( this );
+			}
+		}
+	}
+);
+
+Object.defineProperty(
+	Mesh.prototype,
+	'linear_damping',
+	{
+		get: function() {
+			return this.physijs.linear_damping;
+		},
+		set: function( linear_damping ) {
+			this.physijs.linear_damping = linear_damping;
+			if ( this.parent != null ) {
+				this.parent.physijs.setRigidBodyLinearDamping( this );
+			}
+		}
+	}
+);
+
+Object.defineProperty(
+	Mesh.prototype,
+	'angular_damping',
+	{
+		get: function() {
+			return this.physijs.angular_damping;
+		},
+		set: function( angular_damping ) {
+			this.physijs.angular_damping = angular_damping;
+			if ( this.parent != null ) {
+				this.parent.physijs.setRigidBodyAngularDamping( this );
 			}
 		}
 	}

@@ -171,6 +171,20 @@ function reportWorld() {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].linear_damping = parameters.damping;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].angular_damping = parameters.damping;
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
 		function( parameters ) {
 			id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
@@ -213,6 +227,29 @@ function reportWorld() {
 				parameters.velocity.x,
 				parameters.velocity.y,
 				parameters.velocity.z
+			);
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
+		function( parameters ) {
+			console.log('setting linear factor', parameters);
+			id_rigid_body_map[ parameters.body_id ].linear_factor.set(
+				parameters.factor.x,
+				parameters.factor.y,
+				parameters.factor.z
+			);
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].angular_factor.set(
+				parameters.factor.x,
+				parameters.factor.y,
+				parameters.factor.z
 			);
 		}
 	);
