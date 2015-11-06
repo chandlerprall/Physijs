@@ -171,6 +171,13 @@ function reportWorld() {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
 		function( parameters ) {
 			id_rigid_body_map[ parameters.body_id ].linear_damping = parameters.damping;
@@ -185,9 +192,16 @@ function reportWorld() {
 	);
 
 	handleMessage(
-		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
+			id_rigid_body_map[ parameters.body_id ].collision_groups = parameters.collision_groups;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].collision_mask = parameters.collision_mask;
 		}
 	);
 

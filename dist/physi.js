@@ -29,6 +29,10 @@
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 		 * restitution Float body's restitution
 		 * friction Float body's friction
+		 * linear_damping Float body's linear damping
+		 * angular_damping Float body's angular damping
+		 * collision_groups Integer body's collision groups
+		 * collision_mask Integer body's collision mask
 		 */
 		ADD_RIGIDBODY: 'ADD_RIGIDBODY',
 
@@ -66,6 +70,20 @@
 		 * damping Float new angular damping value
 		 */
 		SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
+
+		/**
+		 * sets the specified rigid body's collision groups
+		 * body_id Integer unique integer id for the body
+		 * groups Integer new collision group value
+		 */
+		SET_RIGIDBODY_COLLISION_GROUPS: 'SET_RIGIDBODY_COLLISION_GROUPS',
+
+		/**
+		 * sets the specified rigid body's collision mask
+		 * body_id Integer unique integer id for the body
+		 * mask Integer new collision mask value
+		 */
+		SET_RIGIDBODY_COLLISION_MASK: 'SET_RIGIDBODY_COLLISION_MASK',
 
 		/**
 		 * sets the specified rigid body's position & rotation
@@ -111,7 +129,7 @@
 		STEP_SIMULATION: 'STEP_SIMULATION'
 	};
 
-	function setRigidBodyAngularFactor ( body_id, mesh ) {
+	function setRigidBodyAngularFactor( body_id, mesh ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
 			{
@@ -121,7 +139,7 @@
 		);
 	}
 
-	function setRigidBodyLinearFactor ( body_id, mesh ) {
+	function setRigidBodyLinearFactor( body_id, mesh ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
 			{
@@ -131,7 +149,7 @@
 		);
 	}
 
-	function setRigidBodyAngularVelocity ( body_id, mesh ) {
+	function setRigidBodyAngularVelocity( body_id, mesh ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
 			{
@@ -141,7 +159,7 @@
 		);
 	}
 
-	function setRigidBodyLinearVelocity ( body_id, mesh ) {
+	function setRigidBodyLinearVelocity( body_id, mesh ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
 			{
@@ -151,13 +169,33 @@
 		);
 	}
 
-	function setRigidBodyTransform ( body_id, mesh ) {
+	function setRigidBodyTransform( body_id, mesh ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 			{
 				body_id: body_id,
 				position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
 				rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+			}
+		);
+	}
+
+	function setRigidBodyCollisionMask( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
+			{
+				body_id: mesh.physijs.id,
+				collision_mask: mesh.physijs.collision_mask
+			}
+		);
+	}
+
+	function setRigidBodyCollisionGroups( mesh ) {
+		this.physijs.postMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
+			{
+				body_id: mesh.physijs.id,
+				collision_groups: mesh.physijs.collision_groups
 			}
 		);
 	}
@@ -292,6 +330,8 @@
 			setRigidBodyFriction: setRigidBodyFriction.bind( this ),
 			setRigidBodyLinearDamping: setRigidBodyLinearDamping.bind( this ),
 			setRigidBodyAngularDamping: setRigidBodyAngularDamping.bind( this ),
+			setRigidBodyCollisionGroups: setRigidBodyCollisionGroups.bind( this ),
+			setRigidBodyCollisionMask: setRigidBodyCollisionMask.bind( this ),
 			setRigidBodyTransform: setRigidBodyTransform.bind( this ),
 			setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
 			setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
@@ -341,6 +381,8 @@
 			friction: physics_descriptor.friction || 0.5,
 			linear_damping: physics_descriptor.linear_damping || 0,
 			angular_damping: physics_descriptor.angular_damping || 0,
+			collision_groups: 0,
+			collision_mask: 0,
 
 			position: new THREE.Vector3(),
 			quaternion: new THREE.Quaternion(),
@@ -439,6 +481,37 @@
 		}
 	);
 
+	Object.defineProperty(
+		Mesh.prototype,
+		'collision_groups',
+		{
+			get: function() {
+				return this.physijs.collision_groups;
+			},
+			set: function( collision_groups ) {
+				this.physijs.collision_groups = collision_groups;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyCollisionGroups( this );
+				}
+			}
+		}
+	);
+	Object.defineProperty(
+		Mesh.prototype,
+		'collision_mask',
+		{
+			get: function() {
+				return this.physijs.collision_mask;
+			},
+			set: function( collision_mask ) {
+				this.physijs.collision_mask = collision_mask;
+				if ( this.parent != null ) {
+					this.parent.physijs.setRigidBodyCollisionMask( this );
+				}
+			}
+		}
+	);
+
 	function BoxMesh( geometry, material, mass ) {
 		Mesh.call( this, geometry, material, mass );
 	}
@@ -477,7 +550,11 @@
 			body_definition: body_definition,
 			mass: mesh.physijs.mass,
 			restitution: mesh.physijs.restitution,
-			friction: mesh.physijs.friction
+			friction: mesh.physijs.friction,
+			linear_damping: mesh.physijs.linear_damping,
+			angular_damping: mesh.physijs.angular_damping,
+			collision_groups: mesh.physijs.collision_groups,
+			collision_mask: mesh.physijs.collision_mask
 		};
 	}
 
@@ -488,7 +565,6 @@
 			var rigid_body_definition = getRigidBodyDefinition( object );
 			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
-			this.physijs.setRigidBodyTransform( rigid_body_definition.body_id, object );
 		}
 	};
 

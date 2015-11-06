@@ -23,6 +23,10 @@ export default {
 	 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 	 * restitution Float body's restitution
 	 * friction Float body's friction
+	 * linear_damping Float body's linear damping
+	 * angular_damping Float body's angular damping
+	 * collision_groups Integer body's collision groups
+	 * collision_mask Integer body's collision mask
 	 */
 	ADD_RIGIDBODY: 'ADD_RIGIDBODY',
 
@@ -60,6 +64,20 @@ export default {
 	 * damping Float new angular damping value
 	 */
 	SET_RIGIDBODY_ANGULAR_DAMPING: 'SET_RIGIDBODY_ANGULAR_DAMPING',
+
+	/**
+	 * sets the specified rigid body's collision groups
+	 * body_id Integer unique integer id for the body
+	 * groups Integer new collision group value
+	 */
+	SET_RIGIDBODY_COLLISION_GROUPS: 'SET_RIGIDBODY_COLLISION_GROUPS',
+
+	/**
+	 * sets the specified rigid body's collision mask
+	 * body_id Integer unique integer id for the body
+	 * mask Integer new collision mask value
+	 */
+	SET_RIGIDBODY_COLLISION_MASK: 'SET_RIGIDBODY_COLLISION_MASK',
 
 	/**
 	 * sets the specified rigid body's position & rotation
