@@ -40,9 +40,9 @@
 
 			var physics_framerate = 1000 / 60;
 			function onStep() {
-				setTimeout( scene.physijs.step.bind( null, physics_framerate / 1000, undefined, onStep ), physics_framerate );
+				setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
 			}
-			scene.physijs.step( physics_framerate / 1000, undefined, onStep );
+			scene.step( physics_framerate / 1000, undefined, onStep );
 
 		</script>
 	</body>

@@ -13,7 +13,7 @@ function ensureReportSize( report, report_size, chunk_size ) {
 	}
 	return report;
 }
-var WORLD_REPORT_SIZE_RIGIDBODY = 24; // 1 body id + 16 matrix elements + 3 position elements + 4 rotation elements
+var WORLD_REPORT_SIZE_RIGIDBODY = 30; // 1 body id + 16 matrix elements + 3 position elements + 4 rotation elements + 3 linear velocity + 3 angular_velocity
 var WORLD_REPORT_CHUNK_SIZE = 100 * WORLD_REPORT_SIZE_RIGIDBODY; // increase buffer by enough to hold 100 objects each time
 var world_report = new Float32Array( 0 );
 
@@ -70,6 +70,14 @@ function reportWorld() {
 		world_report[idx++] = rigid_body.rotation.y;
 		world_report[idx++] = rigid_body.rotation.z;
 		world_report[idx++] = rigid_body.rotation.w;
+
+		world_report[idx++] = rigid_body.linear_velocity.x;
+		world_report[idx++] = rigid_body.linear_velocity.y;
+		world_report[idx++] = rigid_body.linear_velocity.z;
+
+		world_report[idx++] = rigid_body.angular_velocity.x;
+		world_report[idx++] = rigid_body.angular_velocity.y;
+		world_report[idx++] = rigid_body.angular_velocity.z;
 	}
 
 	postReport( world_report );
@@ -169,6 +177,28 @@ function reportWorld() {
 				parameters.rotation.y,
 				parameters.rotation.z,
 				parameters.rotation.w
+			);
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].linear_velocity.set(
+				parameters.velocity.x,
+				parameters.velocity.y,
+				parameters.velocity.z
+			);
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
+		function( parameters ) {
+			id_rigid_body_map[ parameters.body_id ].angular_velocity.set(
+				parameters.velocity.x,
+				parameters.velocity.y,
+				parameters.velocity.z
 			);
 		}
 	);

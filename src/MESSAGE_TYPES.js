@@ -40,6 +40,20 @@ export default {
 	SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
 
 	/**
+	 * sets the specified rigid body's linear velocity
+	 * body_id Integer unique integer id for the body
+	 * velocity Object new coordinates for the body's linear velocity, {x:x, y:y, z:z}
+	 */
+	SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
+
+	/**
+	 * sets the specified rigid body's angular velocity
+	 * body_id Integer unique integer id for the body
+	 * velocity Object new coordinates for the body's angular velocity, {x:x, y:y, z:z}
+	 */
+	SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
+
+	/**
 	 * steps the physics simulation
 	 * time_delta Float total amount of time, in seconds, to step the simulation by
 	 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]

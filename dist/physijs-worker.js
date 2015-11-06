@@ -19,7 +19,7 @@
 		}
 		return report;
 	}
-	var WORLD_REPORT_SIZE_RIGIDBODY = 24; // 1 body id + 16 matrix elements + 3 position elements + 4 rotation elements
+	var WORLD_REPORT_SIZE_RIGIDBODY = 30; // 1 body id + 16 matrix elements + 3 position elements + 4 rotation elements + 3 linear velocity + 3 angular_velocity
 	var WORLD_REPORT_CHUNK_SIZE = 100 * WORLD_REPORT_SIZE_RIGIDBODY; // increase buffer by enough to hold 100 objects each time
 
 	var MESSAGE_TYPES = {
@@ -62,6 +62,20 @@
 		 * rotation Object new quaternion values {x:x, y:y, z:z, w:w}
 		 */
 		SET_RIGIDBODY_TRANSFORM: 'SET_RIGIDBODY_TRANSFORM',
+
+		/**
+		 * sets the specified rigid body's linear velocity
+		 * body_id Integer unique integer id for the body
+		 * velocity Object new coordinates for the body's linear velocity, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_LINEAR_VELOCITY: 'SET_RIGIDBODY_LINEAR_VELOCITY',
+
+		/**
+		 * sets the specified rigid body's angular velocity
+		 * body_id Integer unique integer id for the body
+		 * velocity Object new coordinates for the body's angular velocity, {x:x, y:y, z:z}
+		 */
+		SET_RIGIDBODY_ANGULAR_VELOCITY: 'SET_RIGIDBODY_ANGULAR_VELOCITY',
 
 		/**
 		 * steps the physics simulation
@@ -140,6 +154,14 @@
 			world_report[idx++] = rigid_body.rotation.y;
 			world_report[idx++] = rigid_body.rotation.z;
 			world_report[idx++] = rigid_body.rotation.w;
+
+			world_report[idx++] = rigid_body.linear_velocity.x;
+			world_report[idx++] = rigid_body.linear_velocity.y;
+			world_report[idx++] = rigid_body.linear_velocity.z;
+
+			world_report[idx++] = rigid_body.angular_velocity.x;
+			world_report[idx++] = rigid_body.angular_velocity.y;
+			world_report[idx++] = rigid_body.angular_velocity.z;
 		}
 
 		postReport( world_report );
@@ -239,6 +261,28 @@
 					parameters.rotation.y,
 					parameters.rotation.z,
 					parameters.rotation.w
+				);
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].linear_velocity.set(
+					parameters.velocity.x,
+					parameters.velocity.y,
+					parameters.velocity.z
+				);
+			}
+		);
+
+		handleMessage(
+			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
+			function( parameters ) {
+				id_rigid_body_map[ parameters.body_id ].angular_velocity.set(
+					parameters.velocity.x,
+					parameters.velocity.y,
+					parameters.velocity.z
 				);
 			}
 		);

@@ -13,8 +13,13 @@ export default function Mesh( geometry, material, mass ) {
 		id: getUniqueId(),
 		mass: mass || Infinity,
 		position: new THREE.Vector3(),
-		quaternion: new THREE.Quaternion()
+		quaternion: new THREE.Quaternion(),
+		linear_velocity: new THREE.Vector3(),
+		angular_velocity: new THREE.Vector3()
 	};
+
+	this.linear_velocity = new THREE.Vector3();
+	this.angular_velocity = new THREE.Vector3();
 }
 
 Mesh.prototype = Object.create( THREE.Mesh.prototype );
