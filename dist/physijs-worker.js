@@ -296,6 +296,14 @@
 				}
 
 				var body = new Goblin.RigidBody( shape, parameters.mass );
+
+				body.restitution = parameters.restitution;
+				body.friction = parameters.friction;
+				body.linear_damping = parameters.linear_damping;
+				body.angular_damping = parameters.angular_damping;
+				body.collision_groups = parameters.collision_groups;
+				body.collision_mask = parameters.collision_mask;
+
 				world.addRigidBody( body );
 
 				id_rigid_body_map[ parameters.body_id ] = body;
@@ -340,6 +348,7 @@
 		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 			function( parameters ) {
+				console.log('setting groups to', parameters.collision_groups);
 				id_rigid_body_map[ parameters.body_id ].collision_groups = parameters.collision_groups;
 			}
 		);
@@ -347,6 +356,7 @@
 		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
 			function( parameters ) {
+				console.log('setting mask to', parameters.collision_mask);
 				id_rigid_body_map[ parameters.body_id ].collision_mask = parameters.collision_mask;
 			}
 		);
