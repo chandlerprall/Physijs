@@ -13,7 +13,8 @@
 
 	// report-related variables and constants
 	function ensureReportSize( report, report_size, chunk_size ) {
-		var needed_buffer_size = ( report_size + 2) + chunk_size - report_size % chunk_size; // the +2 is to add an array element to hold the report type and length of array data
+		var needed_buffer_size = ( report_size + 3 ) + chunk_size - report_size % chunk_size; // the +2 is to
+			// add an array element to hold the report type, number of ticks simulation has gone through, and length of array data
 		if ( report.length < needed_buffer_size ) {
 			report = new Float32Array( needed_buffer_size );
 		}
@@ -42,8 +43,7 @@
 		/**
 		 * adds a rigid body to the world
 		 * body_id Integer unique integer id for the body
-		 * body_type String a constant found in `BODY_TYPES`
-		 * body_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+		 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 		 * restitution Float body's restitution
 		 * friction Float body's friction
@@ -158,7 +158,13 @@
 		 * height Float box extent on y axis
 		 * depth Float box extent on z axis
 		 */
-		BOX: 'BOX'
+		BOX: 'BOX',
+
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 */
+		PLANE: 'PLANE'
 	}
 
 	var world_report = new Float32Array( 0 );
@@ -181,6 +187,7 @@
 		// populate the report
 		var idx = 0;
 		world_report[idx++] = MESSAGE_TYPES.REPORTS.WORLD;
+		world_report[idx++] = world.ticks;
 		world_report[idx++] = rigid_bodies_count;
 
 		for ( var i = 0; i < rigid_bodies_count; i++ ) {
@@ -286,13 +293,15 @@
 		handleMessage(
 			MESSAGE_TYPES.ADD_RIGIDBODY,
 			function( parameters ) {
-				var body_definition = parameters.body_definition;
+				var shape_definition = parameters.shape_definition;
 				var shape;
 
-				if ( parameters.body_type === BODY_TYPES.SPHERE ) {
-					shape = new Goblin.SphereShape( body_definition.radius );
-				} else if ( parameters.body_type === BODY_TYPES.BOX ) {
-					shape = new Goblin.BoxShape( body_definition.width, body_definition.height, body_definition.depth );
+				if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
+					shape = new Goblin.SphereShape( shape_definition.radius );
+				} else if ( shape_definition.body_type === BODY_TYPES.BOX ) {
+					shape = new Goblin.BoxShape( shape_definition.width, shape_definition.height, shape_definition.depth );
+				} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {
+					shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
 				}
 
 				var body = new Goblin.RigidBody( shape, parameters.mass );

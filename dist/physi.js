@@ -24,8 +24,7 @@
 		/**
 		 * adds a rigid body to the world
 		 * body_id Integer unique integer id for the body
-		 * body_type String a constant found in `BODY_TYPES`
-		 * body_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+		 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 		 * restitution Float body's restitution
 		 * friction Float body's friction
@@ -262,10 +261,11 @@
 	}
 
 	function processWorldReport( report ) {
-		var rigid_body_count = report[1];
+		var simulation_ticks = report[1];
+		var rigid_body_count = report[2];
 
 		for ( var i = 0; i < rigid_body_count; i++ ) {
-			var idx = 2 + i * 30; // [WORLD, # BODIES, n*30 elements ...]
+			var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
 			var rigid_body_id = report[idx++];
 			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
 
@@ -290,7 +290,7 @@
 		if ( this.physijs.onStep instanceof Function ) {
 			var onStep = this.physijs.onStep;
 			this.physijs.onStep = null;
-			onStep.call( this );
+			onStep.call( this, simulation_ticks );
 		}
 	}
 
@@ -345,18 +345,20 @@
 	Scene.prototype = Object.create( THREE.Scene.prototype );
 	Scene.prototype.constructor = Scene;
 
-	var BODY_TYPES = {
-		/**
-		 * radius Float radius of the sphere
-		 */
-		SPHERE: 'SPHERE',
+	function getRigidBodyDefinition( mesh ) {
+		var shape_definition = mesh.getShapeDefinition();
 
-		/**
-		 * width Float box extent on x axis
-		 * height Float box extent on y axis
-		 * depth Float box extent on z axis
-		 */
-		BOX: 'BOX'
+		return {
+			body_id: mesh.physijs.id,
+			shape_definition: shape_definition,
+			mass: mesh.physijs.mass,
+			restitution: mesh.physijs.restitution,
+			friction: mesh.physijs.friction,
+			linear_damping: mesh.physijs.linear_damping,
+			angular_damping: mesh.physijs.angular_damping,
+			collision_groups: mesh.physijs.collision_groups,
+			collision_mask: mesh.physijs.collision_mask
+		};
 	}
 
 	var nextId = 0;
@@ -512,52 +514,6 @@
 		}
 	);
 
-	function BoxMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
-	}
-
-	BoxMesh.prototype = Object.create( Mesh.prototype );
-	BoxMesh.prototype.constructor = BoxMesh;
-
-	function SphereMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
-	}
-
-	SphereMesh.prototype = Object.create( Mesh.prototype );
-	SphereMesh.prototype.constructor = SphereMesh;
-
-	function getRigidBodyDefinition( mesh ) {
-		var body_type;
-		var body_definition = {};
-
-		if ( mesh instanceof SphereMesh ) {
-			mesh.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
-			body_type = BODY_TYPES.SPHERE;
-			body_definition.radius = mesh.geometry.boundingSphere.radius;
-		} else if ( mesh instanceof BoxMesh ) {
-			mesh.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
-			body_type = BODY_TYPES.BOX;
-			body_definition.width = mesh.geometry.boundingBox.max.x;
-			body_definition.height = mesh.geometry.boundingBox.max.y;
-			body_definition.depth = mesh.geometry.boundingBox.max.z;
-		} else {
-			throw new Error( 'Physijs: unable to determine rigid body definition for mesh' );
-		}
-
-		return {
-			body_id: mesh.physijs.id,
-			body_type: body_type,
-			body_definition: body_definition,
-			mass: mesh.physijs.mass,
-			restitution: mesh.physijs.restitution,
-			friction: mesh.physijs.friction,
-			linear_damping: mesh.physijs.linear_damping,
-			angular_damping: mesh.physijs.angular_damping,
-			collision_groups: mesh.physijs.collision_groups,
-			collision_mask: mesh.physijs.collision_mask
-		};
-	}
-
 	Scene.prototype.add = function( object ) {
 		THREE.Scene.prototype.add.call( this, object );
 
@@ -565,6 +521,7 @@
 			var rigid_body_definition = getRigidBodyDefinition( object );
 			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+			object.updateMatrix();
 		}
 	};
 
@@ -619,9 +576,81 @@
 		);
 	};
 
+	function SphereMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	SphereMesh.prototype = Object.create( Mesh.prototype );
+	SphereMesh.prototype.constructor = SphereMesh;
+
+	var BODY_TYPES = {
+		/**
+		 * radius Float radius of the sphere
+		 */
+		SPHERE: 'SPHERE',
+
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 * depth Float box extent on z axis
+		 */
+		BOX: 'BOX',
+
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 */
+		PLANE: 'PLANE'
+	}
+
+	SphereMesh.prototype.getShapeDefinition = function() {
+		this.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
+
+		return {
+			body_type: BODY_TYPES.SPHERE,
+			radius: this.geometry.boundingSphere.radius
+		};
+	};
+
+	function PlaneMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	PlaneMesh.prototype = Object.create( Mesh.prototype );
+	PlaneMesh.prototype.constructor = PlaneMesh;
+
+	PlaneMesh.prototype.getShapeDefinition = function() {
+		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+		return {
+			body_type: BODY_TYPES.PLANE,
+			width: this.geometry.boundingBox.max.x,
+			height: this.geometry.boundingBox.max.y
+		};
+	};
+
+	function BoxMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	BoxMesh.prototype = Object.create( Mesh.prototype );
+	BoxMesh.prototype.constructor = BoxMesh;
+
+	BoxMesh.prototype.getShapeDefinition = function() {
+		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+		return {
+			body_type: BODY_TYPES.BOX,
+			width: this.geometry.boundingBox.max.x,
+			height: this.geometry.boundingBox.max.y,
+			depth: this.geometry.boundingBox.max.z
+		};
+	};
+
 	var index = {
 		Mesh: Mesh,
 		BoxMesh: BoxMesh,
+		PlaneMesh: PlaneMesh,
 		SphereMesh: SphereMesh,
 
 		Scene: Scene

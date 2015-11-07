@@ -18,8 +18,7 @@ export default {
 	/**
 	 * adds a rigid body to the world
 	 * body_id Integer unique integer id for the body
-	 * body_type String a constant found in `BODY_TYPES`
-	 * body_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 	 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 	 * restitution Float body's restitution
 	 * friction Float body's friction

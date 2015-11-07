@@ -9,5 +9,11 @@ export default {
 	 * height Float box extent on y axis
 	 * depth Float box extent on z axis
 	 */
-	BOX: 'BOX'
+	BOX: 'BOX',
+
+	/**
+	 * width Float box extent on x axis
+	 * height Float box extent on y axis
+	 */
+	PLANE: 'PLANE'
 }
