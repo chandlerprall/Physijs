@@ -145,12 +145,14 @@ function reportWorld() {
 			var shape_definition = parameters.shape_definition;
 			var shape;
 
-			if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
-				shape = new Goblin.SphereShape( shape_definition.radius );
-			} else if ( shape_definition.body_type === BODY_TYPES.BOX ) {
+			if ( shape_definition.body_type === BODY_TYPES.BOX ) {
 				shape = new Goblin.BoxShape( shape_definition.width, shape_definition.height, shape_definition.depth );
+			} else if ( shape_definition.body_type === BODY_TYPES.CYLINDER ) {
+				shape = new Goblin.CylinderShape( shape_definition.radius, shape_definition.height );
 			} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {
 				shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
+			} else if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
+				shape = new Goblin.SphereShape( shape_definition.radius );
 			}
 
 			var body = new Goblin.RigidBody( shape, parameters.mass );

@@ -1,10 +1,5 @@
 export default {
 	/**
-	 * radius Float radius of the sphere
-	 */
-	SPHERE: 'SPHERE',
-
-	/**
 	 * width Float box extent on x axis
 	 * height Float box extent on y axis
 	 * depth Float box extent on z axis
@@ -12,8 +7,19 @@ export default {
 	BOX: 'BOX',
 
 	/**
-	 * width Float box extent on x axis
-	 * height Float box extent on y axis
+	 * radius Float cylinder radius
+	 * height Float cylinder extent on y axis
 	 */
-	PLANE: 'PLANE'
+	CYLINDER: 'CYLINDER',
+
+	/**
+	 * width Float plane extent on x axis
+	 * height Float plane extent on y axis
+	 */
+	PLANE: 'PLANE',
+
+	/**
+	 * radius Float radius of the sphere
+	 */
+	SPHERE: 'SPHERE'
 }

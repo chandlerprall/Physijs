@@ -20,6 +20,7 @@
 
 	// create geometries
 	var box_geometry = new THREE.BoxGeometry( 0.5, 0.5, 0.5 );
+	var cylinder_geometry = new THREE.CylinderGeometry( 0.3, 0.3, 0.5 );
 	var sphere_geometry = new THREE.SphereGeometry( 0.3 );
 	var plane_geometry = new THREE.PlaneGeometry( 0.6, 0.6 );
 
@@ -37,7 +38,7 @@
 
 		// every 100ms spawn a new object
 		if ( ticks % 100 === 0 ) {
-			var object_selector = ( ticks / 100 ) % 3;
+			var object_selector = ( ticks / 100 ) % 4;
 			var mesh;
 
 			if ( object_selector === 0 ) {
@@ -46,7 +47,10 @@
 				mesh = new physijs.SphereMesh( sphere_geometry, normal_material, { mass: 0.3 } );
 			} else if ( object_selector === 2 ) {
 				mesh = new physijs.PlaneMesh( plane_geometry, normal_material, { mass: 0.05 } );
+			} else if ( object_selector === 3 ) {
+				mesh = new physijs.CylinderMesh( cylinder_geometry, normal_material, { mass: 0.6 } );
 			}
+
 			if ( ticks === 0 ) {
 				mesh.mass = 0;
 			} else {

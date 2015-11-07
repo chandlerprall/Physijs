@@ -149,11 +149,6 @@
 
 	var BODY_TYPES = {
 		/**
-		 * radius Float radius of the sphere
-		 */
-		SPHERE: 'SPHERE',
-
-		/**
 		 * width Float box extent on x axis
 		 * height Float box extent on y axis
 		 * depth Float box extent on z axis
@@ -161,10 +156,21 @@
 		BOX: 'BOX',
 
 		/**
-		 * width Float box extent on x axis
-		 * height Float box extent on y axis
+		 * radius Float cylinder radius
+		 * height Float cylinder extent on y axis
 		 */
-		PLANE: 'PLANE'
+		CYLINDER: 'CYLINDER',
+
+		/**
+		 * width Float plane extent on x axis
+		 * height Float plane extent on y axis
+		 */
+		PLANE: 'PLANE',
+
+		/**
+		 * radius Float radius of the sphere
+		 */
+		SPHERE: 'SPHERE'
 	}
 
 	var world_report = new Float32Array( 0 );
@@ -296,12 +302,14 @@
 				var shape_definition = parameters.shape_definition;
 				var shape;
 
-				if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
-					shape = new Goblin.SphereShape( shape_definition.radius );
-				} else if ( shape_definition.body_type === BODY_TYPES.BOX ) {
+				if ( shape_definition.body_type === BODY_TYPES.BOX ) {
 					shape = new Goblin.BoxShape( shape_definition.width, shape_definition.height, shape_definition.depth );
+				} else if ( shape_definition.body_type === BODY_TYPES.CYLINDER ) {
+					shape = new Goblin.CylinderShape( shape_definition.radius, shape_definition.height );
 				} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {
 					shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
+				} else if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
+					shape = new Goblin.SphereShape( shape_definition.radius );
 				}
 
 				var body = new Goblin.RigidBody( shape, parameters.mass );

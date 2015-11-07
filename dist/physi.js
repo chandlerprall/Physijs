@@ -585,11 +585,6 @@
 
 	var BODY_TYPES = {
 		/**
-		 * radius Float radius of the sphere
-		 */
-		SPHERE: 'SPHERE',
-
-		/**
 		 * width Float box extent on x axis
 		 * height Float box extent on y axis
 		 * depth Float box extent on z axis
@@ -597,10 +592,21 @@
 		BOX: 'BOX',
 
 		/**
-		 * width Float box extent on x axis
-		 * height Float box extent on y axis
+		 * radius Float cylinder radius
+		 * height Float cylinder extent on y axis
 		 */
-		PLANE: 'PLANE'
+		CYLINDER: 'CYLINDER',
+
+		/**
+		 * width Float plane extent on x axis
+		 * height Float plane extent on y axis
+		 */
+		PLANE: 'PLANE',
+
+		/**
+		 * radius Float radius of the sphere
+		 */
+		SPHERE: 'SPHERE'
 	}
 
 	SphereMesh.prototype.getShapeDefinition = function() {
@@ -629,6 +635,23 @@
 		};
 	};
 
+	function CylinderMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	CylinderMesh.prototype = Object.create( Mesh.prototype );
+	CylinderMesh.prototype.constructor = CylinderMesh;
+
+	CylinderMesh.prototype.getShapeDefinition = function() {
+		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+
+		return {
+			body_type: BODY_TYPES.CYLINDER,
+			radius: this.geometry.boundingBox.max.x,
+			height: this.geometry.boundingBox.max.y
+		};
+	};
+
 	function BoxMesh( geometry, material, mass ) {
 		Mesh.call( this, geometry, material, mass );
 	}
@@ -650,6 +673,7 @@
 	var index = {
 		Mesh: Mesh,
 		BoxMesh: BoxMesh,
+		CylinderMesh: CylinderMesh,
 		PlaneMesh: PlaneMesh,
 		SphereMesh: SphereMesh,
 
