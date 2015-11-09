@@ -19,8 +19,7 @@
   },
   "homepage": "http://chandlerprall.github.io/Physijs/",
   "peerDependencies": {
-    "three.js": "0.73.0",
-    "goblinphysics": "0.9.0"
+    "three.js": "0.73.0"
   },
   "devDependencies": {
     "gulp": "^3.9.0",

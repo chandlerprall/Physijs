@@ -10,6 +10,12 @@ export default {
 	 * radius Float cylinder radius
 	 * height Float cylinder extent on y axis
 	 */
+	CONE: 'CONE',
+
+	/**
+	 * radius Float cylinder radius
+	 * height Float cylinder extent on y axis
+	 */
 	CYLINDER: 'CYLINDER',
 
 	/**
