@@ -182,7 +182,13 @@
 		/**
 		 * radius Float radius of the sphere
 		 */
-		SPHERE: 'SPHERE'
+		SPHERE: 'SPHERE',
+
+		/**
+		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+		 * faces Array list of vertex indexes composing the faces
+		 */
+		TRIANGLE: 'TRIANGLE'
 	}
 
 	var world_report = new Float32Array( 0 );
@@ -338,6 +344,21 @@
 					shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
 				} else if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
 					shape = new Goblin.SphereShape( shape_definition.radius );
+				} else if ( shape_definition.body_type === BODY_TYPES.TRIANGLE ) {
+					shape = new Goblin.MeshShape(
+						shape_definition.vertices.reduce(
+							function( vertices, component, idx, source ) {
+								if (idx % 3 == 0) {
+									vertices.push(
+										new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
+									);
+								}
+								return vertices;
+							},
+							[]
+						),
+						shape_definition.faces
+					);
 				}
 
 				var body = new Goblin.RigidBody( shape, parameters.mass );

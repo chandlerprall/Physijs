@@ -576,12 +576,12 @@
 		);
 	};
 
-	function SphereMesh( geometry, material, mass ) {
+	function TriangleMesh( geometry, material, mass ) {
 		Mesh.call( this, geometry, material, mass );
 	}
 
-	SphereMesh.prototype = Object.create( Mesh.prototype );
-	SphereMesh.prototype.constructor = SphereMesh;
+	TriangleMesh.prototype = Object.create( Mesh.prototype );
+	TriangleMesh.prototype.constructor = TriangleMesh;
 
 	var BODY_TYPES = {
 		/**
@@ -617,8 +617,37 @@
 		/**
 		 * radius Float radius of the sphere
 		 */
-		SPHERE: 'SPHERE'
+		SPHERE: 'SPHERE',
+
+		/**
+		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+		 * faces Array list of vertex indexes composing the faces
+		 */
+		TRIANGLE: 'TRIANGLE'
 	}
+
+	TriangleMesh.prototype.getShapeDefinition = function() {
+		var vertices = this.geometry.vertices.reduce(
+			function( vertices, vertex ) {
+				vertices.push( vertex.x, vertex.y, vertex.z );
+				return vertices;
+			},
+			[]
+		);
+
+		return {
+			body_type: BODY_TYPES.CONVEX,
+			vertices: vertices,
+			faces: this.geometry.faces
+		};
+	};
+
+	function SphereMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	SphereMesh.prototype = Object.create( Mesh.prototype );
+	SphereMesh.prototype.constructor = SphereMesh;
 
 	SphereMesh.prototype.getShapeDefinition = function() {
 		this.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
@@ -728,6 +757,7 @@
 		CylinderMesh: CylinderMesh,
 		PlaneMesh: PlaneMesh,
 		SphereMesh: SphereMesh,
+		TriangleMesh: TriangleMesh,
 
 		Scene: Scene
 	};

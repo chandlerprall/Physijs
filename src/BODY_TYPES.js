@@ -32,5 +32,11 @@ export default {
 	/**
 	 * radius Float radius of the sphere
 	 */
-	SPHERE: 'SPHERE'
+	SPHERE: 'SPHERE',
+
+	/**
+	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+	 * faces Array list of vertex indexes composing the faces
+	 */
+	TRIANGLE: 'TRIANGLE'
 }

@@ -5,6 +5,7 @@ import ConvexMesh from './classes/mesh/ConvexMesh';
 import CylinderMesh from './classes/mesh/CylinderMesh';
 import PlaneMesh from './classes/mesh/PlaneMesh';
 import SphereMesh from './classes/mesh/SphereMesh';
+import TriangleMesh from './classes/mesh/TriangleMesh';
 
 import Scene from './classes/Scene';
 
@@ -16,6 +17,7 @@ export default {
 	CylinderMesh: CylinderMesh,
 	PlaneMesh: PlaneMesh,
 	SphereMesh: SphereMesh,
+	TriangleMesh: TriangleMesh,
 
 	Scene: Scene
 };

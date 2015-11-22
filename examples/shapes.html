@@ -48,7 +48,7 @@
 
 		// every 100ms spawn a new object
 		if ( ticks % 100 === 0 ) {
-			var object_selector = ( ticks / 100 ) % 6;
+			var object_selector = ( ticks / 100 ) % 7;
 			var mesh;
 
 			if ( object_selector === 0 ) {
@@ -63,6 +63,8 @@
 				mesh = new physijs.ConeMesh( cone_geometry, normal_material, { mass: 0.4 } );
 			} else if ( object_selector === 5 ) {
 				mesh = new physijs.ConvexMesh( convex_geometry, normal_material, { mass: 0.5 } );
+			} else if ( object_selector === 6 ) {
+				mesh = new physijs.TriangleMesh( sphere_geometry, normal_material, { mass: 0.5 } );
 			}
 
 			if ( ticks === 0 ) {
