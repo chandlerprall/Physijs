@@ -13,6 +13,11 @@ export default {
 	CONE: 'CONE',
 
 	/**
+	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+	 */
+	CONVEX: 'CONVEX',
+
+	/**
 	 * radius Float cylinder radius
 	 * height Float cylinder extent on y axis
 	 */

@@ -598,6 +598,11 @@
 		CONE: 'CONE',
 
 		/**
+		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+		 */
+		CONVEX: 'CONVEX',
+
+		/**
 		 * radius Float cylinder radius
 		 * height Float cylinder extent on y axis
 		 */
@@ -658,6 +663,28 @@
 		};
 	};
 
+	function ConvexMesh( geometry, material, mass ) {
+		Mesh.call( this, geometry, material, mass );
+	}
+
+	ConvexMesh.prototype = Object.create( Mesh.prototype );
+	ConvexMesh.prototype.constructor = ConvexMesh;
+
+	ConvexMesh.prototype.getShapeDefinition = function() {
+		var vertices = this.geometry.vertices.reduce(
+			function( vertices, vertex ) {
+				vertices.push( vertex.x, vertex.y, vertex.z );
+				return vertices;
+			},
+			[]
+		);
+
+		return {
+			body_type: BODY_TYPES.CONVEX,
+			vertices: vertices
+		};
+	};
+
 	function ConeMesh( geometry, material, mass ) {
 		Mesh.call( this, geometry, material, mass );
 	}
@@ -697,6 +724,7 @@
 		Mesh: Mesh,
 		BoxMesh: BoxMesh,
 		ConeMesh: ConeMesh,
+		ConvexMesh: ConvexMesh,
 		CylinderMesh: CylinderMesh,
 		PlaneMesh: PlaneMesh,
 		SphereMesh: SphereMesh,

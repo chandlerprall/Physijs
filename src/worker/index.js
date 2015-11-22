@@ -148,7 +148,21 @@ function reportWorld() {
 			if ( shape_definition.body_type === BODY_TYPES.BOX ) {
 				shape = new Goblin.BoxShape( shape_definition.width, shape_definition.height, shape_definition.depth );
 			} else if ( shape_definition.body_type === BODY_TYPES.CONE ) {
-				shape = new Goblin.ConeShape( shape_definition.radius, shape_definition.height );
+				shape = new Goblin.ConeShape(shape_definition.radius, shape_definition.height);
+			} else if ( shape_definition.body_type === BODY_TYPES.CONVEX ) {
+				shape = new Goblin.ConvexShape(
+					shape_definition.vertices.reduce(
+						function( vertices, component, idx, source ) {
+							if (idx % 3 == 0) {
+								vertices.push(
+									new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
+								);
+							}
+							return vertices;
+						},
+						[]
+					)
+				);
 			} else if ( shape_definition.body_type === BODY_TYPES.CYLINDER ) {
 				shape = new Goblin.CylinderShape( shape_definition.radius, shape_definition.height );
 			} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {

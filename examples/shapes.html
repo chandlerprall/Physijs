@@ -3,6 +3,7 @@
 <head>
 	<title>Shapes Example - Physijs</title>
 	<script type="text/javascript" src="lib/three.min.js"></script>
+	<script type="text/javascript" src="lib/ConvexGeometry.js"></script>
 	<script type="text/javascript" src="../dist/physi.js"></script>
 	<link rel="stylesheet" type="text/css" href="styles.css"/>
 </head>
@@ -24,6 +25,14 @@
 	var cylinder_geometry = new THREE.CylinderGeometry( 0.3, 0.3, 0.5 );
 	var sphere_geometry = new THREE.SphereGeometry( 0.3 );
 	var plane_geometry = new THREE.PlaneGeometry( 0.6, 0.6 );
+	var convex_geometry = new THREE.ConvexGeometry([
+		new THREE.Vector3( 0.4, 0, 0.4 ),
+		new THREE.Vector3( 0.2, 0.2, -0.4 ),
+		new THREE.Vector3( -0.2, 0.2, -0.4 ),
+		new THREE.Vector3( -0.4, 0, 0.4 ),
+		new THREE.Vector3( -0.1, -0.4, -0.2 ),
+		new THREE.Vector3( 0.1, 0.4, 0.2 )
+	]);
 
 	// create materials
 	var normal_material = new THREE.MeshNormalMaterial();
@@ -39,7 +48,7 @@
 
 		// every 100ms spawn a new object
 		if ( ticks % 100 === 0 ) {
-			var object_selector = ( ticks / 100 ) % 5;
+			var object_selector = ( ticks / 100 ) % 6;
 			var mesh;
 
 			if ( object_selector === 0 ) {
@@ -52,6 +61,8 @@
 				mesh = new physijs.CylinderMesh( cylinder_geometry, normal_material, { mass: 0.6 } );
 			} else if ( object_selector === 4 ) {
 				mesh = new physijs.ConeMesh( cone_geometry, normal_material, { mass: 0.4 } );
+			} else if ( object_selector === 5 ) {
+				mesh = new physijs.ConvexMesh( convex_geometry, normal_material, { mass: 0.5 } );
 			}
 
 			if ( ticks === 0 ) {
