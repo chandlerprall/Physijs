@@ -1,8 +1,8 @@
 import BODY_TYPES from '../../../BODY_TYPES';
 import Mesh from './Mesh';
 
-export default function SphereMesh( geometry, material, mass ) {
-	Mesh.call( this, geometry, material, mass );
+export default function SphereMesh( geometry, material, physics_descriptor ) {
+	Mesh.call( this, geometry, material, physics_descriptor );
 }
 
 SphereMesh.prototype = Object.create( Mesh.prototype );

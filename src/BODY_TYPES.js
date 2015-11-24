@@ -7,6 +7,11 @@ export default {
 	BOX: 'BOX',
 
 	/**
+	 * shapes Array list of shape definitions composing the compound shape
+	 */
+	COMPOUND: 'COMPOUND',
+
+	/**
 	 * radius Float cylinder radius
 	 * height Float cylinder extent on y axis
 	 */

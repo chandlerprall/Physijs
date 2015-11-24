@@ -7,6 +7,7 @@ import PlaneMesh from './classes/mesh/PlaneMesh';
 import SphereMesh from './classes/mesh/SphereMesh';
 import TriangleMesh from './classes/mesh/TriangleMesh';
 
+import CompoundObject from './classes/CompoundObject';
 import Scene from './classes/Scene';
 
 export default {
@@ -19,5 +20,6 @@ export default {
 	SphereMesh: SphereMesh,
 	TriangleMesh: TriangleMesh,
 
+	CompoundObject: CompoundObject,
 	Scene: Scene
 };

@@ -85,6 +85,62 @@ function reportWorld() {
 	postReport( world_report );
 }
 
+function getShapeForDefinition( shape_definition ) {
+	var shape;
+
+	if ( shape_definition.body_type === BODY_TYPES.BOX ) {
+		shape = new Goblin.BoxShape(shape_definition.width, shape_definition.height, shape_definition.depth);
+	} else if ( shape_definition.body_type === BODY_TYPES.COMPOUND ) {
+		shape = new Goblin.CompoundShape();
+		shape_definition.shapes.forEach(function( child_shape ) {
+			shape.addChildShape(
+				getShapeForDefinition( child_shape.shape_definition ),
+				new Goblin.Vector3( child_shape.position.x, child_shape.position.y, child_shape.position.z ),
+				new Goblin.Quaternion( child_shape.quaternion.x, child_shape.quaternion.y, child_shape.quaternion.z, child_shape.quaternion.w )
+			);
+		});
+	} else if ( shape_definition.body_type === BODY_TYPES.CONE ) {
+		shape = new Goblin.ConeShape(shape_definition.radius, shape_definition.height);
+	} else if ( shape_definition.body_type === BODY_TYPES.CONVEX ) {
+		shape = new Goblin.ConvexShape(
+			shape_definition.vertices.reduce(
+				function( vertices, component, idx, source ) {
+					if (idx % 3 == 0) {
+						vertices.push(
+							new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
+						);
+					}
+					return vertices;
+				},
+				[]
+			)
+		);
+	} else if ( shape_definition.body_type === BODY_TYPES.CYLINDER ) {
+		shape = new Goblin.CylinderShape( shape_definition.radius, shape_definition.height );
+	} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {
+		shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
+	} else if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
+		shape = new Goblin.SphereShape( shape_definition.radius );
+	} else if ( shape_definition.body_type === BODY_TYPES.TRIANGLE ) {
+		shape = new Goblin.MeshShape(
+			shape_definition.vertices.reduce(
+				function( vertices, component, idx, source ) {
+					if (idx % 3 == 0) {
+						vertices.push(
+							new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
+						);
+					}
+					return vertices;
+				},
+				[]
+			),
+			shape_definition.faces
+		);
+	}
+
+	return shape;
+}
+
 // message handling
 (function() {
 	var handlers = {};
@@ -143,49 +199,7 @@ function reportWorld() {
 		MESSAGE_TYPES.ADD_RIGIDBODY,
 		function( parameters ) {
 			var shape_definition = parameters.shape_definition;
-			var shape;
-
-			if ( shape_definition.body_type === BODY_TYPES.BOX ) {
-				shape = new Goblin.BoxShape( shape_definition.width, shape_definition.height, shape_definition.depth );
-			} else if ( shape_definition.body_type === BODY_TYPES.CONE ) {
-				shape = new Goblin.ConeShape(shape_definition.radius, shape_definition.height);
-			} else if ( shape_definition.body_type === BODY_TYPES.CONVEX ) {
-				shape = new Goblin.ConvexShape(
-					shape_definition.vertices.reduce(
-						function( vertices, component, idx, source ) {
-							if (idx % 3 == 0) {
-								vertices.push(
-									new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
-								);
-							}
-							return vertices;
-						},
-						[]
-					)
-				);
-			} else if ( shape_definition.body_type === BODY_TYPES.CYLINDER ) {
-				shape = new Goblin.CylinderShape( shape_definition.radius, shape_definition.height );
-			} else if ( shape_definition.body_type === BODY_TYPES.PLANE ) {
-				shape = new Goblin.PlaneShape( 2, shape_definition.width, shape_definition.height );
-			} else if ( shape_definition.body_type === BODY_TYPES.SPHERE ) {
-				shape = new Goblin.SphereShape( shape_definition.radius );
-			} else if ( shape_definition.body_type === BODY_TYPES.TRIANGLE ) {
-				shape = new Goblin.MeshShape(
-					shape_definition.vertices.reduce(
-						function( vertices, component, idx, source ) {
-							if (idx % 3 == 0) {
-								vertices.push(
-									new Goblin.Vector3( source[idx], source[idx+1], source[idx+2] )
-								);
-							}
-							return vertices;
-						},
-						[]
-					),
-					shape_definition.faces
-				);
-			}
-
+			var shape = getShapeForDefinition( shape_definition );
 			var body = new Goblin.RigidBody( shape, parameters.mass );
 
 			body.restitution = parameters.restitution;

@@ -46,9 +46,9 @@
 	function onStep( ticks ) {
 		setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
 
-		// every 100ms spawn a new object
-		if ( ticks % 100 === 0 ) {
-			var object_selector = ( ticks / 100 ) % 7;
+		// every 75ms spawn a new object
+		if ( ticks % 75 === 0 ) {
+			var object_selector = ( ticks / 75 ) % 8;
 			var mesh;
 
 			if ( object_selector === 0 ) {
@@ -65,6 +65,16 @@
 				mesh = new physijs.ConvexMesh( convex_geometry, normal_material, { mass: 0.5 } );
 			} else if ( object_selector === 6 ) {
 				mesh = new physijs.TriangleMesh( sphere_geometry, normal_material, { mass: 0.5 } );
+			} else if ( object_selector === 7 ) {
+				mesh = new physijs.CompoundObject( { mass: 1 } );
+				var sphere1_mesh = new physijs.SphereMesh( sphere_geometry, normal_material );
+				var sphere2_mesh = new physijs.SphereMesh( sphere_geometry, normal_material );
+				var cylinder_mesh = new physijs.CylinderMesh( cylinder_geometry, normal_material );
+				sphere1_mesh.position.set( 0, -0.3, 0 );
+				sphere2_mesh.position.set( 0, 0.3, 0 );
+				mesh.add( sphere1_mesh );
+				mesh.add( sphere2_mesh );
+				mesh.add( cylinder_mesh );
 			}
 
 			if ( ticks === 0 ) {

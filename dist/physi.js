@@ -366,12 +366,12 @@
 		return nextId++;
 	}
 
-	function Mesh( geometry, material, physics_descriptor ) {
+	function CompoundObject( physics_descriptor ) {
 		if ( physics_descriptor == null ) {
 			throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
 		}
 
-		THREE.Mesh.call( this, geometry, material );
+		THREE.Object3D.call( this );
 		this.rotationAutoUpdate = false;
 		this.matrixAutoUpdate = false;
 
@@ -385,6 +385,89 @@
 			angular_damping: physics_descriptor.angular_damping || 0,
 			collision_groups: 0,
 			collision_mask: 0,
+
+			position: new THREE.Vector3(),
+			quaternion: new THREE.Quaternion(),
+			linear_velocity: new THREE.Vector3(),
+			angular_velocity: new THREE.Vector3(),
+			linear_factor: new THREE.Vector3( 1, 1, 1 ),
+			angular_factor: new THREE.Vector3( 1, 1, 1 )
+		};
+
+		this.linear_velocity = new THREE.Vector3();
+		this.angular_velocity = new THREE.Vector3();
+		this.linear_factor = new THREE.Vector3( 1, 1, 1 );
+		this.angular_factor = new THREE.Vector3( 1, 1, 1 );
+	}
+
+	CompoundObject.prototype = Object.create( THREE.Object3D.prototype );
+	CompoundObject.prototype.constructor = CompoundObject;
+
+	var BODY_TYPES = {
+		/**
+		 * width Float box extent on x axis
+		 * height Float box extent on y axis
+		 * depth Float box extent on z axis
+		 */
+		BOX: 'BOX',
+
+		/**
+		 * shapes Array list of shape definitions composing the compound shape
+		 */
+		COMPOUND: 'COMPOUND',
+
+		/**
+		 * radius Float cylinder radius
+		 * height Float cylinder extent on y axis
+		 */
+		CONE: 'CONE',
+
+		/**
+		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+		 */
+		CONVEX: 'CONVEX',
+
+		/**
+		 * radius Float cylinder radius
+		 * height Float cylinder extent on y axis
+		 */
+		CYLINDER: 'CYLINDER',
+
+		/**
+		 * width Float plane extent on x axis
+		 * height Float plane extent on y axis
+		 */
+		PLANE: 'PLANE',
+
+		/**
+		 * radius Float radius of the sphere
+		 */
+		SPHERE: 'SPHERE',
+
+		/**
+		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+		 * faces Array list of vertex indexes composing the faces
+		 */
+		TRIANGLE: 'TRIANGLE'
+	}
+
+	function Mesh( geometry, material, physics_descriptor ) {
+		THREE.Mesh.call( this, geometry, material );
+		this.rotationAutoUpdate = false;
+		this.matrixAutoUpdate = false;
+
+		physics_descriptor = physics_descriptor || {};
+
+		this.physijs = {
+			id: getUniqueId(),
+
+			mass: physics_descriptor.mass || Infinity,
+			restitution: physics_descriptor.restitution || 0.1,
+			friction: physics_descriptor.friction || 0.5,
+			linear_damping: physics_descriptor.linear_damping || 0,
+			angular_damping: physics_descriptor.angular_damping || 0,
+			collision_groups: physics_descriptor.collision_groups || 0,
+			collision_mask: physics_descriptor.collision_mask || 0,
 
 			position: new THREE.Vector3(),
 			quaternion: new THREE.Quaternion(),
@@ -514,10 +597,30 @@
 		}
 	);
 
+	CompoundObject.prototype.getShapeDefinition = function() {
+		var shapes = [];
+
+		this.traverse(function( object ) {
+			if ( object instanceof Mesh ) {
+				object.updateMatrix();
+				shapes.push({
+					position: { x: object.position.x, y: object.position.y, z: object.position.z },
+					quaternion: { x: object.quaternion._x, y: object.quaternion._y, z: object.quaternion._z, w: object.quaternion._w },
+					shape_definition: object.getShapeDefinition()
+				});
+			}
+		});
+
+		return {
+			body_type: BODY_TYPES.COMPOUND,
+			shapes: shapes
+		};
+	};
+
 	Scene.prototype.add = function( object ) {
 		THREE.Scene.prototype.add.call( this, object );
 
-		if ( object instanceof Mesh ) {
+		if ( object instanceof Mesh || object instanceof CompoundObject ) {
 			var rigid_body_definition = getRigidBodyDefinition( object );
 			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
@@ -576,55 +679,12 @@
 		);
 	};
 
-	function TriangleMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function TriangleMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	TriangleMesh.prototype = Object.create( Mesh.prototype );
 	TriangleMesh.prototype.constructor = TriangleMesh;
-
-	var BODY_TYPES = {
-		/**
-		 * width Float box extent on x axis
-		 * height Float box extent on y axis
-		 * depth Float box extent on z axis
-		 */
-		BOX: 'BOX',
-
-		/**
-		 * radius Float cylinder radius
-		 * height Float cylinder extent on y axis
-		 */
-		CONE: 'CONE',
-
-		/**
-		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-		 */
-		CONVEX: 'CONVEX',
-
-		/**
-		 * radius Float cylinder radius
-		 * height Float cylinder extent on y axis
-		 */
-		CYLINDER: 'CYLINDER',
-
-		/**
-		 * width Float plane extent on x axis
-		 * height Float plane extent on y axis
-		 */
-		PLANE: 'PLANE',
-
-		/**
-		 * radius Float radius of the sphere
-		 */
-		SPHERE: 'SPHERE',
-
-		/**
-		 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-		 * faces Array list of vertex indexes composing the faces
-		 */
-		TRIANGLE: 'TRIANGLE'
-	}
 
 	TriangleMesh.prototype.getShapeDefinition = function() {
 		var vertices = this.geometry.vertices.reduce(
@@ -642,8 +702,8 @@
 		};
 	};
 
-	function SphereMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function SphereMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	SphereMesh.prototype = Object.create( Mesh.prototype );
@@ -658,8 +718,8 @@
 		};
 	};
 
-	function PlaneMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function PlaneMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	PlaneMesh.prototype = Object.create( Mesh.prototype );
@@ -675,8 +735,8 @@
 		};
 	};
 
-	function CylinderMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function CylinderMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	CylinderMesh.prototype = Object.create( Mesh.prototype );
@@ -692,8 +752,8 @@
 		};
 	};
 
-	function ConvexMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function ConvexMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	ConvexMesh.prototype = Object.create( Mesh.prototype );
@@ -714,8 +774,8 @@
 		};
 	};
 
-	function ConeMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function ConeMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	ConeMesh.prototype = Object.create( Mesh.prototype );
@@ -731,8 +791,8 @@
 		};
 	};
 
-	function BoxMesh( geometry, material, mass ) {
-		Mesh.call( this, geometry, material, mass );
+	function BoxMesh( geometry, material, physics_descriptor ) {
+		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
 	BoxMesh.prototype = Object.create( Mesh.prototype );
@@ -759,6 +819,7 @@
 		SphereMesh: SphereMesh,
 		TriangleMesh: TriangleMesh,
 
+		CompoundObject: CompoundObject,
 		Scene: Scene
 	};
 

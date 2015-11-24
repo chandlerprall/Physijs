@@ -1,8 +1,7 @@
 import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
 import Mesh from './mesh/Mesh';
-import BoxMesh from './mesh/BoxMesh';
-import SphereMesh from './mesh/SphereMesh';
+import CompoundObject from './CompoundObject';
 
 function getRigidBodyDefinition( mesh ) {
 	var shape_definition = mesh.getShapeDefinition();
@@ -55,7 +54,7 @@ Scene.prototype.constructor = Scene;
 Scene.prototype.add = function( object ) {
 	THREE.Scene.prototype.add.call( this, object );
 
-	if ( object instanceof Mesh ) {
+	if ( object instanceof Mesh || object instanceof CompoundObject ) {
 		var rigid_body_definition = getRigidBodyDefinition( object );
 		this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 		this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );

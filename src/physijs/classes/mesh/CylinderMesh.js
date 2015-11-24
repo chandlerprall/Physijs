@@ -1,8 +1,8 @@
 import BODY_TYPES from '../../../BODY_TYPES';
 import Mesh from './Mesh';
 
-export default function CylinderMesh( geometry, material, mass ) {
-	Mesh.call( this, geometry, material, mass );
+export default function CylinderMesh( geometry, material, physics_descriptor ) {
+	Mesh.call( this, geometry, material, physics_descriptor );
 }
 
 CylinderMesh.prototype = Object.create( Mesh.prototype );

@@ -1,13 +1,11 @@
 import {getUniqueId} from '../util/uniqueId';
 
 export default function Mesh( geometry, material, physics_descriptor ) {
-	if ( physics_descriptor == null ) {
-		throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
-	}
-
 	THREE.Mesh.call( this, geometry, material );
 	this.rotationAutoUpdate = false;
 	this.matrixAutoUpdate = false;
+
+	physics_descriptor = physics_descriptor || {};
 
 	this.physijs = {
 		id: getUniqueId(),
@@ -17,8 +15,8 @@ export default function Mesh( geometry, material, physics_descriptor ) {
 		friction: physics_descriptor.friction || 0.5,
 		linear_damping: physics_descriptor.linear_damping || 0,
 		angular_damping: physics_descriptor.angular_damping || 0,
-		collision_groups: 0,
-		collision_mask: 0,
+		collision_groups: physics_descriptor.collision_groups || 0,
+		collision_mask: physics_descriptor.collision_mask || 0,
 
 		position: new THREE.Vector3(),
 		quaternion: new THREE.Quaternion(),
