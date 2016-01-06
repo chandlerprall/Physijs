@@ -20,10 +20,10 @@
 			var sphere_geometry = new THREE.SphereGeometry( 1, 12, 12 );
 			var normal_material = new THREE.MeshNormalMaterial();
 
-			var sphere = new physijs.SphereMesh( sphere_geometry, normal_material, { mass: 0 } );
+			var sphere = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0 } );
 			scene.add( sphere );
 
-			var box = new physijs.BoxMesh( new THREE.BoxGeometry( 1, 1, 1 ), normal_material, { mass: 2 } );
+			var box = new physijs.Box( new THREE.BoxGeometry( 1, 1, 1 ), normal_material, { mass: 2 } );
 			box.position.set( 0.13, 3, 0 );
 			scene.add( box );
 

@@ -16,7 +16,7 @@
 
 	var scene = new physijs.Scene( '../dist/physijs-worker.js' );
 	var camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100 );
-	camera.position.set( 0, 5, 10 );
+	camera.position.set( 0, 2.5, 5 );
 	camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
 
 	// create geometries
@@ -48,39 +48,40 @@
 
 		// every 75ms spawn a new object
 		if ( ticks % 75 === 0 ) {
-			var object_selector = ( ticks / 75 ) % 8;
+			var object_selector = ( ticks / 75 ) % 7;
 			var mesh;
 
 			if ( object_selector === 0 ) {
-				mesh = new physijs.BoxMesh( box_geometry, normal_material, { mass: 0.5 } );
+				mesh = new physijs.Box( box_geometry, normal_material, { mass: 0.5 } );
 			} else if ( object_selector === 1 ) {
-				mesh = new physijs.SphereMesh( sphere_geometry, normal_material, { mass: 0.3 } );
+				mesh = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0.3 } );
 			} else if ( object_selector === 2 ) {
-				mesh = new physijs.PlaneMesh( plane_geometry, normal_material, { mass: 0.05 } );
+				mesh = new physijs.Plane( plane_geometry, normal_material, { mass: 0.05 } );
 			} else if ( object_selector === 3 ) {
-				mesh = new physijs.CylinderMesh( cylinder_geometry, normal_material, { mass: 0.6 } );
+				mesh = new physijs.Cylinder( cylinder_geometry, normal_material, { mass: 0.6 } );
 			} else if ( object_selector === 4 ) {
-				mesh = new physijs.ConeMesh( cone_geometry, normal_material, { mass: 0.4 } );
+				mesh = new physijs.Cone( cone_geometry, normal_material, { mass: 0.4 } );
 			} else if ( object_selector === 5 ) {
-				mesh = new physijs.ConvexMesh( convex_geometry, normal_material, { mass: 0.5 } );
+				mesh = new physijs.Convex( convex_geometry, normal_material, { mass: 0.5 } );
 			} else if ( object_selector === 6 ) {
 				mesh = new physijs.TriangleMesh( sphere_geometry, normal_material, { mass: 0.5 } );
-			} else if ( object_selector === 7 ) {
+			/*} else if ( object_selector === 7 ) {
 				mesh = new physijs.CompoundObject( { mass: 1 } );
-				var sphere1_mesh = new physijs.SphereMesh( sphere_geometry, normal_material );
-				var sphere2_mesh = new physijs.SphereMesh( sphere_geometry, normal_material );
-				var cylinder_mesh = new physijs.CylinderMesh( cylinder_geometry, normal_material );
+				var sphere1_mesh = new physijs.Sphere( sphere_geometry, normal_material );
+				var sphere2_mesh = new physijs.Sphere( sphere_geometry, normal_material );
+				var cylinder_mesh = new physijs.Cylinder( cylinder_geometry, normal_material );
 				sphere1_mesh.position.set( 0, -0.3, 0 );
 				sphere2_mesh.position.set( 0, 0.3, 0 );
 				mesh.add( sphere1_mesh );
 				mesh.add( sphere2_mesh );
-				mesh.add( cylinder_mesh );
+				mesh.add( cylinder_mesh );*/
 			}
 
 			if ( ticks === 0 ) {
-				mesh.mass = 0;
+				mesh.physics.mass = 0;
+				mesh.position.set(0, -1, 0);
 			} else {
-				mesh.position.set( 0, 3, 0 );
+				mesh.position.set( 0, 1, 0 );
 			}
 
 			scene.add( mesh );

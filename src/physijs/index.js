@@ -1,25 +1,25 @@
-import Mesh from './classes/mesh/Mesh';
-import BoxMesh from './classes/mesh/BoxMesh';
-import ConeMesh from './classes/mesh/ConeMesh';
-import ConvexMesh from './classes/mesh/ConvexMesh';
-import CylinderMesh from './classes/mesh/CylinderMesh';
-import PlaneMesh from './classes/mesh/PlaneMesh';
-import SphereMesh from './classes/mesh/SphereMesh';
-import TriangleMesh from './classes/mesh/TriangleMesh';
+import PhysicsObject from './classes/PhysicsObject';
+import Box from './classes/shapes/Box';
+import Cone from './classes/shapes/Cone';
+import Convex from './classes/shapes/Convex';
+import Cylinder from './classes/shapes/Cylinder';
+import Plane from './classes/shapes/Plane';
+import Sphere from './classes/shapes/Sphere';
+import TriangleMesh from './classes/shapes/TriangleMesh';
 
-import CompoundObject from './classes/CompoundObject';
+//import CompoundObject from './classes/CompoundObject';
 import Scene from './classes/Scene';
 
 export default {
-	Mesh: Mesh,
-	BoxMesh: BoxMesh,
-	ConeMesh: ConeMesh,
-	ConvexMesh: ConvexMesh,
-	CylinderMesh: CylinderMesh,
-	PlaneMesh: PlaneMesh,
-	SphereMesh: SphereMesh,
+	PhysicsObject: PhysicsObject,
+	Box: Box,
+	Cone: Cone,
+	Convex: Convex,
+	Cylinder: Cylinder,
+	Plane: Plane,
+	Sphere: Sphere,
 	TriangleMesh: TriangleMesh,
 
-	CompoundObject: CompoundObject,
+	//CompoundObject: CompoundObject,
 	Scene: Scene
 };

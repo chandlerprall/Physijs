@@ -1,21 +1,21 @@
 import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
-import Mesh from './mesh/Mesh';
+import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 import CompoundObject from './CompoundObject';
 
-function getRigidBodyDefinition( mesh ) {
-	var shape_definition = mesh.getShapeDefinition();
+function getRigidBodyDefinition( object ) {
+	var shape_definition = object.physics.getShapeDefinition( object.physics.geometry );
 
 	return {
-		body_id: mesh.physijs.id,
+		body_id: object.physics._.id,
 		shape_definition: shape_definition,
-		mass: mesh.physijs.mass,
-		restitution: mesh.physijs.restitution,
-		friction: mesh.physijs.friction,
-		linear_damping: mesh.physijs.linear_damping,
-		angular_damping: mesh.physijs.angular_damping,
-		collision_groups: mesh.physijs.collision_groups,
-		collision_mask: mesh.physijs.collision_mask
+		mass: object.physics._.mass,
+		restitution: object.physics._.restitution,
+		friction: object.physics._.friction,
+		linear_damping: object.physics._.linear_damping,
+		angular_damping: object.physics._.angular_damping,
+		collision_groups: object.physics._.collision_groups,
+		collision_mask: object.physics._.collision_mask
 	};
 }
 
@@ -54,7 +54,7 @@ Scene.prototype.constructor = Scene;
 Scene.prototype.add = function( object ) {
 	THREE.Scene.prototype.add.call( this, object );
 
-	if ( object instanceof Mesh || object instanceof CompoundObject ) {
+	if ( object.physics instanceof _PhysicsObject ) {
 		var rigid_body_definition = getRigidBodyDefinition( object );
 		this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
 		this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
@@ -77,30 +77,30 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 		var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
 
 		// check position/rotation
-		if ( !rigid_body.position.equals( rigid_body.physijs.position ) || !rigid_body.quaternion.equals( rigid_body.physijs.quaternion ) ) {
-			this.physijs.setRigidBodyTransform( rigid_body_id, rigid_body );
+		if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {
+			this.physijs.setRigidBodyTransform( rigid_body );
 		}
 
 		// check linear velocity
-		if ( !rigid_body.linear_velocity.equals( rigid_body.physijs.linear_velocity ) ) {
-			this.physijs.setRigidBodyLinearVelocity( rigid_body_id, rigid_body );
+		if ( !rigid_body.physics.linear_velocity.equals( rigid_body.physics._.linear_velocity ) ) {
+			this.physijs.setRigidBodyLinearVelocity( rigid_body );
 		}
 
 		// check angular velocity
-		if ( !rigid_body.angular_velocity.equals( rigid_body.physijs.angular_velocity ) ) {
-			this.physijs.setRigidBodyAngularVelocity( rigid_body_id, rigid_body );
+		if ( !rigid_body.physics.angular_velocity.equals( rigid_body.physics._.angular_velocity ) ) {
+			this.physijs.setRigidBodyAngularVelocity( rigid_body );
 		}
 
 		// check linear factor
-		if ( !rigid_body.linear_factor.equals( rigid_body.physijs.linear_factor ) ) {
-			this.physijs.setRigidBodyLinearFactor( rigid_body_id, rigid_body );
-			rigid_body.physijs.linear_factor.copy( rigid_body.linear_factor );
+		if ( !rigid_body.physics.linear_factor.equals( rigid_body.physics._.linear_factor ) ) {
+			this.physijs.setRigidBodyLinearFactor( rigid_body );
+			rigid_body.physics._.linear_factor.copy( rigid_body.physics.linear_factor );
 		}
 
 		// check angular factor
-		if ( !rigid_body.angular_factor.equals( rigid_body.physijs.angular_factor ) ) {
-			this.physijs.setRigidBodyAngularFactor( rigid_body_id, rigid_body );
-			rigid_body.physijs.angular_factor.copy( rigid_body.angular_factor );
+		if ( !rigid_body.physics.angular_factor.equals( rigid_body.physics._.angular_factor ) ) {
+			this.physijs.setRigidBodyAngularFactor( rigid_body );
+			rigid_body.physics._.angular_factor.copy( rigid_body.physics.angular_factor );
 		}
 	}
 
@@ -148,10 +148,10 @@ function processWorldReport( report ) {
 			report[idx++], report[idx++], report[idx++], report[idx++]
 		);
 
-		rigid_body.position.copy( rigid_body.physijs.position.set( report[idx++], report[idx++], report[idx++] ) );
-		rigid_body.quaternion.copy( rigid_body.physijs.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
-		rigid_body.linear_velocity.copy( rigid_body.physijs.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
-		rigid_body.angular_velocity.copy( rigid_body.physijs.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+		rigid_body.position.copy( rigid_body.physics._.position.set( report[idx++], report[idx++], report[idx++] ) );
+		rigid_body.quaternion.copy( rigid_body.physics._.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
+		rigid_body.physics.linear_velocity.copy( rigid_body.physics._.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+		rigid_body.physics.angular_velocity.copy( rigid_body.physics._.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
 	}
 
 	// send the buffer back for re-use
@@ -177,123 +177,123 @@ function postReport( report ) {
 	this.physijs.worker.postMessage( report, [report.buffer] );
 }
 
-function setRigidBodyMass( mesh ) {
+function setRigidBodyMass( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_MASS,
 		{
-			body_id: mesh.physijs.id,
-			mass: mesh.physijs.mass
+			body_id: physics_object._.id,
+			mass: physics_object._.mass
 		}
 	);
 }
 
-function setRigidBodyRestitution( mesh ) {
+function setRigidBodyRestitution( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
 		{
-			body_id: mesh.physijs.id,
-			restitution: mesh.physijs.restitution
+			body_id: physics_object._.id,
+			restitution: physics_object._.restitution
 		}
 	);
 }
 
-function setRigidBodyFriction( mesh ) {
+function setRigidBodyFriction( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
 		{
-			body_id: mesh.physijs.id,
-			friction: mesh.physijs.friction
+			body_id: physics_object._.id,
+			friction: physics_object._.friction
 		}
 	);
 }
 
-function setRigidBodyLinearDamping( mesh ) {
+function setRigidBodyLinearDamping( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
 		{
-			body_id: mesh.physijs.id,
-			damping: mesh.physijs.linear_damping
+			body_id: physics_object._.id,
+			damping: physics_object._.linear_damping
 		}
 	);
 }
 
-function setRigidBodyAngularDamping( mesh ) {
+function setRigidBodyAngularDamping( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
 		{
-			body_id: mesh.physijs.id,
-			damping: mesh.physijs.angular_damping
+			body_id: physics_object._.id,
+			damping: physics_object._.angular_damping
 		}
 	);
 }
 
-function setRigidBodyCollisionGroups( mesh ) {
+function setRigidBodyCollisionGroups( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 		{
-			body_id: mesh.physijs.id,
-			collision_groups: mesh.physijs.collision_groups
+			body_id: physics_object._.id,
+			collision_groups: physics_object._.collision_groups
 		}
 	);
 }
 
-function setRigidBodyCollisionMask( mesh ) {
+function setRigidBodyCollisionMask( physics_object ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
 		{
-			body_id: mesh.physijs.id,
-			collision_mask: mesh.physijs.collision_mask
+			body_id: physics_object._.id,
+			collision_mask: physics_object._.collision_mask
 		}
 	);
 }
 
-function setRigidBodyTransform( body_id, mesh ) {
+function setRigidBodyTransform( body ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 		{
-			body_id: body_id,
-			position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
-			rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+			body_id: body.physics._.id,
+			position: { x: body.position.x, y: body.position.y, z: body.position.z },
+			rotation: { x: body.quaternion.x, y: body.quaternion.y, z: body.quaternion.z, w: body.quaternion.w }
 		}
 	);
 }
 
-function setRigidBodyLinearVelocity( body_id, mesh ) {
+function setRigidBodyLinearVelocity( body ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
 		{
-			body_id: body_id,
-			velocity: { x: mesh.linear_velocity.x, y: mesh.linear_velocity.y, z: mesh.linear_velocity.z }
+			body_id: body.physics._.id,
+			velocity: { x: body.physics.linear_velocity.x, y: body.physics.linear_velocity.y, z: body.physics.linear_velocity.z }
 		}
 	);
 }
 
-function setRigidBodyAngularVelocity( body_id, mesh ) {
+function setRigidBodyAngularVelocity( body ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
 		{
-			body_id: body_id,
-			velocity: { x: mesh.angular_velocity.x, y: mesh.angular_velocity.y, z: mesh.angular_velocity.z }
+			body_id: body.physics._.id,
+			velocity: { x: body.physics.angular_velocity.x, y: body.physics.angular_velocity.y, z: body.physics.angular_velocity.z }
 		}
 	);
 }
 
-function setRigidBodyLinearFactor( body_id, mesh ) {
+function setRigidBodyLinearFactor( body ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
 		{
-			body_id: body_id,
-			factor: { x: mesh.linear_factor.x, y: mesh.linear_factor.y, z: mesh.linear_factor.z }
+			body_id: body.physics._.id,
+			factor: { x: body.physics.linear_factor.x, y: body.physics.linear_factor.y, z: body.physics.linear_factor.z }
 		}
 	);
 }
 
-function setRigidBodyAngularFactor( body_id, mesh ) {
+function setRigidBodyAngularFactor( body ) {
 	this.physijs.postMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
 		{
-			body_id: body_id,
-			factor: { x: mesh.angular_factor.x, y: mesh.angular_factor.y, z: mesh.angular_factor.z }
+			body_id: body.physics._.id,
+			factor: { x: body.physics.angular_factor.x, y: body.physics.angular_factor.y, z: body.physics.angular_factor.z }
 		}
 	);
 }

@@ -128,123 +128,123 @@
 		STEP_SIMULATION: 'STEP_SIMULATION'
 	};
 
-	function setRigidBodyAngularFactor( body_id, mesh ) {
+	function setRigidBodyAngularFactor( body ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
 			{
-				body_id: body_id,
-				factor: { x: mesh.angular_factor.x, y: mesh.angular_factor.y, z: mesh.angular_factor.z }
+				body_id: body.physics._.id,
+				factor: { x: body.physics.angular_factor.x, y: body.physics.angular_factor.y, z: body.physics.angular_factor.z }
 			}
 		);
 	}
 
-	function setRigidBodyLinearFactor( body_id, mesh ) {
+	function setRigidBodyLinearFactor( body ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
 			{
-				body_id: body_id,
-				factor: { x: mesh.linear_factor.x, y: mesh.linear_factor.y, z: mesh.linear_factor.z }
+				body_id: body.physics._.id,
+				factor: { x: body.physics.linear_factor.x, y: body.physics.linear_factor.y, z: body.physics.linear_factor.z }
 			}
 		);
 	}
 
-	function setRigidBodyAngularVelocity( body_id, mesh ) {
+	function setRigidBodyAngularVelocity( body ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
 			{
-				body_id: body_id,
-				velocity: { x: mesh.angular_velocity.x, y: mesh.angular_velocity.y, z: mesh.angular_velocity.z }
+				body_id: body.physics._.id,
+				velocity: { x: body.physics.angular_velocity.x, y: body.physics.angular_velocity.y, z: body.physics.angular_velocity.z }
 			}
 		);
 	}
 
-	function setRigidBodyLinearVelocity( body_id, mesh ) {
+	function setRigidBodyLinearVelocity( body ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
 			{
-				body_id: body_id,
-				velocity: { x: mesh.linear_velocity.x, y: mesh.linear_velocity.y, z: mesh.linear_velocity.z }
+				body_id: body.physics._.id,
+				velocity: { x: body.physics.linear_velocity.x, y: body.physics.linear_velocity.y, z: body.physics.linear_velocity.z }
 			}
 		);
 	}
 
-	function setRigidBodyTransform( body_id, mesh ) {
+	function setRigidBodyTransform( body ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 			{
-				body_id: body_id,
-				position: { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z },
-				rotation: { x: mesh.quaternion.x, y: mesh.quaternion.y, z: mesh.quaternion.z, w: mesh.quaternion.w }
+				body_id: body.physics._.id,
+				position: { x: body.position.x, y: body.position.y, z: body.position.z },
+				rotation: { x: body.quaternion.x, y: body.quaternion.y, z: body.quaternion.z, w: body.quaternion.w }
 			}
 		);
 	}
 
-	function setRigidBodyCollisionMask( mesh ) {
+	function setRigidBodyCollisionMask( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
 			{
-				body_id: mesh.physijs.id,
-				collision_mask: mesh.physijs.collision_mask
+				body_id: physics_object._.id,
+				collision_mask: physics_object._.collision_mask
 			}
 		);
 	}
 
-	function setRigidBodyCollisionGroups( mesh ) {
+	function setRigidBodyCollisionGroups( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 			{
-				body_id: mesh.physijs.id,
-				collision_groups: mesh.physijs.collision_groups
+				body_id: physics_object._.id,
+				collision_groups: physics_object._.collision_groups
 			}
 		);
 	}
 
-	function setRigidBodyAngularDamping( mesh ) {
+	function setRigidBodyAngularDamping( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
 			{
-				body_id: mesh.physijs.id,
-				damping: mesh.physijs.angular_damping
+				body_id: physics_object._.id,
+				damping: physics_object._.angular_damping
 			}
 		);
 	}
 
-	function setRigidBodyLinearDamping( mesh ) {
+	function setRigidBodyLinearDamping( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
 			{
-				body_id: mesh.physijs.id,
-				damping: mesh.physijs.linear_damping
+				body_id: physics_object._.id,
+				damping: physics_object._.linear_damping
 			}
 		);
 	}
 
-	function setRigidBodyFriction( mesh ) {
+	function setRigidBodyFriction( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
 			{
-				body_id: mesh.physijs.id,
-				friction: mesh.physijs.friction
+				body_id: physics_object._.id,
+				friction: physics_object._.friction
 			}
 		);
 	}
 
-	function setRigidBodyRestitution( mesh ) {
+	function setRigidBodyRestitution( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
 			{
-				body_id: mesh.physijs.id,
-				restitution: mesh.physijs.restitution
+				body_id: physics_object._.id,
+				restitution: physics_object._.restitution
 			}
 		);
 	}
 
-	function setRigidBodyMass( mesh ) {
+	function setRigidBodyMass( physics_object ) {
 		this.physijs.postMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_MASS,
 			{
-				body_id: mesh.physijs.id,
-				mass: mesh.physijs.mass
+				body_id: physics_object._.id,
+				mass: physics_object._.mass
 			}
 		);
 	}
@@ -276,10 +276,10 @@
 				report[idx++], report[idx++], report[idx++], report[idx++]
 			);
 
-			rigid_body.position.copy( rigid_body.physijs.position.set( report[idx++], report[idx++], report[idx++] ) );
-			rigid_body.quaternion.copy( rigid_body.physijs.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
-			rigid_body.linear_velocity.copy( rigid_body.physijs.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
-			rigid_body.angular_velocity.copy( rigid_body.physijs.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+			rigid_body.position.copy( rigid_body.physics._.position.set( report[idx++], report[idx++], report[idx++] ) );
+			rigid_body.quaternion.copy( rigid_body.physics._.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
+			rigid_body.physics.linear_velocity.copy( rigid_body.physics._.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+			rigid_body.physics.angular_velocity.copy( rigid_body.physics._.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
 		}
 
 		// send the buffer back for re-use
@@ -345,19 +345,19 @@
 	Scene.prototype = Object.create( THREE.Scene.prototype );
 	Scene.prototype.constructor = Scene;
 
-	function getRigidBodyDefinition( mesh ) {
-		var shape_definition = mesh.getShapeDefinition();
+	function getRigidBodyDefinition( object ) {
+		var shape_definition = object.physics.getShapeDefinition( object.physics.geometry );
 
 		return {
-			body_id: mesh.physijs.id,
+			body_id: object.physics._.id,
 			shape_definition: shape_definition,
-			mass: mesh.physijs.mass,
-			restitution: mesh.physijs.restitution,
-			friction: mesh.physijs.friction,
-			linear_damping: mesh.physijs.linear_damping,
-			angular_damping: mesh.physijs.angular_damping,
-			collision_groups: mesh.physijs.collision_groups,
-			collision_mask: mesh.physijs.collision_mask
+			mass: object.physics._.mass,
+			restitution: object.physics._.restitution,
+			friction: object.physics._.friction,
+			linear_damping: object.physics._.linear_damping,
+			angular_damping: object.physics._.angular_damping,
+			collision_groups: object.physics._.collision_groups,
+			collision_mask: object.physics._.collision_mask
 		};
 	}
 
@@ -366,16 +366,19 @@
 		return nextId++;
 	}
 
-	function CompoundObject( physics_descriptor ) {
-		if ( physics_descriptor == null ) {
-			throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
-		}
+	function _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition ) {
+		physics_descriptor = physics_descriptor || {};
 
-		THREE.Object3D.call( this );
-		this.rotationAutoUpdate = false;
-		this.matrixAutoUpdate = false;
+		this.three_object = three_object;
+		this.geometry = geometry;
+		this.getShapeDefinition = getShapeDefinition;
 
-		this.physijs = {
+		this.linear_velocity = new THREE.Vector3();
+		this.angular_velocity = new THREE.Vector3();
+		this.linear_factor = new THREE.Vector3( 1, 1, 1 );
+		this.angular_factor = new THREE.Vector3( 1, 1, 1 );
+
+		this._ = {
 			id: getUniqueId(),
 
 			mass: physics_descriptor.mass || Infinity,
@@ -383,25 +386,191 @@
 			friction: physics_descriptor.friction || 0.5,
 			linear_damping: physics_descriptor.linear_damping || 0,
 			angular_damping: physics_descriptor.angular_damping || 0,
-			collision_groups: 0,
-			collision_mask: 0,
+			collision_groups: physics_descriptor.collision_groups || 0,
+			collision_mask: physics_descriptor.collision_mask || 0,
 
 			position: new THREE.Vector3(),
 			quaternion: new THREE.Quaternion(),
 			linear_velocity: new THREE.Vector3(),
 			angular_velocity: new THREE.Vector3(),
-			linear_factor: new THREE.Vector3( 1, 1, 1 ),
-			angular_factor: new THREE.Vector3( 1, 1, 1 )
+			linear_factor: new THREE.Vector3(1, 1, 1),
+			angular_factor: new THREE.Vector3(1, 1, 1)
 		};
-
-		this.linear_velocity = new THREE.Vector3();
-		this.angular_velocity = new THREE.Vector3();
-		this.linear_factor = new THREE.Vector3( 1, 1, 1 );
-		this.angular_factor = new THREE.Vector3( 1, 1, 1 );
 	}
 
-	CompoundObject.prototype = Object.create( THREE.Object3D.prototype );
-	CompoundObject.prototype.constructor = CompoundObject;
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'mass',
+		{
+			get: function() {
+				return this._.mass;
+			},
+			set: function( mass ) {
+				this._.mass = mass;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyMass( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'restitution',
+		{
+			get: function() {
+				return this._.restitution;
+			},
+			set: function( restitution ) {
+				this._.restitution = restitution;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyRestitution( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'friction',
+		{
+			get: function() {
+				return this._.friction;
+			},
+			set: function( friction ) {
+				this._.friction = friction;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyFriction( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'linear_damping',
+		{
+			get: function() {
+				return this._.linear_damping;
+			},
+			set: function( linear_damping ) {
+				this._.linear_damping = linear_damping;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyLinearDamping( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'angular_damping',
+		{
+			get: function() {
+				return this._.angular_damping;
+			},
+			set: function( angular_damping ) {
+				this._.angular_damping = angular_damping;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyAngularDamping( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'collision_groups',
+		{
+			get: function() {
+				return this._.collision_groups;
+			},
+			set: function( collision_groups ) {
+				this._.collision_groups = collision_groups;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyCollisionGroups( this );
+				}
+			}
+		}
+	);
+
+	Object.defineProperty(
+		_PhysicsObject.prototype,
+		'collision_mask',
+		{
+			get: function() {
+				return this._.collision_mask;
+			},
+			set: function( collision_mask ) {
+				this._.collision_mask = collision_mask;
+				if ( this.three_object.parent != null ) {
+					this.three_object.parent.physijs.setRigidBodyCollisionMask( this );
+				}
+			}
+		}
+	);
+
+	Scene.prototype.add = function( object ) {
+		THREE.Scene.prototype.add.call( this, object );
+
+		if ( object.physics instanceof _PhysicsObject ) {
+			var rigid_body_definition = getRigidBodyDefinition( object );
+			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
+			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+			object.updateMatrix();
+		}
+	};
+
+	Scene.prototype.step = function( time_delta, max_step, onStep ) {
+		if ( this.physijs.is_stepping === true ) {
+			throw new Error( 'Physijs: scene is already stepping, cannot call step() until it\'s finished' );
+		}
+
+		this.physijs.is_stepping = true;
+		this.physijs.onStep = onStep;
+
+		// check if any rigid bodies have been toyed with
+		var rigid_body_ids = Object.keys( this.physijs.id_rigid_body_map );
+		for ( var i = 0; i < rigid_body_ids.length; i++ ) {
+			var rigid_body_id = rigid_body_ids[ i ];
+			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+
+			// check position/rotation
+			if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {
+				this.physijs.setRigidBodyTransform( rigid_body );
+			}
+
+			// check linear velocity
+			if ( !rigid_body.physics.linear_velocity.equals( rigid_body.physics._.linear_velocity ) ) {
+				this.physijs.setRigidBodyLinearVelocity( rigid_body );
+			}
+
+			// check angular velocity
+			if ( !rigid_body.physics.angular_velocity.equals( rigid_body.physics._.angular_velocity ) ) {
+				this.physijs.setRigidBodyAngularVelocity( rigid_body );
+			}
+
+			// check linear factor
+			if ( !rigid_body.physics.linear_factor.equals( rigid_body.physics._.linear_factor ) ) {
+				this.physijs.setRigidBodyLinearFactor( rigid_body );
+				rigid_body.physics._.linear_factor.copy( rigid_body.physics.linear_factor );
+			}
+
+			// check angular factor
+			if ( !rigid_body.physics.angular_factor.equals( rigid_body.physics._.angular_factor ) ) {
+				this.physijs.setRigidBodyAngularFactor( rigid_body );
+				rigid_body.physics._.angular_factor.copy( rigid_body.physics.angular_factor );
+			}
+		}
+
+		this.physijs.postMessage(
+			MESSAGE_TYPES.STEP_SIMULATION,
+			{
+				time_delta: time_delta,
+				max_step: max_step
+			}
+		);
+	};
 
 	var BODY_TYPES = {
 		/**
@@ -451,243 +620,8 @@
 		TRIANGLE: 'TRIANGLE'
 	}
 
-	function Mesh( geometry, material, physics_descriptor ) {
-		THREE.Mesh.call( this, geometry, material );
-		this.rotationAutoUpdate = false;
-		this.matrixAutoUpdate = false;
-
-		physics_descriptor = physics_descriptor || {};
-
-		this.physijs = {
-			id: getUniqueId(),
-
-			mass: physics_descriptor.mass || Infinity,
-			restitution: physics_descriptor.restitution || 0.1,
-			friction: physics_descriptor.friction || 0.5,
-			linear_damping: physics_descriptor.linear_damping || 0,
-			angular_damping: physics_descriptor.angular_damping || 0,
-			collision_groups: physics_descriptor.collision_groups || 0,
-			collision_mask: physics_descriptor.collision_mask || 0,
-
-			position: new THREE.Vector3(),
-			quaternion: new THREE.Quaternion(),
-			linear_velocity: new THREE.Vector3(),
-			angular_velocity: new THREE.Vector3(),
-			linear_factor: new THREE.Vector3( 1, 1, 1 ),
-			angular_factor: new THREE.Vector3( 1, 1, 1 )
-		};
-
-		this.linear_velocity = new THREE.Vector3();
-		this.angular_velocity = new THREE.Vector3();
-		this.linear_factor = new THREE.Vector3( 1, 1, 1 );
-		this.angular_factor = new THREE.Vector3( 1, 1, 1 );
-	}
-
-	Mesh.prototype = Object.create( THREE.Mesh.prototype );
-	Mesh.prototype.constructor = Mesh;
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'mass',
-		{
-			get: function() {
-				return this.physijs.mass;
-			},
-			set: function( mass ) {
-				this.physijs.mass = mass;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyMass( this );
-				}
-			}
-		}
-	);
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'restitution',
-		{
-			get: function() {
-				return this.physijs.restitution;
-			},
-			set: function( restitution ) {
-				this.physijs.restitution = restitution;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyRestitution( this );
-				}
-			}
-		}
-	);
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'friction',
-		{
-			get: function() {
-				return this.physijs.friction;
-			},
-			set: function( friction ) {
-				this.physijs.friction = friction;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyFriction( this );
-				}
-			}
-		}
-	);
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'linear_damping',
-		{
-			get: function() {
-				return this.physijs.linear_damping;
-			},
-			set: function( linear_damping ) {
-				this.physijs.linear_damping = linear_damping;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyLinearDamping( this );
-				}
-			}
-		}
-	);
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'angular_damping',
-		{
-			get: function() {
-				return this.physijs.angular_damping;
-			},
-			set: function( angular_damping ) {
-				this.physijs.angular_damping = angular_damping;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyAngularDamping( this );
-				}
-			}
-		}
-	);
-
-	Object.defineProperty(
-		Mesh.prototype,
-		'collision_groups',
-		{
-			get: function() {
-				return this.physijs.collision_groups;
-			},
-			set: function( collision_groups ) {
-				this.physijs.collision_groups = collision_groups;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyCollisionGroups( this );
-				}
-			}
-		}
-	);
-	Object.defineProperty(
-		Mesh.prototype,
-		'collision_mask',
-		{
-			get: function() {
-				return this.physijs.collision_mask;
-			},
-			set: function( collision_mask ) {
-				this.physijs.collision_mask = collision_mask;
-				if ( this.parent != null ) {
-					this.parent.physijs.setRigidBodyCollisionMask( this );
-				}
-			}
-		}
-	);
-
-	CompoundObject.prototype.getShapeDefinition = function() {
-		var shapes = [];
-
-		this.traverse(function( object ) {
-			if ( object instanceof Mesh ) {
-				object.updateMatrix();
-				shapes.push({
-					position: { x: object.position.x, y: object.position.y, z: object.position.z },
-					quaternion: { x: object.quaternion._x, y: object.quaternion._y, z: object.quaternion._z, w: object.quaternion._w },
-					shape_definition: object.getShapeDefinition()
-				});
-			}
-		});
-
-		return {
-			body_type: BODY_TYPES.COMPOUND,
-			shapes: shapes
-		};
-	};
-
-	Scene.prototype.add = function( object ) {
-		THREE.Scene.prototype.add.call( this, object );
-
-		if ( object instanceof Mesh || object instanceof CompoundObject ) {
-			var rigid_body_definition = getRigidBodyDefinition( object );
-			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
-			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
-			object.updateMatrix();
-		}
-	};
-
-	Scene.prototype.step = function( time_delta, max_step, onStep ) {
-		if ( this.physijs.is_stepping === true ) {
-			throw new Error( 'Physijs: scene is already stepping, cannot call step() until it\'s finished' );
-		}
-
-		this.physijs.is_stepping = true;
-		this.physijs.onStep = onStep;
-
-		// check if any rigid bodies have been toyed with
-		var rigid_body_ids = Object.keys( this.physijs.id_rigid_body_map );
-		for ( var i = 0; i < rigid_body_ids.length; i++ ) {
-			var rigid_body_id = rigid_body_ids[ i ];
-			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
-
-			// check position/rotation
-			if ( !rigid_body.position.equals( rigid_body.physijs.position ) || !rigid_body.quaternion.equals( rigid_body.physijs.quaternion ) ) {
-				this.physijs.setRigidBodyTransform( rigid_body_id, rigid_body );
-			}
-
-			// check linear velocity
-			if ( !rigid_body.linear_velocity.equals( rigid_body.physijs.linear_velocity ) ) {
-				this.physijs.setRigidBodyLinearVelocity( rigid_body_id, rigid_body );
-			}
-
-			// check angular velocity
-			if ( !rigid_body.angular_velocity.equals( rigid_body.physijs.angular_velocity ) ) {
-				this.physijs.setRigidBodyAngularVelocity( rigid_body_id, rigid_body );
-			}
-
-			// check linear factor
-			if ( !rigid_body.linear_factor.equals( rigid_body.physijs.linear_factor ) ) {
-				this.physijs.setRigidBodyLinearFactor( rigid_body_id, rigid_body );
-				rigid_body.physijs.linear_factor.copy( rigid_body.linear_factor );
-			}
-
-			// check angular factor
-			if ( !rigid_body.angular_factor.equals( rigid_body.physijs.angular_factor ) ) {
-				this.physijs.setRigidBodyAngularFactor( rigid_body_id, rigid_body );
-				rigid_body.physijs.angular_factor.copy( rigid_body.angular_factor );
-			}
-		}
-
-		this.physijs.postMessage(
-			MESSAGE_TYPES.STEP_SIMULATION,
-			{
-				time_delta: time_delta,
-				max_step: max_step
-			}
-		);
-	};
-
-	function TriangleMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
-	}
-
-	TriangleMesh.prototype = Object.create( Mesh.prototype );
-	TriangleMesh.prototype.constructor = TriangleMesh;
-
-	TriangleMesh.prototype.getShapeDefinition = function() {
-		var vertices = this.geometry.vertices.reduce(
+	function _getShapeDefinition( geometry ) {
+		var vertices = geometry.vertices.reduce(
 			function( vertices, vertex ) {
 				vertices.push( vertex.x, vertex.y, vertex.z );
 				return vertices;
@@ -698,69 +632,101 @@
 		return {
 			body_type: BODY_TYPES.CONVEX,
 			vertices: vertices,
-			faces: this.geometry.faces
+			faces: geometry.faces
 		};
-	};
-
-	function SphereMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	SphereMesh.prototype = Object.create( Mesh.prototype );
-	SphereMesh.prototype.constructor = SphereMesh;
 
-	SphereMesh.prototype.getShapeDefinition = function() {
-		this.geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
+	/*
+	IF
+	geometry is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
+	ELSE
+		the first argument is assumed to be an object Three.js can understand AND
+		IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape
+		ELSE the object passed as the first argument is assumed to have a `geometry` property
+
+	The next argument in all cases is optional and allows for the object's physical properties to be changed
+	The last argument in all cases is the getShapeDefinition function
+	 */
+	function PhysicsObject( first, second, third, fourth ) {
+		var three_object;
+		var geometry;
+		var physics_descriptor;
+		var getShapeDefinition;
+
+		if ( first instanceof THREE.Geometry ) {
+			geometry = first;
+			three_object = new THREE.Mesh( geometry, second );
+			physics_descriptor = third;
+			getShapeDefinition = fourth;
+		} else {
+			three_object = first;
+			if ( second instanceof THREE.Geometry ) {
+				geometry = second;
+				physics_descriptor = third;
+				getShapeDefinition = fourth;
+			} else {
+				geometry = three_object.geometry;
+				physics_descriptor = second;
+				getShapeDefinition = third;
+			}
+		}
+
+		three_object.rotationAutoUpdate = false;
+		three_object.matrixAutoUpdate = false;
+
+		three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+
+		return three_object;
+	}
+
+	function TriangleMesh( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, _getShapeDefinition );
+	}
+
+	function __getShapeDefinition( geometry ) {
+		geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
 
 		return {
 			body_type: BODY_TYPES.SPHERE,
-			radius: this.geometry.boundingSphere.radius
+			radius: geometry.boundingSphere.radius
 		};
-	};
-
-	function PlaneMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	PlaneMesh.prototype = Object.create( Mesh.prototype );
-	PlaneMesh.prototype.constructor = PlaneMesh;
+	function Sphere( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, __getShapeDefinition );
+	}
 
-	PlaneMesh.prototype.getShapeDefinition = function() {
-		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+	function ___getShapeDefinition( geometry ) {
+		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
 			body_type: BODY_TYPES.PLANE,
-			width: this.geometry.boundingBox.max.x,
-			height: this.geometry.boundingBox.max.y
+			width: geometry.boundingBox.max.x,
+			height: geometry.boundingBox.max.y
 		};
-	};
-
-	function CylinderMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	CylinderMesh.prototype = Object.create( Mesh.prototype );
-	CylinderMesh.prototype.constructor = CylinderMesh;
+	function Plane( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, ___getShapeDefinition );
+	}
 
-	CylinderMesh.prototype.getShapeDefinition = function() {
-		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+	function ____getShapeDefinition( geometry ) {
+		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
 			body_type: BODY_TYPES.CYLINDER,
-			radius: this.geometry.boundingBox.max.x,
-			height: this.geometry.boundingBox.max.y
+			radius: geometry.boundingBox.max.x,
+			height: geometry.boundingBox.max.y
 		};
-	};
-
-	function ConvexMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	ConvexMesh.prototype = Object.create( Mesh.prototype );
-	ConvexMesh.prototype.constructor = ConvexMesh;
+	function Cylinder( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, ____getShapeDefinition );
+	}
 
-	ConvexMesh.prototype.getShapeDefinition = function() {
-		var vertices = this.geometry.vertices.reduce(
+	function _____getShapeDefinition( geometry ) {
+		var vertices = geometry.vertices.reduce(
 			function( vertices, vertex ) {
 				vertices.push( vertex.x, vertex.y, vertex.z );
 				return vertices;
@@ -772,54 +738,52 @@
 			body_type: BODY_TYPES.CONVEX,
 			vertices: vertices
 		};
-	};
-
-	function ConeMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	ConeMesh.prototype = Object.create( Mesh.prototype );
-	ConeMesh.prototype.constructor = ConeMesh;
+	function Convex( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, _____getShapeDefinition );
+	}
 
-	ConeMesh.prototype.getShapeDefinition = function() {
-		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+	function ______getShapeDefinition( geometry ) {
+		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
 			body_type: BODY_TYPES.CONE,
-			radius: this.geometry.boundingBox.max.x,
-			height: this.geometry.boundingBox.max.y
+			radius: geometry.boundingBox.max.x,
+			height: geometry.boundingBox.max.y
 		};
-	};
-
-	function BoxMesh( geometry, material, physics_descriptor ) {
-		Mesh.call( this, geometry, material, physics_descriptor );
 	}
 
-	BoxMesh.prototype = Object.create( Mesh.prototype );
-	BoxMesh.prototype.constructor = BoxMesh;
+	function Cone( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, ______getShapeDefinition );
+	}
 
-	BoxMesh.prototype.getShapeDefinition = function() {
-		this.geometry.computeBoundingBox(); // make sure bounding radius has been calculated
+	function getShapeDefinition( geometry ) {
+		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
 			body_type: BODY_TYPES.BOX,
-			width: this.geometry.boundingBox.max.x,
-			height: this.geometry.boundingBox.max.y,
-			depth: this.geometry.boundingBox.max.z
+			width: geometry.boundingBox.max.x,
+			height: geometry.boundingBox.max.y,
+			depth: geometry.boundingBox.max.z
 		};
-	};
+	}
+
+	function Box( first, second, third ) {
+		return PhysicsObject.call( this, first, second, third, getShapeDefinition );
+	}
 
 	var index = {
-		Mesh: Mesh,
-		BoxMesh: BoxMesh,
-		ConeMesh: ConeMesh,
-		ConvexMesh: ConvexMesh,
-		CylinderMesh: CylinderMesh,
-		PlaneMesh: PlaneMesh,
-		SphereMesh: SphereMesh,
+		PhysicsObject: PhysicsObject,
+		Box: Box,
+		Cone: Cone,
+		Convex: Convex,
+		Cylinder: Cylinder,
+		Plane: Plane,
+		Sphere: Sphere,
 		TriangleMesh: TriangleMesh,
 
-		CompoundObject: CompoundObject,
+		//CompoundObject: CompoundObject,
 		Scene: Scene
 	};
 
