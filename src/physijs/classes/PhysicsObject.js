@@ -9,29 +9,25 @@ ELSE
 	ELSE the object passed as the first argument is assumed to have a `geometry` property
 
 The next argument in all cases is optional and allows for the object's physical properties to be changed
-The last argument in all cases is the getShapeDefinition function
+The fourth argument in all cases is the getShapeDefinition function
  */
-export default function( first, second, third, fourth ) {
+export default function( first, second, third, getShapeDefinition ) {
 	var three_object;
 	var geometry;
 	var physics_descriptor;
-	var getShapeDefinition;
 
 	if ( first instanceof THREE.Geometry ) {
 		geometry = first;
 		three_object = new THREE.Mesh( geometry, second );
 		physics_descriptor = third;
-		getShapeDefinition = fourth;
 	} else {
 		three_object = first;
 		if ( second instanceof THREE.Geometry ) {
 			geometry = second;
 			physics_descriptor = third;
-			getShapeDefinition = fourth;
 		} else {
 			geometry = three_object.geometry;
 			physics_descriptor = second;
-			getShapeDefinition = third;
 		}
 	}
 
