@@ -7,7 +7,7 @@ import Plane from './classes/shapes/Plane';
 import Sphere from './classes/shapes/Sphere';
 import TriangleMesh from './classes/shapes/TriangleMesh';
 
-//import CompoundObject from './classes/CompoundObject';
+import CompoundObject from './classes/CompoundObject';
 import Scene from './classes/Scene';
 
 export default {
@@ -20,6 +20,6 @@ export default {
 	Sphere: Sphere,
 	TriangleMesh: TriangleMesh,
 
-	//CompoundObject: CompoundObject,
+	CompoundObject: CompoundObject,
 	Scene: Scene
 };

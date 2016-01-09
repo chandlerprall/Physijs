@@ -1,55 +1,63 @@
 import {getUniqueId} from './util/uniqueId';
 import BODY_TYPES from '../../BODY_TYPES';
-import Mesh from './mesh/Mesh';
+import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 
-export default function CompoundObject( physics_descriptor ) {
+export default function CompoundObject( object, physics_descriptor ) {
 	if ( physics_descriptor == null ) {
 		throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
 	}
 
-	THREE.Object3D.call( this );
-	this.rotationAutoUpdate = false;
-	this.matrixAutoUpdate = false;
+	if ( object.physics instanceof _PhysicsObject ) {
+		object.physics.getShapeDefinition = getShapeDefinition.bind( null, object, object.physics.getShapeDefinition );
+	} else {
+		object.physics = new _PhysicsObject( object, null, physics_descriptor, getShapeDefinition.bind( null, object ) );
+	}
 
-	this.physijs = {
-		id: getUniqueId(),
+	object.rotationAutoUpdate = false;
+	object.matrixAutoUpdate = false;
 
-		mass: physics_descriptor.mass || Infinity,
-		restitution: physics_descriptor.restitution || 0.1,
-		friction: physics_descriptor.friction || 0.5,
-		linear_damping: physics_descriptor.linear_damping || 0,
-		angular_damping: physics_descriptor.angular_damping || 0,
-		collision_groups: 0,
-		collision_mask: 0,
-
-		position: new THREE.Vector3(),
-		quaternion: new THREE.Quaternion(),
-		linear_velocity: new THREE.Vector3(),
-		angular_velocity: new THREE.Vector3(),
-		linear_factor: new THREE.Vector3( 1, 1, 1 ),
-		angular_factor: new THREE.Vector3( 1, 1, 1 )
-	};
-
-	this.linear_velocity = new THREE.Vector3();
-	this.angular_velocity = new THREE.Vector3();
-	this.linear_factor = new THREE.Vector3( 1, 1, 1 );
-	this.angular_factor = new THREE.Vector3( 1, 1, 1 );
+	return object;
 }
 
-CompoundObject.prototype = Object.create( THREE.Object3D.prototype );
-CompoundObject.prototype.constructor = CompoundObject;
 
-CompoundObject.prototype.getShapeDefinition = function() {
+function getShapeDefinition( object, originalShapeDefinition ) {
 	var shapes = [];
 
-	this.traverse(function( object ) {
-		if ( object instanceof Mesh ) {
-			object.updateMatrix();
-			shapes.push({
-				position: { x: object.position.x, y: object.position.y, z: object.position.z },
-				quaternion: { x: object.quaternion._x, y: object.quaternion._y, z: object.quaternion._z, w: object.quaternion._w },
-				shape_definition: object.getShapeDefinition()
-			});
+	var position_offset = new THREE.Vector3();
+	var quaternion_offset = new THREE.Quaternion();
+
+	object.updateMatrix();
+	object.updateMatrixWorld( true );
+	var parent_inverse_world = new THREE.Matrix4().getInverse( object.matrixWorld );
+	var childMatrix = new THREE.Matrix4();
+
+	object.traverse(function( child ) {
+		child.updateMatrix();
+		child.updateMatrixWorld( true );
+
+		if ( child.physics instanceof _PhysicsObject ) {
+			var shapeDefinition;
+			if ( originalShapeDefinition != null ) {
+				shapeDefinition = originalShapeDefinition( child.physics.geometry );
+			} else if ( object !== child ) {
+				shapeDefinition = child.physics.getShapeDefinition( child.physics.geometry );
+			}
+
+			if ( shapeDefinition != null ) {
+				childMatrix.copy( child.matrixWorld ).multiply( parent_inverse_world );
+				position_offset.setFromMatrixPosition( childMatrix );
+				quaternion_offset.setFromRotationMatrix( childMatrix );
+				shapes.push({
+					position: {x: position_offset.x, y: position_offset.y, z: position_offset.z},
+					quaternion: {
+						x: quaternion_offset._x,
+						y: quaternion_offset._y,
+						z: quaternion_offset._z,
+						w: quaternion_offset._w
+					},
+					shape_definition: shapeDefinition
+				});
+			}
 		}
 	});
 
@@ -57,4 +65,4 @@ CompoundObject.prototype.getShapeDefinition = function() {
 		body_type: BODY_TYPES.COMPOUND,
 		shapes: shapes
 	};
-};
+}

@@ -620,7 +620,73 @@
 		TRIANGLE: 'TRIANGLE'
 	}
 
-	function _getShapeDefinition( geometry ) {
+
+	function _getShapeDefinition( object, originalShapeDefinition ) {
+		var shapes = [];
+
+		var position_offset = new THREE.Vector3();
+		var quaternion_offset = new THREE.Quaternion();
+
+		object.updateMatrix();
+		object.updateMatrixWorld( true );
+		var parent_inverse_world = new THREE.Matrix4().getInverse( object.matrixWorld );
+		var childMatrix = new THREE.Matrix4();
+
+		object.traverse(function( child ) {
+			child.updateMatrix();
+			child.updateMatrixWorld( true );
+
+			if ( child.physics instanceof _PhysicsObject ) {
+				var shapeDefinition;
+				if ( originalShapeDefinition != null ) {
+					shapeDefinition = originalShapeDefinition( child.physics.geometry );
+				} else if ( object !== child ) {
+					shapeDefinition = child.physics.getShapeDefinition( child.physics.geometry );
+				}
+
+				if ( shapeDefinition != null ) {
+					childMatrix.copy( child.matrixWorld ).multiply( parent_inverse_world );
+					position_offset.setFromMatrixPosition( childMatrix );
+					quaternion_offset.setFromRotationMatrix( childMatrix );
+					shapes.push({
+						position: {x: position_offset.x, y: position_offset.y, z: position_offset.z},
+						quaternion: {
+							x: quaternion_offset._x,
+							y: quaternion_offset._y,
+							z: quaternion_offset._z,
+							w: quaternion_offset._w
+						},
+						shape_definition: shapeDefinition
+					});
+				}
+			}
+		});
+
+		return {
+			body_type: BODY_TYPES.COMPOUND,
+			shapes: shapes
+		};
+	}
+
+	function CompoundObject( object, physics_descriptor ) {
+		if ( physics_descriptor == null ) {
+			throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
+		}
+
+		if ( object.physics instanceof _PhysicsObject ) {
+			object.physics.getShapeDefinition = _getShapeDefinition.bind( null, object, object.physics.getShapeDefinition );
+		} else {
+			object.physics = new _PhysicsObject( object, null, physics_descriptor, _getShapeDefinition.bind( null, object ) );
+		}
+
+		object.rotationAutoUpdate = false;
+		object.matrixAutoUpdate = false;
+
+		return object;
+	}
+
+
+	function __getShapeDefinition( geometry ) {
 		var vertices = geometry.vertices.reduce(
 			function( vertices, vertex ) {
 				vertices.push( vertex.x, vertex.y, vertex.z );
@@ -677,10 +743,10 @@
 	}
 
 	function TriangleMesh( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, _getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, __getShapeDefinition );
 	}
 
-	function __getShapeDefinition( geometry ) {
+	function ___getShapeDefinition( geometry ) {
 		geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
 
 		return {
@@ -690,10 +756,10 @@
 	}
 
 	function Sphere( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, __getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, ___getShapeDefinition );
 	}
 
-	function ___getShapeDefinition( geometry ) {
+	function ____getShapeDefinition( geometry ) {
 		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
@@ -704,10 +770,10 @@
 	}
 
 	function Plane( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, ___getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, ____getShapeDefinition );
 	}
 
-	function ____getShapeDefinition( geometry ) {
+	function _____getShapeDefinition( geometry ) {
 		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
@@ -718,10 +784,10 @@
 	}
 
 	function Cylinder( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, ____getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, _____getShapeDefinition );
 	}
 
-	function _____getShapeDefinition( geometry ) {
+	function ______getShapeDefinition( geometry ) {
 		var vertices = geometry.vertices.reduce(
 			function( vertices, vertex ) {
 				vertices.push( vertex.x, vertex.y, vertex.z );
@@ -737,10 +803,10 @@
 	}
 
 	function Convex( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, _____getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, ______getShapeDefinition );
 	}
 
-	function ______getShapeDefinition( geometry ) {
+	function _______getShapeDefinition( geometry ) {
 		geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
 		return {
@@ -751,7 +817,7 @@
 	}
 
 	function Cone( first, second, third ) {
-		return PhysicsObject.call( this, first, second, third, ______getShapeDefinition );
+		return PhysicsObject.call( this, first, second, third, _______getShapeDefinition );
 	}
 
 	function getShapeDefinition( geometry ) {
@@ -779,7 +845,7 @@
 		Sphere: Sphere,
 		TriangleMesh: TriangleMesh,
 
-		//CompoundObject: CompoundObject,
+		CompoundObject: CompoundObject,
 		Scene: Scene
 	};
 

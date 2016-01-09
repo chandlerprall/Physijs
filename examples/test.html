@@ -27,13 +27,9 @@
 			box.position.set( 0.13, 3, 0 );
 			scene.add( box );
 
-			(function render() {
-				requestAnimationFrame( render );
-				renderer.render( scene, camera );
-			})();
-
 			var physics_framerate = 1000 / 60;
 			function onStep() {
+				renderer.render( scene, camera );
 				setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
 			}
 			scene.step( physics_framerate / 1000, undefined, onStep );
