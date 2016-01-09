@@ -14,9 +14,17 @@ function getShapeDefinition( geometry ) {
 		[]
 	);
 
+	var faces = geometry.faces.reduce(
+		function( faces, face ) {
+			faces.push( face.a, face.b, face.c );
+			return faces;
+		},
+		[]
+	);
+
 	return {
-		body_type: BODY_TYPES.CONVEX,
+		body_type: BODY_TYPES.TRIANGLE,
 		vertices: vertices,
-		faces: geometry.faces
+		faces: faces
 	};
 }
