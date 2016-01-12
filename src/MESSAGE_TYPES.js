@@ -2,10 +2,18 @@ export default {
 	REPORTS: {
 		/**
 		 * world report containing matrix data for rigid bodies
-		 * element [1] is number of rigid bodies in the array
+		 * element [1] is how many simulation ticks have been processed (world.ticks)
+		 * element [2] is number of rigid bodies in the array
 		 * 2...n elements are the bodies' matrix data
 		 */
-		WORLD: 0
+		WORLD: 0,
+
+		/**
+		 * contains details for new contacts
+		 * element [1] is the number of collisions, each collision is represented by:
+		 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
+		 */
+		COLLISIONS: 1
 	},
 
 	/**

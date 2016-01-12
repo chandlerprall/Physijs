@@ -3,6 +3,11 @@ import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 import CompoundObject from './CompoundObject';
 
+var _tmp_vector3_1 = new THREE.Vector3();
+var _tmp_vector3_2 = new THREE.Vector3();
+var _tmp_vector3_3 = new THREE.Vector3();
+var _tmp_vector3_4 = new THREE.Vector3();
+
 function getRigidBodyDefinition( object ) {
 	var shape_definition = object.physics.getShapeDefinition( object.physics.geometry );
 
@@ -24,11 +29,12 @@ export default function Scene( worker_script_location, world_config ) {
 
 	this.physijs = {
 		is_stepping: false,
-		id_rigid_body_map: {},
+		id_body_map: {},
 		onStep: null,
 
 		initializeWorker: initializeWorker.bind( this ),
 		processWorldReport: processWorldReport.bind( this ),
+		processCollisionReport: processCollisionReport.bind( this ),
 		postMessage: postMessage.bind( this ),
 		postReport: postReport.bind( this ),
 		setRigidBodyMass: setRigidBodyMass.bind( this ),
@@ -56,7 +62,7 @@ Scene.prototype.add = function( object ) {
 
 	if ( object.physics instanceof _PhysicsObject ) {
 		var rigid_body_definition = getRigidBodyDefinition( object );
-		this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
+		this.physijs.id_body_map[ rigid_body_definition.body_id ] = object;
 		this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
 		object.updateMatrix();
 	}
@@ -71,10 +77,10 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 	this.physijs.onStep = onStep;
 
 	// check if any rigid bodies have been toyed with
-	var rigid_body_ids = Object.keys( this.physijs.id_rigid_body_map );
+	var rigid_body_ids = Object.keys( this.physijs.id_body_map );
 	for ( var i = 0; i < rigid_body_ids.length; i++ ) {
 		var rigid_body_id = rigid_body_ids[ i ];
-		var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
 
 		// check position/rotation
 		if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {
@@ -125,6 +131,8 @@ function initializeWorker( worker_script_location, world_config ) {
 				var report_type = data[0];
 				if ( report_type === MESSAGE_TYPES.REPORTS.WORLD ) {
 					this.physijs.processWorldReport( data );
+				} else if ( report_type === MESSAGE_TYPES.REPORTS.COLLISIONS ) {
+					this.physijs.processCollisionReport( data );
 				}
 			}
 		}.bind( this )
@@ -139,7 +147,7 @@ function processWorldReport( report ) {
 	for ( var i = 0; i < rigid_body_count; i++ ) {
 		var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
 		var rigid_body_id = report[idx++];
-		var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
 
 		rigid_body.matrix.set(
 			report[idx++], report[idx++], report[idx++], report[idx++],
@@ -164,6 +172,43 @@ function processWorldReport( report ) {
 		this.physijs.onStep = null;
 		onStep.call( this, simulation_ticks );
 	}
+}
+
+function processCollisionReport( report ) {
+	var new_contacts = report[1];
+
+	for ( var i = 0; i < new_contacts; i += 15 ) {
+		var idx = i + 2;
+		var object_a = this.physijs.id_body_map[report[idx+0]];
+		var object_b = this.physijs.id_body_map[report[idx+1]];
+
+		_tmp_vector3_1.set( report[idx+2], report[idx+3], report[idx+4] );
+		_tmp_vector3_2.set( report[idx+5], report[idx+6], report[idx+7] );
+		_tmp_vector3_3.set( report[idx+8], report[idx+9], report[idx+10] );
+		_tmp_vector3_4.set( report[idx+11], report[idx+12], report[idx+13] );
+
+		object_a.dispatchEvent({
+			type: 'physics.newContact',
+			other_body: object_b,
+			contact_point: _tmp_vector3_1,
+			contact_normal: _tmp_vector3_2,
+			relative_linear_velocity: _tmp_vector3_3,
+			relative_angular_velocity: _tmp_vector3_4,
+			penetration_depth: report[idx+14]
+		});
+
+		object_b.dispatchEvent({
+			type: 'physics.newContact',
+			other_body: object_a,
+			contact_point: _tmp_vector3_1,
+			contact_normal: _tmp_vector3_2,
+			relative_linear_velocity: _tmp_vector3_3,
+			relative_angular_velocity: _tmp_vector3_4,
+			penetration_depth: report[idx+14]
+		});
+	}
+
+	this.physijs.postReport( report );
 }
 
 function postMessage( type, parameters ) {

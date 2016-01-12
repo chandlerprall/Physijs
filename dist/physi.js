@@ -8,10 +8,18 @@
 		REPORTS: {
 			/**
 			 * world report containing matrix data for rigid bodies
-			 * element [1] is number of rigid bodies in the array
+			 * element [1] is how many simulation ticks have been processed (world.ticks)
+			 * element [2] is number of rigid bodies in the array
 			 * 2...n elements are the bodies' matrix data
 			 */
-			WORLD: 0
+			WORLD: 0,
+
+			/**
+			 * contains details for new contacts
+			 * element [1] is the number of collisions, each collision is represented by:
+			 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
+			 */
+			COLLISIONS: 1
 		},
 
 		/**
@@ -260,6 +268,51 @@
 		});
 	}
 
+	var _tmp_vector3_4 = new THREE.Vector3();
+
+	var _tmp_vector3_3 = new THREE.Vector3();
+
+	var _tmp_vector3_2 = new THREE.Vector3();
+
+	var _tmp_vector3_1 = new THREE.Vector3();
+
+	function processCollisionReport( report ) {
+		var new_contacts = report[1];
+
+		for ( var i = 0; i < new_contacts; i += 15 ) {
+			var idx = i + 2;
+			var object_a = this.physijs.id_body_map[report[idx+0]];
+			var object_b = this.physijs.id_body_map[report[idx+1]];
+
+			_tmp_vector3_1.set( report[idx+2], report[idx+3], report[idx+4] );
+			_tmp_vector3_2.set( report[idx+5], report[idx+6], report[idx+7] );
+			_tmp_vector3_3.set( report[idx+8], report[idx+9], report[idx+10] );
+			_tmp_vector3_4.set( report[idx+11], report[idx+12], report[idx+13] );
+
+			object_a.dispatchEvent({
+				type: 'physics.newContact',
+				other_body: object_b,
+				contact_point: _tmp_vector3_1,
+				contact_normal: _tmp_vector3_2,
+				relative_linear_velocity: _tmp_vector3_3,
+				relative_angular_velocity: _tmp_vector3_4,
+				penetration_depth: report[idx+14]
+			});
+
+			object_b.dispatchEvent({
+				type: 'physics.newContact',
+				other_body: object_a,
+				contact_point: _tmp_vector3_1,
+				contact_normal: _tmp_vector3_2,
+				relative_linear_velocity: _tmp_vector3_3,
+				relative_angular_velocity: _tmp_vector3_4,
+				penetration_depth: report[idx+14]
+			});
+		}
+
+		this.physijs.postReport( report );
+	}
+
 	function processWorldReport( report ) {
 		var simulation_ticks = report[1];
 		var rigid_body_count = report[2];
@@ -267,7 +320,7 @@
 		for ( var i = 0; i < rigid_body_count; i++ ) {
 			var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
 			var rigid_body_id = report[idx++];
-			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+			var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
 
 			rigid_body.matrix.set(
 				report[idx++], report[idx++], report[idx++], report[idx++],
@@ -306,6 +359,8 @@
 					var report_type = data[0];
 					if ( report_type === MESSAGE_TYPES.REPORTS.WORLD ) {
 						this.physijs.processWorldReport( data );
+					} else if ( report_type === MESSAGE_TYPES.REPORTS.COLLISIONS ) {
+						this.physijs.processCollisionReport( data );
 					}
 				}
 			}.bind( this )
@@ -318,11 +373,12 @@
 
 		this.physijs = {
 			is_stepping: false,
-			id_rigid_body_map: {},
+			id_body_map: {},
 			onStep: null,
 
 			initializeWorker: initializeWorker.bind( this ),
 			processWorldReport: processWorldReport.bind( this ),
+			processCollisionReport: processCollisionReport.bind( this ),
 			postMessage: postMessage.bind( this ),
 			postReport: postReport.bind( this ),
 			setRigidBodyMass: setRigidBodyMass.bind( this ),
@@ -515,7 +571,7 @@
 
 		if ( object.physics instanceof _PhysicsObject ) {
 			var rigid_body_definition = getRigidBodyDefinition( object );
-			this.physijs.id_rigid_body_map[ rigid_body_definition.body_id ] = object;
+			this.physijs.id_body_map[ rigid_body_definition.body_id ] = object;
 			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
 			object.updateMatrix();
 		}
@@ -530,10 +586,10 @@
 		this.physijs.onStep = onStep;
 
 		// check if any rigid bodies have been toyed with
-		var rigid_body_ids = Object.keys( this.physijs.id_rigid_body_map );
+		var rigid_body_ids = Object.keys( this.physijs.id_body_map );
 		for ( var i = 0; i < rigid_body_ids.length; i++ ) {
 			var rigid_body_id = rigid_body_ids[ i ];
-			var rigid_body = this.physijs.id_rigid_body_map[ rigid_body_id ];
+			var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
 
 			// check position/rotation
 			if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {

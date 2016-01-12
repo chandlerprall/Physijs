@@ -27,6 +27,13 @@
 			box.position.set( 0.13, 3, 0 );
 			scene.add( box );
 
+			box.addEventListener(
+				'physics.newContact',
+				function( event ) {
+					console.log( 'collided at', event.relative_linear_velocity.length() );
+				}
+			);
+
 			var physics_framerate = 1000 / 60;
 			function onStep() {
 				renderer.render( scene, camera );

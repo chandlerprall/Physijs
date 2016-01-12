@@ -5,6 +5,8 @@ import BODY_TYPES from '../BODY_TYPES';
 import * as _goblin from '../../lib/goblin.min.js';
 var Goblin = self.Goblin || _goblin;
 
+var _tmp_vector3 = new Goblin.Vector3();
+
 // report-related variables and constants
 function ensureReportSize( report, report_size, chunk_size ) {
 	var needed_buffer_size = ( report_size + 3 ) + chunk_size - report_size % chunk_size; // the +2 is to
@@ -18,9 +20,14 @@ var WORLD_REPORT_SIZE_RIGIDBODY = 30; // 1 body id + 16 matrix elements + 3 posi
 var WORLD_REPORT_CHUNK_SIZE = 100 * WORLD_REPORT_SIZE_RIGIDBODY; // increase buffer by enough to hold 100 objects each time
 var world_report = new Float32Array( 0 );
 
+var COLLISION_REPORT_SIZE = 15; // 2 body ids + 4 Vector3s + penetration depth
+var COLLISION_REPORT_CHUNK_SIZE = 100 * COLLISION_REPORT_CHUNK_SIZE;
+var collision_report = new Float32Array( 0 );
+
 // global variables for the simulation
 var world;
 var id_rigid_body_map = {};
+var new_collisions = [];
 
 function postReport( report ) {
 	self.postMessage( report, [report.buffer] );
@@ -83,6 +90,53 @@ function reportWorld() {
 	}
 
 	postReport( world_report );
+}
+
+function reportCollisions() {
+	// divided by 2 because each new collision triggers two `contact` events and the second is a duplicate
+	// divided by 9 as each entry in `new_collisions` spans nine indices
+	var new_collisions_count = new_collisions.length / 2 / 9;
+
+	// compute buffer size
+	var report_size = ( COLLISION_REPORT_SIZE * new_collisions_count ); // elements needed to report collisions
+	collision_report = ensureReportSize( collision_report, report_size, COLLISION_REPORT_SIZE );
+	collision_report[0] = MESSAGE_TYPES.REPORTS.COLLISIONS;
+	collision_report[1] = new_collisions_count;
+
+	var report_idx = 2;
+
+	for ( var i = 0; i < new_collisions.length; i += 18 ) {
+		var object_a = new_collisions[i+0];
+		var object_b = new_collisions[i+1];
+		var contact = new_collisions[i+2];
+
+		collision_report[report_idx+0] = object_a.id;
+		collision_report[report_idx+1] = object_b.id;
+
+		collision_report[report_idx+2] = contact.contact_point.x;
+		collision_report[report_idx+3] = contact.contact_point.y;
+		collision_report[report_idx+4] = contact.contact_point.z;
+
+		collision_report[report_idx+5] = contact.contact_normal.x;
+		collision_report[report_idx+6] = contact.contact_normal.y;
+		collision_report[report_idx+7] = contact.contact_normal.z;
+
+		collision_report[report_idx+8] = new_collisions[i+3];
+		collision_report[report_idx+9] = new_collisions[i+4];
+		collision_report[report_idx+10] = new_collisions[i+5];
+
+		collision_report[report_idx+11] = new_collisions[i+6];
+		collision_report[report_idx+12] = new_collisions[i+7];
+		collision_report[report_idx+13] = new_collisions[i+8];
+
+		collision_report[report_idx+14] = contact.penetration_depth;
+
+		report_idx += COLLISION_REPORT_SIZE;
+	}
+
+	new_collisions.length = 0;
+
+	postReport( collision_report );
 }
 
 function getShapeForDefinition( shape_definition ) {
@@ -179,6 +233,13 @@ function getShapeForDefinition( shape_definition ) {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.REPORTS.COLLISIONS,
+		function( report ) {
+			collision_report = report;
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.INITIALIZE,
 		function( parameters ) {
 			var broadphase = parameters.broadphase === 'naive' ? new Goblin.BasicBroadphase() : new Goblin.SAPBroadphase();
@@ -208,6 +269,20 @@ function getShapeForDefinition( shape_definition ) {
 			body.angular_damping = parameters.angular_damping;
 			body.collision_groups = parameters.collision_groups;
 			body.collision_mask = parameters.collision_mask;
+
+			body.addListener(
+				'contact',
+				function( other_body, contact ) {
+					new_collisions.push( this, other_body, contact );
+
+					// find relative velocities
+					_tmp_vector3.subtractVectors( other_body.linear_velocity, this.linear_velocity );
+					new_collisions.push( _tmp_vector3.x, _tmp_vector3.y, _tmp_vector3.z );
+
+					_tmp_vector3.subtractVectors( other_body.angular_velocity, this.angular_velocity );
+					new_collisions.push( _tmp_vector3.x, _tmp_vector3.y, _tmp_vector3.z );
+				}
+			);
 
 			world.addRigidBody( body );
 
@@ -334,6 +409,7 @@ function getShapeForDefinition( shape_definition ) {
 		function( parameters ) {
 			world.step( parameters.time_delta, parameters.max_step );
 			reportWorld();
+			reportCollisions();
 		}
 	);
 })();
