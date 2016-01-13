@@ -26,7 +26,7 @@ var collision_report = new Float32Array( 0 );
 
 // global variables for the simulation
 var world;
-var id_rigid_body_map = {};
+var id_body_map = {};
 var new_collisions = [];
 
 function postReport( report ) {
@@ -35,7 +35,7 @@ function postReport( report ) {
 
 function reportWorld() {
 	// compute necessary buffer size
-	var rigid_body_ids = Object.keys( id_rigid_body_map );
+	var rigid_body_ids = Object.keys( id_body_map );
 	var rigid_bodies_count = rigid_body_ids.length;
 	var report_size = ( WORLD_REPORT_SIZE_RIGIDBODY * rigid_bodies_count ); // elements needed to report bodies
 	world_report = ensureReportSize( world_report, report_size, WORLD_REPORT_CHUNK_SIZE );
@@ -48,7 +48,7 @@ function reportWorld() {
 
 	for ( var i = 0; i < rigid_bodies_count; i++ ) {
 		var rigid_body_id = rigid_body_ids[ i ];
-		var rigid_body = id_rigid_body_map[ rigid_body_id ];
+		var rigid_body = id_body_map[ rigid_body_id ];
 		world_report[idx++] = rigid_body_id;
 
 		world_report[idx++] = rigid_body.transform.e00;
@@ -286,42 +286,52 @@ function getShapeForDefinition( shape_definition ) {
 
 			world.addRigidBody( body );
 
-			id_rigid_body_map[ parameters.body_id ] = body;
+			id_body_map[ parameters.body_id ] = body;
+		}
+	);
+	
+	handleMessage(
+		MESSAGE_TYPES.REMOVE_RIGIDBODY,
+		function( parameters ) {
+			var body_id = parameters.body_id;
+			var body = id_body_map[ body_id ];
+			world.removeRigidBody( body );
+			delete id_body_map[ body_id ];
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_MASS,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].mass = parameters.mass;
+			id_body_map[ parameters.body_id ].mass = parameters.mass;
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].restitution = parameters.restitution;
+			id_body_map[ parameters.body_id ].restitution = parameters.restitution;
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].friction = parameters.friction;
+			id_body_map[ parameters.body_id ].friction = parameters.friction;
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].linear_damping = parameters.damping;
+			id_body_map[ parameters.body_id ].linear_damping = parameters.damping;
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].angular_damping = parameters.damping;
+			id_body_map[ parameters.body_id ].angular_damping = parameters.damping;
 		}
 	);
 
@@ -329,7 +339,7 @@ function getShapeForDefinition( shape_definition ) {
 		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 		function( parameters ) {
 			console.log('setting groups to', parameters.collision_groups);
-			id_rigid_body_map[ parameters.body_id ].collision_groups = parameters.collision_groups;
+			id_body_map[ parameters.body_id ].collision_groups = parameters.collision_groups;
 		}
 	);
 
@@ -337,20 +347,20 @@ function getShapeForDefinition( shape_definition ) {
 		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
 		function( parameters ) {
 			console.log('setting mask to', parameters.collision_mask);
-			id_rigid_body_map[ parameters.body_id ].collision_mask = parameters.collision_mask;
+			id_body_map[ parameters.body_id ].collision_mask = parameters.collision_mask;
 		}
 	);
 
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].position.set(
+			id_body_map[ parameters.body_id ].position.set(
 				parameters.position.x,
 				parameters.position.y,
 				parameters.position.z
 			);
 
-			id_rigid_body_map[ parameters.body_id ].rotation.set(
+			id_body_map[ parameters.body_id ].rotation.set(
 				parameters.rotation.x,
 				parameters.rotation.y,
 				parameters.rotation.z,
@@ -362,7 +372,7 @@ function getShapeForDefinition( shape_definition ) {
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].linear_velocity.set(
+			id_body_map[ parameters.body_id ].linear_velocity.set(
 				parameters.velocity.x,
 				parameters.velocity.y,
 				parameters.velocity.z
@@ -373,7 +383,7 @@ function getShapeForDefinition( shape_definition ) {
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].angular_velocity.set(
+			id_body_map[ parameters.body_id ].angular_velocity.set(
 				parameters.velocity.x,
 				parameters.velocity.y,
 				parameters.velocity.z
@@ -385,7 +395,7 @@ function getShapeForDefinition( shape_definition ) {
 		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
 		function( parameters ) {
 			console.log('setting linear factor', parameters);
-			id_rigid_body_map[ parameters.body_id ].linear_factor.set(
+			id_body_map[ parameters.body_id ].linear_factor.set(
 				parameters.factor.x,
 				parameters.factor.y,
 				parameters.factor.z
@@ -396,7 +406,7 @@ function getShapeForDefinition( shape_definition ) {
 	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
 		function( parameters ) {
-			id_rigid_body_map[ parameters.body_id ].angular_factor.set(
+			id_body_map[ parameters.body_id ].angular_factor.set(
 				parameters.factor.x,
 				parameters.factor.y,
 				parameters.factor.z

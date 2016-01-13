@@ -31,7 +31,7 @@
 
 		/**
 		 * adds a rigid body to the world
-		 * body_id Integer unique integer id for the body
+		 * body_id Integer unique id for the body
 		 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 		 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 		 * restitution Float body's restitution
@@ -42,6 +42,12 @@
 		 * collision_mask Integer body's collision mask
 		 */
 		ADD_RIGIDBODY: 'ADD_RIGIDBODY',
+
+		/**
+		 * removes a rigid body from the world
+		 * body_id Integer unique id of the body
+		 */
+		REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
 
 		/**
 		 * sets the specified rigid body's mass
@@ -574,6 +580,15 @@
 			this.physijs.id_body_map[ rigid_body_definition.body_id ] = object;
 			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
 			object.updateMatrix();
+		}
+	};
+
+	Scene.prototype.remove = function( object ) {
+		THREE.Scene.prototype.remove.call( this, object );
+
+		if ( object.physics instanceof _PhysicsObject ) {
+			delete this.physijs.id_body_map[ object.physics._.id ];
+			this.physijs.postMessage( MESSAGE_TYPES.REMOVE_RIGIDBODY, { body_id: object.physics._.id } );
 		}
 	};
 

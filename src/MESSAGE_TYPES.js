@@ -25,7 +25,7 @@ export default {
 
 	/**
 	 * adds a rigid body to the world
-	 * body_id Integer unique integer id for the body
+	 * body_id Integer unique id for the body
 	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
 	 * mass Float amount of mass the body has, 0 or Infinity creates a static object
 	 * restitution Float body's restitution
@@ -36,6 +36,12 @@ export default {
 	 * collision_mask Integer body's collision mask
 	 */
 	ADD_RIGIDBODY: 'ADD_RIGIDBODY',
+
+	/**
+	 * removes a rigid body from the world
+	 * body_id Integer unique id of the body
+	 */
+	REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
 
 	/**
 	 * sets the specified rigid body's mass

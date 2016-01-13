@@ -68,6 +68,15 @@ Scene.prototype.add = function( object ) {
 	}
 };
 
+Scene.prototype.remove = function( object ) {
+	THREE.Scene.prototype.remove.call( this, object );
+
+	if ( object.physics instanceof _PhysicsObject ) {
+		delete this.physijs.id_body_map[ object.physics._.id ];
+		this.physijs.postMessage( MESSAGE_TYPES.REMOVE_RIGIDBODY, { body_id: object.physics._.id } );
+	}
+};
+
 Scene.prototype.step = function( time_delta, max_step, onStep ) {
 	if ( this.physijs.is_stepping === true ) {
 		throw new Error( 'Physijs: scene is already stepping, cannot call step() until it\'s finished' );
