@@ -290,6 +290,11 @@
 			var object_a = this.physijs.id_body_map[report[idx+0]];
 			var object_b = this.physijs.id_body_map[report[idx+1]];
 
+			if ( object_a == null || object_b == null ) {
+				debugger;
+				continue;
+			}
+
 			_tmp_vector3_1.set( report[idx+2], report[idx+3], report[idx+4] );
 			_tmp_vector3_2.set( report[idx+5], report[idx+6], report[idx+7] );
 			_tmp_vector3_3.set( report[idx+8], report[idx+9], report[idx+10] );
@@ -327,6 +332,9 @@
 			var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
 			var rigid_body_id = report[idx++];
 			var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
+			if ( rigid_body == null ) {
+				continue;
+			}
 
 			rigid_body.matrix.set(
 				report[idx++], report[idx++], report[idx++], report[idx++],
@@ -457,6 +465,25 @@
 			angular_velocity: new THREE.Vector3(),
 			linear_factor: new THREE.Vector3(1, 1, 1),
 			angular_factor: new THREE.Vector3(1, 1, 1)
+		};
+
+		this.clone = function( three_object ) {
+			var cloned = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+
+			cloned.mass = this.mass;
+			cloned.restitution = this.restitution;
+			cloned.friction = this.friction;
+			cloned.linear_damping = this.linear_damping;
+			cloned.angular_damping = this.angular_damping;
+			cloned.collision_groups = this.collision_groups;
+			cloned.collision_mask = this.collision_mask;
+
+			cloned.linear_velocity.copy( this.linear_velocity );
+			cloned.angular_velocity.copy( this.angular_velocity );
+			cloned.linear_factor.copy( this.linear_factor );
+			cloned.angular_factor.copy( this.angular_factor );
+
+			return cloned;
 		};
 	}
 
@@ -605,6 +632,9 @@
 		for ( var i = 0; i < rigid_body_ids.length; i++ ) {
 			var rigid_body_id = rigid_body_ids[ i ];
 			var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
+			if ( rigid_body == null ) {
+				continue;
+			}
 
 			// check position/rotation
 			if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {
@@ -642,6 +672,58 @@
 			}
 		);
 	};
+
+	function clone() {
+		var args = Array.prototype.slice.call( arguments );
+		var original_clone = args.shift();
+
+		var cloned = original_clone.apply( this, args );
+
+		cloned.physics = this.physics.clone( cloned );
+
+		return cloned;
+	}
+
+
+	/*
+	IF
+	geometry is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
+	ELSE
+		the first argument is assumed to be an object Three.js can understand AND
+		IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape
+		ELSE the object passed as the first argument is assumed to have a `geometry` property
+
+	The next argument in all cases is optional and allows for the object's physical properties to be changed
+	The fourth argument in all cases is the getShapeDefinition function
+	 */
+	function PhysicsObject( first, second, third, getShapeDefinition ) {
+		var three_object;
+		var geometry;
+		var physics_descriptor;
+
+		if ( first instanceof THREE.Geometry ) {
+			geometry = first;
+			three_object = new THREE.Mesh( geometry, second );
+			physics_descriptor = third;
+		} else {
+			three_object = first;
+			if ( second instanceof THREE.Geometry ) {
+				geometry = second;
+				physics_descriptor = third;
+			} else {
+				geometry = three_object.geometry;
+				physics_descriptor = second;
+			}
+		}
+
+		three_object.rotationAutoUpdate = false;
+		three_object.matrixAutoUpdate = false;
+
+		three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+		three_object.clone = clone.bind( three_object, three_object.clone );
+
+		return three_object;
+	}
 
 	var BODY_TYPES = {
 		/**
@@ -753,6 +835,8 @@
 		object.rotationAutoUpdate = false;
 		object.matrixAutoUpdate = false;
 
+		object.clone = clone.bind( object, object.clone );
+
 		return object;
 	}
 
@@ -779,46 +863,6 @@
 			vertices: vertices,
 			faces: faces
 		};
-	}
-
-
-	/*
-	IF
-	geometry is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
-	ELSE
-		the first argument is assumed to be an object Three.js can understand AND
-		IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape
-		ELSE the object passed as the first argument is assumed to have a `geometry` property
-
-	The next argument in all cases is optional and allows for the object's physical properties to be changed
-	The fourth argument in all cases is the getShapeDefinition function
-	 */
-	function PhysicsObject( first, second, third, getShapeDefinition ) {
-		var three_object;
-		var geometry;
-		var physics_descriptor;
-
-		if ( first instanceof THREE.Geometry ) {
-			geometry = first;
-			three_object = new THREE.Mesh( geometry, second );
-			physics_descriptor = third;
-		} else {
-			three_object = first;
-			if ( second instanceof THREE.Geometry ) {
-				geometry = second;
-				physics_descriptor = third;
-			} else {
-				geometry = three_object.geometry;
-				physics_descriptor = second;
-			}
-		}
-
-		three_object.rotationAutoUpdate = false;
-		three_object.matrixAutoUpdate = false;
-
-		three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
-
-		return three_object;
 	}
 
 	function TriangleMesh( first, second, third ) {

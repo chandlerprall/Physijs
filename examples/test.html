@@ -23,11 +23,15 @@
 			var sphere = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0 } );
 			scene.add( sphere );
 
-			var box = new physijs.Box( new THREE.BoxGeometry( 1, 1, 1 ), normal_material, { mass: 2 } );
+			var box = new physijs.Box(
+				new THREE.BoxGeometry( 1, 1, 1 ), normal_material
+				, { mass: 2 }
+			);
 			box.position.set( 0.13, 3, 0 );
+			box.physics.linear_velocity.y = -5;
 			scene.add( box );
 
-			box.addEventListener(
+			sphere.addEventListener(
 				'physics.newContact',
 				function( event ) {
 					console.log( 'collided at', event.relative_linear_velocity.length() );

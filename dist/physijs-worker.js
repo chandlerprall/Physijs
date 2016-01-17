@@ -221,6 +221,7 @@
 	// global variables for the simulation
 	var world;
 	var id_body_map = {};
+	var body_id_map = {};
 	var new_collisions = [];
 
 	function postReport( report ) {
@@ -304,8 +305,8 @@
 			var object_b = new_collisions[i+1];
 			var contact = new_collisions[i+2];
 
-			collision_report[report_idx+0] = object_a.id;
-			collision_report[report_idx+1] = object_b.id;
+			collision_report[report_idx+0] = body_id_map[ object_a.id ];
+			collision_report[report_idx+1] = body_id_map[ object_b.id ];
 
 			collision_report[report_idx+2] = contact.contact_point.x;
 			collision_report[report_idx+3] = contact.contact_point.y;
@@ -463,7 +464,7 @@
 				body.angular_damping = parameters.angular_damping;
 				body.collision_groups = parameters.collision_groups;
 				body.collision_mask = parameters.collision_mask;
-
+				
 				body.addListener(
 					'contact',
 					function( other_body, contact ) {
@@ -481,6 +482,7 @@
 				world.addRigidBody( body );
 
 				id_body_map[ parameters.body_id ] = body;
+				body_id_map[ body.id ] = parameters.body_id;
 			}
 		);
 		
@@ -532,7 +534,6 @@
 		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
 			function( parameters ) {
-				console.log('setting groups to', parameters.collision_groups);
 				id_body_map[ parameters.body_id ].collision_groups = parameters.collision_groups;
 			}
 		);
@@ -540,7 +541,6 @@
 		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
 			function( parameters ) {
-				console.log('setting mask to', parameters.collision_mask);
 				id_body_map[ parameters.body_id ].collision_mask = parameters.collision_mask;
 			}
 		);
@@ -588,7 +588,6 @@
 		handleMessage(
 			MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
 			function( parameters ) {
-				console.log('setting linear factor', parameters);
 				id_body_map[ parameters.body_id ].linear_factor.set(
 					parameters.factor.x,
 					parameters.factor.y,

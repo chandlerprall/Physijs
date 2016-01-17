@@ -90,6 +90,9 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 	for ( var i = 0; i < rigid_body_ids.length; i++ ) {
 		var rigid_body_id = rigid_body_ids[ i ];
 		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
+		if ( rigid_body == null ) {
+			continue;
+		}
 
 		// check position/rotation
 		if ( !rigid_body.position.equals( rigid_body.physics._.position ) || !rigid_body.quaternion.equals( rigid_body.physics._.quaternion ) ) {
@@ -157,6 +160,9 @@ function processWorldReport( report ) {
 		var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
 		var rigid_body_id = report[idx++];
 		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
+		if ( rigid_body == null ) {
+			continue;
+		}
 
 		rigid_body.matrix.set(
 			report[idx++], report[idx++], report[idx++], report[idx++],
@@ -190,6 +196,11 @@ function processCollisionReport( report ) {
 		var idx = i + 2;
 		var object_a = this.physijs.id_body_map[report[idx+0]];
 		var object_b = this.physijs.id_body_map[report[idx+1]];
+
+		if ( object_a == null || object_b == null ) {
+			debugger;
+			continue;
+		}
 
 		_tmp_vector3_1.set( report[idx+2], report[idx+3], report[idx+4] );
 		_tmp_vector3_2.set( report[idx+5], report[idx+6], report[idx+7] );

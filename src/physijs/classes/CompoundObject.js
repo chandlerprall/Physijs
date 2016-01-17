@@ -1,6 +1,6 @@
 import {getUniqueId} from './util/uniqueId';
 import BODY_TYPES from '../../BODY_TYPES';
-import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
+import PhysicsObject, {_PhysicsObject, clone} from './PhysicsObject';
 
 export default function CompoundObject( object, physics_descriptor ) {
 	if ( physics_descriptor == null ) {
@@ -15,6 +15,8 @@ export default function CompoundObject( object, physics_descriptor ) {
 
 	object.rotationAutoUpdate = false;
 	object.matrixAutoUpdate = false;
+
+	object.clone = clone.bind( object, object.clone );
 
 	return object;
 }

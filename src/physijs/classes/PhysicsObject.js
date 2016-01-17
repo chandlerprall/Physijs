@@ -35,6 +35,7 @@ export default function( first, second, third, getShapeDefinition ) {
 	three_object.matrixAutoUpdate = false;
 
 	three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+	three_object.clone = clone.bind( three_object, three_object.clone );
 
 	return three_object;
 }
@@ -68,6 +69,25 @@ export function _PhysicsObject( three_object, geometry, physics_descriptor, getS
 		angular_velocity: new THREE.Vector3(),
 		linear_factor: new THREE.Vector3(1, 1, 1),
 		angular_factor: new THREE.Vector3(1, 1, 1)
+	};
+
+	this.clone = function( three_object ) {
+		var cloned = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+
+		cloned.mass = this.mass;
+		cloned.restitution = this.restitution;
+		cloned.friction = this.friction;
+		cloned.linear_damping = this.linear_damping;
+		cloned.angular_damping = this.angular_damping;
+		cloned.collision_groups = this.collision_groups;
+		cloned.collision_mask = this.collision_mask;
+
+		cloned.linear_velocity.copy( this.linear_velocity );
+		cloned.angular_velocity.copy( this.angular_velocity );
+		cloned.linear_factor.copy( this.linear_factor );
+		cloned.angular_factor.copy( this.angular_factor );
+
+		return cloned;
 	};
 }
 
@@ -182,3 +202,14 @@ Object.defineProperty(
 		}
 	}
 );
+
+export function clone() {
+	var args = Array.prototype.slice.call( arguments );
+	var original_clone = args.shift();
+
+	var cloned = original_clone.apply( this, args );
+
+	cloned.physics = this.physics.clone( cloned );
+
+	return cloned;
+}
