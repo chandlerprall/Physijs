@@ -149,7 +149,21 @@
 		 * time_delta Float total amount of time, in seconds, to step the simulation by
 		 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]
 		 */
-		STEP_SIMULATION: 'STEP_SIMULATION'
+		STEP_SIMULATION: 'STEP_SIMULATION',
+
+		/**
+		 * performs ray traces
+		 * raytrace_id unique identifier for this request
+		 * rays Array[ { start: { x:x, y:y, z:z }, end: { x:x, y:y, z:z } } ]
+		 */
+		RAYTRACE: 'RAYTRACE',
+
+		/**
+		 * results of a raytrace request
+		 * raytrace_id unique identifier of the request
+		 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
+		 */
+		RAYTRACE_RESULTS: 'RAYTRACE_RESULTS'
 	};
 
 	var BODY_TYPES = {
@@ -223,6 +237,13 @@
 	var id_body_map = {};
 	var body_id_map = {};
 	var new_collisions = [];
+
+	function postMessage( type, parameters ) {
+		self.postMessage({
+			type: type,
+			parameters: parameters
+		});
+	}
 
 	function postReport( report ) {
 		self.postMessage( report, [report.buffer] );
@@ -464,7 +485,7 @@
 				body.angular_damping = parameters.angular_damping;
 				body.collision_groups = parameters.collision_groups;
 				body.collision_mask = parameters.collision_mask;
-				
+
 				body.addListener(
 					'contact',
 					function( other_body, contact ) {
@@ -615,6 +636,43 @@
 				reportCollisions();
 			}
 		);
+
+		handleMessage(
+			MESSAGE_TYPES.RAYTRACE,
+			function( parameters ) {
+				var ray_start = new Goblin.Vector3();
+				var ray_end = new Goblin.Vector3();
+				var results = parameters.rays.map(function( ray ) {
+					ray_start.set( ray.start.x, ray.start.y, ray.start.z );
+					ray_end.set( ray.end.x, ray.end.y, ray.end.z );
+					var intersections = world.rayIntersect( ray_start, ray_end );
+					return intersections.map(function(intersection) {
+						var mapped_body = body_id_map[ intersection.object.id ];
+
+						// only return an intersection if this body is tracked outside this worker
+						if ( mapped_body == null ) {
+							return null;
+						}
+
+						return {
+							body_id: intersection.object.id,
+							point: { x: intersection.point.x, y: intersection.point.y, z: intersection.point.z },
+							normal: { x: intersection.normal.x, y: intersection.normal.y, z: intersection.normal.z },
+						};
+					}).filter(function(intersection) {
+						return intersection != null;
+					});
+				});
+
+				postMessage(
+					MESSAGE_TYPES.RAYTRACE_RESULTS,
+					{
+						raytrace_id: parameters.raytrace_id,
+						results: results
+					}
+				);
+			}
+		)
 	})();
 
 })();

@@ -2,6 +2,7 @@ import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 import CompoundObject from './CompoundObject';
+import {getUniqueId} from './util/UniqueId';
 
 var _tmp_vector3_1 = new THREE.Vector3();
 var _tmp_vector3_2 = new THREE.Vector3();
@@ -28,6 +29,9 @@ export default function Scene( worker_script_location, world_config ) {
 	THREE.Scene.call( this );
 
 	this.physijs = {
+		handlers: {},
+		handleMessage: handleMessage.bind( this ),
+
 		is_stepping: false,
 		id_body_map: {},
 		onStep: null,
@@ -48,7 +52,14 @@ export default function Scene( worker_script_location, world_config ) {
 		setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
 		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
 		setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
-		setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this )
+		setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this ),
+
+		inflight_raytraces: {},
+		processRaytraceResults: processRaytraceResults.bind( this )
+	};
+
+	this.physics = {
+		raytrace: raytrace.bind( this )
 	};
 
 	this.physijs.initializeWorker( worker_script_location, world_config );
@@ -131,24 +142,78 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 	);
 };
 
+function raytrace( rays, callback ) {
+	var raytrace_id = getUniqueId();
+
+	this.physijs.postMessage(
+		MESSAGE_TYPES.RAYTRACE,
+		{
+			raytrace_id: raytrace_id,
+			rays: rays.map(function(ray) {
+				return {
+					start: {
+						x: ray.start.x,
+						y: ray.start.y,
+						z: ray.start.z
+					},
+					end: {
+						x: ray.end.x,
+						y: ray.end.y,
+						z: ray.end.z
+					}
+				};
+			})
+		}
+	);
+
+	this.physijs.inflight_raytraces[ raytrace_id ] = callback;
+}
+
+function handleMessage( message, handler ) {
+	this.physijs.handlers[message] = handler;
+}
+
 function initializeWorker( worker_script_location, world_config ) {
 	this.physijs.worker = new Worker( worker_script_location );
 	this.physijs.worker.addEventListener(
 		'message',
 		function(e) {
 			var data = e.data;
+			var type;
+			var parameters;
 
 			if ( data instanceof Float32Array ) {
-				// it's a report
-				var report_type = data[0];
-				if ( report_type === MESSAGE_TYPES.REPORTS.WORLD ) {
-					this.physijs.processWorldReport( data );
-				} else if ( report_type === MESSAGE_TYPES.REPORTS.COLLISIONS ) {
-					this.physijs.processCollisionReport( data );
-				}
+				type = data[0];
+				parameters = data;
+			} else {
+				data = data || {};
+				type = data.type;
+				parameters = data.parameters;
+			}
+
+			if ( this.physijs.handlers.hasOwnProperty( type ) ) {
+				this.physijs.handlers[type]( parameters );
+			} else {
+				throw new Error( 'Physijs scene received unknown message type: ' + type );
 			}
 		}.bind( this )
 	);
+
+	this.physijs.handleMessage(
+		MESSAGE_TYPES.REPORTS.WORLD,
+		this.physijs.processWorldReport
+	);
+
+	this.physijs.handleMessage(
+		MESSAGE_TYPES.REPORTS.COLLISIONS,
+		this.physijs.processCollisionReport
+	);
+
+	this.physijs.handleMessage(
+		MESSAGE_TYPES.RAYTRACE_RESULTS,
+		this.physijs.processRaytraceResults
+	);
+
 	this.physijs.postMessage( MESSAGE_TYPES.INITIALIZE, world_config || {} );
 }
 
@@ -360,5 +425,21 @@ function setRigidBodyAngularFactor( body ) {
 			body_id: body.physics._.id,
 			factor: { x: body.physics.angular_factor.x, y: body.physics.angular_factor.y, z: body.physics.angular_factor.z }
 		}
+	);
+}
+
+function processRaytraceResults( response ) {
+	var callback = this.physijs.inflight_raytraces[ response.raytrace_id ];
+	var scene = this;
+	callback(
+		response.results.map(function( ray ) {
+			return ray.map(function( intersection ) {
+				return {
+					body: scene.physijs.id_body_map[ intersection.body_id ],
+					point: new THREE.Vector3( intersection.point.x, intersection.point.y, intersection.point.z ),
+					normal: new THREE.Vector3( intersection.normal.x, intersection.normal.y, intersection.normal.z )
+				}
+			});
+		}, scene)
 	);
 }

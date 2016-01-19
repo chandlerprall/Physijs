@@ -133,5 +133,19 @@ export default {
 	 * time_delta Float total amount of time, in seconds, to step the simulation by
 	 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]
 	 */
-	STEP_SIMULATION: 'STEP_SIMULATION'
+	STEP_SIMULATION: 'STEP_SIMULATION',
+
+	/**
+	 * performs ray traces
+	 * raytrace_id unique identifier for this request
+	 * rays Array[ { start: { x:x, y:y, z:z }, end: { x:x, y:y, z:z } } ]
+	 */
+	RAYTRACE: 'RAYTRACE',
+
+	/**
+	 * results of a raytrace request
+	 * raytrace_id unique identifier of the request
+	 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
+	 */
+	RAYTRACE_RESULTS: 'RAYTRACE_RESULTS'
 };

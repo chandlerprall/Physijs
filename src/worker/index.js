@@ -30,6 +30,13 @@ var id_body_map = {};
 var body_id_map = {};
 var new_collisions = [];
 
+function postMessage( type, parameters ) {
+	self.postMessage({
+		type: type,
+		parameters: parameters
+	});
+}
+
 function postReport( report ) {
 	self.postMessage( report, [report.buffer] );
 }
@@ -421,4 +428,41 @@ function getShapeForDefinition( shape_definition ) {
 			reportCollisions();
 		}
 	);
+
+	handleMessage(
+		MESSAGE_TYPES.RAYTRACE,
+		function( parameters ) {
+			var ray_start = new Goblin.Vector3();
+			var ray_end = new Goblin.Vector3();
+			var results = parameters.rays.map(function( ray ) {
+				ray_start.set( ray.start.x, ray.start.y, ray.start.z );
+				ray_end.set( ray.end.x, ray.end.y, ray.end.z );
+				var intersections = world.rayIntersect( ray_start, ray_end );
+				return intersections.map(function(intersection) {
+					var mapped_body = body_id_map[ intersection.object.id ];
+
+					// only return an intersection if this body is tracked outside this worker
+					if ( mapped_body == null ) {
+						return null;
+					}
+
+					return {
+						body_id: intersection.object.id,
+						point: { x: intersection.point.x, y: intersection.point.y, z: intersection.point.z },
+						normal: { x: intersection.normal.x, y: intersection.normal.y, z: intersection.normal.z },
+					};
+				}).filter(function(intersection) {
+					return intersection != null;
+				});
+			});
+
+			postMessage(
+				MESSAGE_TYPES.RAYTRACE_RESULTS,
+				{
+					raytrace_id: parameters.raytrace_id,
+					results: results
+				}
+			);
+		}
+	)
 })();

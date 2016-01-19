@@ -139,8 +139,70 @@
 		 * time_delta Float total amount of time, in seconds, to step the simulation by
 		 * [max_step] Float maximum step of size, in seconds [default is value of `time_delta`]
 		 */
-		STEP_SIMULATION: 'STEP_SIMULATION'
+		STEP_SIMULATION: 'STEP_SIMULATION',
+
+		/**
+		 * performs ray traces
+		 * raytrace_id unique identifier for this request
+		 * rays Array[ { start: { x:x, y:y, z:z }, end: { x:x, y:y, z:z } } ]
+		 */
+		RAYTRACE: 'RAYTRACE',
+
+		/**
+		 * results of a raytrace request
+		 * raytrace_id unique identifier of the request
+		 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
+		 */
+		RAYTRACE_RESULTS: 'RAYTRACE_RESULTS'
 	};
+
+	var _nextId = 0;
+	function _getUniqueId() {
+		return _nextId++;
+	}
+
+	function raytrace( rays, callback ) {
+		var raytrace_id = _getUniqueId();
+
+		this.physijs.postMessage(
+			MESSAGE_TYPES.RAYTRACE,
+			{
+				raytrace_id: raytrace_id,
+				rays: rays.map(function(ray) {
+					return {
+						start: {
+							x: ray.start.x,
+							y: ray.start.y,
+							z: ray.start.z
+						},
+						end: {
+							x: ray.end.x,
+							y: ray.end.y,
+							z: ray.end.z
+						}
+					};
+				})
+			}
+		);
+
+		this.physijs.inflight_raytraces[ raytrace_id ] = callback;
+	}
+
+	function processRaytraceResults( response ) {
+		var callback = this.physijs.inflight_raytraces[ response.raytrace_id ];
+		var scene = this;
+		callback(
+			response.results.map(function( ray ) {
+				return ray.map(function( intersection ) {
+					return {
+						body: scene.physijs.id_body_map[ intersection.body_id ],
+						point: new THREE.Vector3( intersection.point.x, intersection.point.y, intersection.point.z ),
+						normal: new THREE.Vector3( intersection.normal.x, intersection.normal.y, intersection.normal.z )
+					}
+				});
+			}, scene)
+		);
+	}
 
 	function setRigidBodyAngularFactor( body ) {
 		this.physijs.postMessage(
@@ -367,25 +429,55 @@
 			'message',
 			function(e) {
 				var data = e.data;
+				var type;
+				var parameters;
 
 				if ( data instanceof Float32Array ) {
-					// it's a report
-					var report_type = data[0];
-					if ( report_type === MESSAGE_TYPES.REPORTS.WORLD ) {
-						this.physijs.processWorldReport( data );
-					} else if ( report_type === MESSAGE_TYPES.REPORTS.COLLISIONS ) {
-						this.physijs.processCollisionReport( data );
-					}
+					type = data[0];
+					parameters = data;
+				} else {
+					data = data || {};
+					type = data.type;
+					parameters = data.parameters;
+				}
+
+				if ( this.physijs.handlers.hasOwnProperty( type ) ) {
+					this.physijs.handlers[type]( parameters );
+				} else {
+					throw new Error( 'Physijs scene received unknown message type: ' + type );
 				}
 			}.bind( this )
 		);
+
+		this.physijs.handleMessage(
+			MESSAGE_TYPES.REPORTS.WORLD,
+			this.physijs.processWorldReport
+		);
+
+		this.physijs.handleMessage(
+			MESSAGE_TYPES.REPORTS.COLLISIONS,
+			this.physijs.processCollisionReport
+		);
+
+		this.physijs.handleMessage(
+			MESSAGE_TYPES.RAYTRACE_RESULTS,
+			this.physijs.processRaytraceResults
+		);
+
 		this.physijs.postMessage( MESSAGE_TYPES.INITIALIZE, world_config || {} );
+	}
+
+	function handleMessage( message, handler ) {
+		this.physijs.handlers[message] = handler;
 	}
 
 	function Scene( worker_script_location, world_config ) {
 		THREE.Scene.call( this );
 
 		this.physijs = {
+			handlers: {},
+			handleMessage: handleMessage.bind( this ),
+
 			is_stepping: false,
 			id_body_map: {},
 			onStep: null,
@@ -406,7 +498,14 @@
 			setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
 			setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
 			setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
-			setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this )
+			setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this ),
+
+			inflight_raytraces: {},
+			processRaytraceResults: processRaytraceResults.bind( this )
+		};
+
+		this.physics = {
+			raytrace: raytrace.bind( this )
 		};
 
 		this.physijs.initializeWorker( worker_script_location, world_config );

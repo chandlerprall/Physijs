@@ -1,4 +1,3 @@
-import {getUniqueId} from './util/uniqueId';
 import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject, clone} from './PhysicsObject';
 
