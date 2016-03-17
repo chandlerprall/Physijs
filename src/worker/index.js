@@ -1,5 +1,6 @@
 import MESSAGE_TYPES from '../MESSAGE_TYPES';
 import BODY_TYPES from '../BODY_TYPES';
+import CONSTRAINT_TYPES from '../CONSTRAINT_TYPES';
 
 // trick rollup into including Goblin
 import * as _goblin from '../../lib/goblin.min.js';
@@ -28,6 +29,7 @@ var collision_report = new Float32Array( 0 );
 var world;
 var id_body_map = {};
 var body_id_map = {};
+var id_constraint_map = {};
 var new_collisions = [];
 
 function postMessage( type, parameters ) {
@@ -259,7 +261,7 @@ function getShapeForDefinition( shape_definition ) {
 			);
 
 			if ( parameters.hasOwnProperty('gravity') ) {
-				world.gravity.set( parameters.gravity.x, parameters.y, parameters.z );
+				world.gravity.set( parameters.gravity.x, parameters.gravity.y, parameters.gravity.z );
 			}
 		}
 	);
@@ -373,6 +375,8 @@ function getShapeForDefinition( shape_definition ) {
 				parameters.rotation.z,
 				parameters.rotation.w
 			);
+
+			id_body_map[ parameters.body_id ].updateDerived();
 		}
 	);
 
@@ -464,5 +468,35 @@ function getShapeForDefinition( shape_definition ) {
 				}
 			);
 		}
-	)
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.ADD_CONSTRAINT,
+		function( parameters ) {
+			var constraint;
+
+			if ( parameters.constraint_type === CONSTRAINT_TYPES.HINGE ) {
+				constraint = new Goblin.HingeConstraint(
+					id_body_map[ parameters.body_a_id ],
+					new Goblin.Vector3( parameters.hinge_axis.x, parameters.hinge_axis.y, parameters.hinge_axis.z ),
+					new Goblin.Vector3( parameters.point_a.x, parameters.point_a.y, parameters.point_a.z ),
+					parameters.object_b_id == null ? null : id_body_map[parameters.body_b_id],
+					parameters.object_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
+				);
+				constraint.active = parameters.active;
+
+				if ( parameters.limit.enabled ) {
+					constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
+				}
+
+				if ( parameters.motor.enabled ) {
+					constraint.motor.set( parameters.motor.torque, parameters.motor.max_speed );
+				}
+
+				id_constraint_map[ parameters.constraint_id ] = constraint;
+			}
+
+			world.addConstraint( constraint );
+		}
+	);
 })();

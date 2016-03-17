@@ -1,4 +1,4 @@
-import {getUniqueId} from './util/uniqueId';
+import {getUniqueId} from './util/UniqueId';
 
 /*
 IF

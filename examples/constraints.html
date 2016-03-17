@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Constraints | Physijs</title>
+		<script type="text/javascript" src="lib/three.min.js"></script>
+		<script type="text/javascript" src="lib/OrbitControls.js"></script>
+		<script type="text/javascript" src="../dist/physi.js"></script>
+		<link rel="stylesheet" type="text/css" href="styles.css"/>
+	</head>
+	<body>
+		<script type="text/javascript">
+			var renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setClearColor( new THREE.Color( 0xffffff ) );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+			document.body.appendChild( renderer.domElement );
+
+			var scene = new physijs.Scene( '../dist/physijs-worker.js', { gravity: { x: 0, y: -1, z: 0 } } );
+
+			var camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 50 );
+			camera.position.set( 0, 0.7, 2 );
+			var controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.center.set( 0, 0.2, 0 );
+
+			var textureLoader = new THREE.TextureLoader();
+			function loadRepeatingTexture( url, repeat ) {
+				return textureLoader.load(
+					url,
+					function( texture ) {
+						texture.anisotropy = renderer.getMaxAnisotropy();
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat = repeat;
+					}
+				);
+			}
+
+			// light
+			var ambient = new THREE.AmbientLight( 0x444444 );
+			scene.add( ambient );
+
+			var sunlight = new THREE.DirectionalLight( 0xbbbbbb );
+			sunlight.position.set( 1, 3, 2 );
+			sunlight.castShadow = true;
+			sunlight.shadow.bias = -0.01;
+			sunlight.shadow.mapSize.set( 1024, 1024 );
+			sunlight.shadow.camera.left = sunlight.shadow.camera.top = -5;
+			sunlight.shadow.camera.right = sunlight.shadow.camera.bottom = 5;
+			sunlight.shadow.camera.near = 1;
+			sunlight.shadow.camera.far = 5;
+			scene.add( sunlight );
+
+			var floor_material = new THREE.MeshPhongMaterial({
+				map: loadRepeatingTexture( 'textures/cement/diffuse.jpg', new THREE.Vector2( 3, 3 ) ),
+				normalMap: loadRepeatingTexture( 'textures/cement/normal.png', new THREE.Vector2( 3, 3 ) ),
+				normalScale: new THREE.Vector2( 5, 5 ),
+				specularMap: loadRepeatingTexture( 'textures/cement/specular.png', new THREE.Vector2( 3, 3 ) )
+			});
+			var floor = new physijs.Box( new THREE.BoxGeometry( 3, 0.01, 3 ), floor_material, { restitution: 0.1 } );
+			floor.receiveShadow = true;
+			scene.add( floor );
+
+			// build blank
+			var plank_material = new THREE.MeshPhongMaterial({
+				map: loadRepeatingTexture( 'textures/brick/diffuse.jpg', new THREE.Vector2( 2, 1 ) ),
+				normalMap: loadRepeatingTexture( 'textures/brick/normal.png', new THREE.Vector2( 3, 3 ) ),
+				normalScale: new THREE.Vector2( 5, 5 ),
+				specularMap: loadRepeatingTexture( 'textures/brick/specular.png', new THREE.Vector2( 3, 3 ) )
+			});
+			var plank = new physijs.Box( new THREE.BoxGeometry( 0.8, 0.03, 0.4 ), plank_material, { mass: 10, restitution: 0.1 } );
+			plank.receiveShadow = plank.castShadow = true;
+			plank.position.set( 0, 0.3, 0 );
+			scene.add( plank );
+
+			var plank_constraint = new physijs.HingeConstraint(
+				plank,
+				new THREE.Vector3( 0, 0, 1 ), // angle of hinge
+				new THREE.Vector3( -0.2, 0, 0 ) // point in plank rotating around hinge
+			);
+			plank_constraint.setLimit( -Math.PI / 16, Math.PI / 16 );
+
+			plank_constraint.setMotor( 2.1, 1 );
+
+			scene.add( plank_constraint );
+
+			// balls
+			var ball_geometry = new THREE.SphereGeometry( 0.1, 24, 24 );
+			var ball_material = new THREE.MeshPhongMaterial({
+				color: 0x882244
+			});
+			var ball_materials = [
+				new THREE.MeshPhongMaterial({ color: 0x882244 }),
+				new THREE.MeshPhongMaterial({ color: 0x228844 }),
+				new THREE.MeshPhongMaterial({ color: 0x224488 })
+			];
+			var ball_index = 0;
+			function makeBall() {
+				var ball = new physijs.Sphere( ball_geometry, ball_materials[ball_index++], { mass: 0.2, friction: 0.1, restitution: 0.3 } );
+				ball.receiveShadow = ball.castShadow = true;
+				ball.position.set( -1.8, 2, 0 ); // position over the tube
+				ball.physics.linear_velocity.set( 0, -5, 0 );
+				scene.add( ball );
+
+				if ( ball_index === ball_materials.length ) {
+					ball_index = 0;
+				}
+			}
+
+			var physics_framerate = 1000 / 60;
+			function onStep(step_index) {
+				if (step_index % 10 === 0) {
+					// makeBall();
+				}
+
+				controls.update();
+				renderer.render( scene, camera );
+				setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
+			}
+			scene.step( physics_framerate / 1000, undefined, onStep );
+
+		</script>
+	</body>
+</html>

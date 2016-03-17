@@ -147,5 +147,11 @@ export default {
 	 * raytrace_id unique identifier of the request
 	 * results Array[ Array[ { body_id:body_id, point: { x:x, y:y, z:z }, normal: { x:x, y:y, z:z } } ] ]
 	 */
-	RAYTRACE_RESULTS: 'RAYTRACE_RESULTS'
+	RAYTRACE_RESULTS: 'RAYTRACE_RESULTS',
+
+	/**
+	 * adds a constraint on one or two bodies to the world
+	 * entirety of the message body corresponds to the type of constraint (see CONSTRAINT_TYPES)
+	 */
+	ADD_CONSTRAINT: 'ADD_CONSTRAINT'
 };

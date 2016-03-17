@@ -3,6 +3,7 @@ import BODY_TYPES from '../../BODY_TYPES';
 import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 import CompoundObject from './CompoundObject';
 import {getUniqueId} from './util/UniqueId';
+import Constraint from './constraints/Constraint';
 
 var _tmp_vector3_1 = new THREE.Vector3();
 var _tmp_vector3_2 = new THREE.Vector3();
@@ -34,6 +35,7 @@ export default function Scene( worker_script_location, world_config ) {
 
 		is_stepping: false,
 		id_body_map: {},
+		id_constraint_map: {},
 		onStep: null,
 
 		initializeWorker: initializeWorker.bind( this ),
@@ -69,6 +71,19 @@ Scene.prototype = Object.create( THREE.Scene.prototype );
 Scene.prototype.constructor = Scene;
 
 Scene.prototype.add = function( object ) {
+	if ( object instanceof Constraint ) {
+		object.scene = this;
+		var constraint_definition = object.getConstraintDefinition();
+		this.physijs.id_constraint_map[ constraint_definition.constraint_id ] = object;
+		// ensure the body(ies) transforms have been set
+		this.physijs.setRigidBodyTransform( object.body_a );
+		if ( object.body_b != null ) {
+			this.physijs.setRigidBodyTransform( object.body_b );
+		}
+		this.physijs.postMessage( MESSAGE_TYPES.ADD_CONSTRAINT, constraint_definition );
+		return;
+	}
+
 	THREE.Scene.prototype.add.call( this, object );
 
 	if ( object.physics instanceof _PhysicsObject ) {
