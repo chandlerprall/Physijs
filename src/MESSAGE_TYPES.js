@@ -38,6 +38,14 @@ export default {
 	ADD_RIGIDBODY: 'ADD_RIGIDBODY',
 
 	/**
+	 * applys a force at a local location
+	 * body_id Integer unique integer id for the body
+	 * force Object force to apply to the body {x:x, y:y, z:z}
+	 * local_location Object where, relative to the body, the force is applied {x:x, y:y, z:z}
+	 */
+	APPLY_FORCE: 'APPLY_FORCE',
+
+	/**
 	 * removes a rigid body from the world
 	 * body_id Integer unique id of the body
 	 */

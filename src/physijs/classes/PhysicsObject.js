@@ -68,7 +68,8 @@ export function _PhysicsObject( three_object, geometry, physics_descriptor, getS
 		linear_velocity: new THREE.Vector3(),
 		angular_velocity: new THREE.Vector3(),
 		linear_factor: new THREE.Vector3(1, 1, 1),
-		angular_factor: new THREE.Vector3(1, 1, 1)
+		angular_factor: new THREE.Vector3(1, 1, 1),
+		applied_forces: [],
 	};
 
 	this.clone = function( three_object ) {
@@ -86,6 +87,7 @@ export function _PhysicsObject( three_object, geometry, physics_descriptor, getS
 		cloned.angular_velocity.copy( this.angular_velocity );
 		cloned.linear_factor.copy( this.linear_factor );
 		cloned.angular_factor.copy( this.angular_factor );
+		cloned.applied_forces = this.applied_forces.slice();
 
 		return cloned;
 	};
@@ -202,6 +204,10 @@ Object.defineProperty(
 		}
 	}
 );
+
+_PhysicsObject.prototype.applyForce = function( force, local_location ) {
+	this._.applied_forces.push( force, local_location );
+};
 
 export function clone() {
 	var args = Array.prototype.slice.call( arguments );

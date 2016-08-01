@@ -38,6 +38,7 @@ export default function Scene( worker_script_location, world_config ) {
 		id_constraint_map: {},
 		onStep: null,
 
+		applyForce: applyForce.bind( this ),
 		initializeWorker: initializeWorker.bind( this ),
 		processWorldReport: processWorldReport.bind( this ),
 		processCollisionReport: processCollisionReport.bind( this ),
@@ -146,6 +147,14 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 			this.physijs.setRigidBodyAngularFactor( rigid_body );
 			rigid_body.physics._.angular_factor.copy( rigid_body.physics.angular_factor );
 		}
+
+		// check for applied forces
+		if ( rigid_body.physics._.applied_forces.length > 0 ) {
+			for ( var j = 0; j < rigid_body.physics._.applied_forces.length; j += 2 ) {
+				this.physijs.applyForce( rigid_body, rigid_body.physics._.applied_forces[ j ], rigid_body.physics._.applied_forces[ j + 1 ] );
+			}
+			rigid_body.physics._.applied_forces.length = 0;
+		}
 	}
 
 	this.physijs.postMessage(
@@ -186,6 +195,18 @@ function raytrace( rays, callback ) {
 
 function handleMessage( message, handler ) {
 	this.physijs.handlers[message] = handler;
+}
+
+function applyForce( three_body, force, local_location ) {
+	if ( local_location == null ) local_location = { x: 0, y: 0, z: 0 };
+	this.physijs.postMessage(
+		MESSAGE_TYPES.APPLY_FORCE,
+		{
+			body_id: three_body.physics._.id,
+			force: {x: force.x, y: force.y, z: force.z},
+			local_location: {x: local_location.x, y: local_location.y, z: local_location.z}
+		}
+	);
 }
 
 function initializeWorker( worker_script_location, world_config ) {

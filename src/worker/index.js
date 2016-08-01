@@ -6,7 +6,8 @@ import CONSTRAINT_TYPES from '../CONSTRAINT_TYPES';
 import * as _goblin from '../../lib/goblin.min.js';
 var Goblin = self.Goblin || _goblin;
 
-var _tmp_vector3 = new Goblin.Vector3();
+var _tmp_vector3_1 = new Goblin.Vector3();
+var _tmp_vector3_2 = new Goblin.Vector3();
 
 // report-related variables and constants
 function ensureReportSize( report, report_size, chunk_size ) {
@@ -286,11 +287,11 @@ function getShapeForDefinition( shape_definition ) {
 					new_collisions.push( this, other_body, contact );
 
 					// find relative velocities
-					_tmp_vector3.subtractVectors( other_body.linear_velocity, this.linear_velocity );
-					new_collisions.push( _tmp_vector3.x, _tmp_vector3.y, _tmp_vector3.z );
+					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
+					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
 
-					_tmp_vector3.subtractVectors( other_body.angular_velocity, this.angular_velocity );
-					new_collisions.push( _tmp_vector3.x, _tmp_vector3.y, _tmp_vector3.z );
+					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
+					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
 				}
 			);
 
@@ -298,6 +299,17 @@ function getShapeForDefinition( shape_definition ) {
 
 			id_body_map[ parameters.body_id ] = body;
 			body_id_map[ body.id ] = parameters.body_id;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.APPLY_FORCE,
+		function( parameters ) {
+			var body_id = parameters.body_id;
+			var body = id_body_map[ body_id ];
+			_tmp_vector3_1.set( parameters.force.x, parameters.force.y, parameters.force.z );
+			_tmp_vector3_2.set( parameters.local_location.x, parameters.local_location.y, parameters.local_location.z );
+			body.applyForceAtLocalPoint( _tmp_vector3_1, _tmp_vector3_2 );
 		}
 	);
 	
