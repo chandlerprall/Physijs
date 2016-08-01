@@ -29,6 +29,15 @@
     	 */
     	INITIALIZE: 'INITIALIZE',
 
+    	ADD_GHOSTBODY: 'ADD_GHOSTBODY',
+    	/**
+    	 * adds a ghost body to the world
+    	 * body_id Integer unique id for the body
+    	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+    	 * collision_groups Integer body's collision groups
+    	 * collision_mask Integer body's collision mask
+    	 */
+
     	/**
     	 * adds a rigid body to the world
     	 * body_id Integer unique id for the body
@@ -50,6 +59,12 @@
     	 * local_location Object where, relative to the body, the force is applied {x:x, y:y, z:z}
     	 */
     	APPLY_FORCE: 'APPLY_FORCE',
+
+    	/**
+    	 * removes a ghost body from the world
+    	 * body_id Integer unique id of the body
+    	 */
+    	REMOVE_GHOSTBODY: 'REMOVE_GHOSTBODY',
 
     	/**
     	 * removes a rigid body from the world
@@ -579,6 +594,7 @@
     		angular_damping: physics_descriptor.angular_damping || 0,
     		collision_groups: physics_descriptor.collision_groups || 0,
     		collision_mask: physics_descriptor.collision_mask || 0,
+    		type: physics_descriptor.type || 'RIGID',
 
     		position: new THREE.Vector3(),
     		quaternion: new THREE.Quaternion(),
@@ -722,6 +738,16 @@
     	}
     );
 
+    Object.defineProperty(
+    	_PhysicsObject.prototype,
+    	'type',
+    	{
+    		get: function() {
+    			return this._.type;
+    		},
+    	}
+    );
+
     _PhysicsObject.prototype.applyForce = function( force, local_location ) {
     	this._.applied_forces.push( force, local_location );
     };
@@ -750,7 +776,15 @@
     	if ( object.physics instanceof _PhysicsObject ) {
     		var rigid_body_definition = getRigidBodyDefinition( object );
     		this.physijs.id_body_map[ rigid_body_definition.body_id ] = object;
-    		this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+
+    		if ( object.physics.type === 'RIGID' ) {
+    			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+    		} else if ( object.physics.type === 'GHOST' ) {
+    			this.physijs.postMessage( MESSAGE_TYPES.ADD_GHOSTBODY, rigid_body_definition );
+    		} else {
+    			console.error( 'Unknown physijs body type: ' + this.physijs.type );
+    		}
+
     		object.updateMatrix();
     	}
     };

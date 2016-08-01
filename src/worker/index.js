@@ -268,6 +268,37 @@ function getShapeForDefinition( shape_definition ) {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.ADD_GHOSTBODY,
+		function( parameters ) {
+			var shape_definition = parameters.shape_definition;
+			var shape = getShapeForDefinition( shape_definition );
+			var body = new Goblin.GhostBody( shape );
+
+			body.collision_groups = parameters.collision_groups;
+			body.collision_mask = parameters.collision_mask;
+
+			body.addListener(
+				'contactStart',
+				function( other_body, contact ) {
+					new_collisions.push( this, other_body, contact );
+
+					// find relative velocities
+					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
+					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+
+					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
+					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+				}
+			);
+
+			world.addRigidBody( body );
+
+			id_body_map[ parameters.body_id ] = body;
+			body_id_map[ body.id ] = parameters.body_id;
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.ADD_RIGIDBODY,
 		function( parameters ) {
 			var shape_definition = parameters.shape_definition;
@@ -310,6 +341,16 @@ function getShapeForDefinition( shape_definition ) {
 			_tmp_vector3_1.set( parameters.force.x, parameters.force.y, parameters.force.z );
 			_tmp_vector3_2.set( parameters.local_location.x, parameters.local_location.y, parameters.local_location.z );
 			body.applyForceAtLocalPoint( _tmp_vector3_1, _tmp_vector3_2 );
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.REMOVE_GHOSTBODY,
+		function( parameters ) {
+			var body_id = parameters.body_id;
+			var body = id_body_map[ body_id ];
+			world.removeGhostBody( body );
+			delete id_body_map[ body_id ];
 		}
 	);
 	

@@ -90,7 +90,15 @@ Scene.prototype.add = function( object ) {
 	if ( object.physics instanceof _PhysicsObject ) {
 		var rigid_body_definition = getRigidBodyDefinition( object );
 		this.physijs.id_body_map[ rigid_body_definition.body_id ] = object;
-		this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+
+		if ( object.physics.type === 'RIGID' ) {
+			this.physijs.postMessage( MESSAGE_TYPES.ADD_RIGIDBODY, rigid_body_definition );
+		} else if ( object.physics.type === 'GHOST' ) {
+			this.physijs.postMessage( MESSAGE_TYPES.ADD_GHOSTBODY, rigid_body_definition );
+		} else {
+			console.error( 'Unknown physijs body type: ' + this.physijs.type );
+		}
+
 		object.updateMatrix();
 	}
 };

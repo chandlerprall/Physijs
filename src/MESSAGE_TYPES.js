@@ -23,6 +23,15 @@ export default {
 	 */
 	INITIALIZE: 'INITIALIZE',
 
+	ADD_GHOSTBODY: 'ADD_GHOSTBODY',
+	/**
+	 * adds a ghost body to the world
+	 * body_id Integer unique id for the body
+	 * shape_description Object definition corresponding to the type of rigid body (see BODY_TYPES)
+	 * collision_groups Integer body's collision groups
+	 * collision_mask Integer body's collision mask
+	 */
+
 	/**
 	 * adds a rigid body to the world
 	 * body_id Integer unique id for the body
@@ -44,6 +53,12 @@ export default {
 	 * local_location Object where, relative to the body, the force is applied {x:x, y:y, z:z}
 	 */
 	APPLY_FORCE: 'APPLY_FORCE',
+
+	/**
+	 * removes a ghost body from the world
+	 * body_id Integer unique id of the body
+	 */
+	REMOVE_GHOSTBODY: 'REMOVE_GHOSTBODY',
 
 	/**
 	 * removes a rigid body from the world

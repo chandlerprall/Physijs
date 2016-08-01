@@ -62,6 +62,7 @@ export function _PhysicsObject( three_object, geometry, physics_descriptor, getS
 		angular_damping: physics_descriptor.angular_damping || 0,
 		collision_groups: physics_descriptor.collision_groups || 0,
 		collision_mask: physics_descriptor.collision_mask || 0,
+		type: physics_descriptor.type || 'RIGID',
 
 		position: new THREE.Vector3(),
 		quaternion: new THREE.Quaternion(),
@@ -202,6 +203,16 @@ Object.defineProperty(
 				this.three_object.parent.physijs.setRigidBodyCollisionMask( this );
 			}
 		}
+	}
+);
+
+Object.defineProperty(
+	_PhysicsObject.prototype,
+	'type',
+	{
+		get: function() {
+			return this._.type;
+		},
 	}
 );
 
