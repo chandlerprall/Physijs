@@ -278,7 +278,6 @@ function processCollisionReport( report ) {
 		var object_b = this.physijs.id_body_map[report[idx+1]];
 
 		if ( object_a == null || object_b == null ) {
-			debugger;
 			continue;
 		}
 
