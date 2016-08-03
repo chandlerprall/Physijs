@@ -1,5 +1,6 @@
 import MESSAGE_TYPES from '../../MESSAGE_TYPES';
 import BODY_TYPES from '../../BODY_TYPES';
+import CONTACT_TYPES from '../../CONTACT_TYPES';
 import PhysicsObject, {_PhysicsObject} from './PhysicsObject';
 import CompoundObject from './CompoundObject';
 import {getUniqueId} from './util/UniqueId';
@@ -108,7 +109,12 @@ Scene.prototype.remove = function( object ) {
 
 	if ( object.physics instanceof _PhysicsObject ) {
 		delete this.physijs.id_body_map[ object.physics._.id ];
-		this.physijs.postMessage( MESSAGE_TYPES.REMOVE_RIGIDBODY, { body_id: object.physics._.id } );
+
+		if ( object.physics.type === 'RIGID' ) {
+			this.physijs.postMessage( MESSAGE_TYPES.REMOVE_RIGIDBODY, { body_id: object.physics._.id } );
+		} else if ( object.physics.type === 'GHOST' ) {
+			this.physijs.postMessage( MESSAGE_TYPES.REMOVE_GHOSTBODY, { body_id: object.physics._.id } );
+		}
 	}
 };
 
@@ -301,38 +307,48 @@ function processWorldReport( report ) {
 function processCollisionReport( report ) {
 	var new_contacts = report[1];
 
-	for ( var i = 0; i < new_contacts; i += 15 ) {
+	for ( var i = 0; i < new_contacts; i += 16 ) {
 		var idx = i + 2;
-		var object_a = this.physijs.id_body_map[report[idx+0]];
-		var object_b = this.physijs.id_body_map[report[idx+1]];
+
+		var contactType = report[idx+0];
+		if (contactType === CONTACT_TYPES.START) {
+			contactType = 'physics.contactStart';
+		} else if (contactType === CONTACT_TYPES.CONTINUE) {
+			contactType = 'physics.contactContinue';
+		} if (contactType === CONTACT_TYPES.END) {
+			contactType = 'physics.contactEnd';
+		}
+
+		var object_a = this.physijs.id_body_map[report[idx+1]];
+		var object_b = this.physijs.id_body_map[report[idx+2]];
 
 		if ( object_a == null || object_b == null ) {
 			continue;
 		}
 
-		_tmp_vector3_1.set( report[idx+2], report[idx+3], report[idx+4] );
-		_tmp_vector3_2.set( report[idx+5], report[idx+6], report[idx+7] );
-		_tmp_vector3_3.set( report[idx+8], report[idx+9], report[idx+10] );
-		_tmp_vector3_4.set( report[idx+11], report[idx+12], report[idx+13] );
+		_tmp_vector3_1.set( report[idx+3], report[idx+4], report[idx+5] );
+		_tmp_vector3_2.set( report[idx+6], report[idx+7], report[idx+8] );
+		_tmp_vector3_3.set( report[idx+9], report[idx+10], report[idx+11] );
+		_tmp_vector3_4.set( report[idx+12], report[idx+13], report[idx+14] );
 
 		object_a.dispatchEvent({
-			type: 'physics.newContact',
+			type: contactType,
 			other_body: object_b,
 			contact_point: _tmp_vector3_1,
 			contact_normal: _tmp_vector3_2,
 			relative_linear_velocity: _tmp_vector3_3,
 			relative_angular_velocity: _tmp_vector3_4,
-			penetration_depth: report[idx+14]
+			penetration_depth: report[idx+15]
 		});
 
 		object_b.dispatchEvent({
-			type: 'physics.newContact',
+			type: contactType,
 			other_body: object_a,
 			contact_point: _tmp_vector3_1,
 			contact_normal: _tmp_vector3_2,
 			relative_linear_velocity: _tmp_vector3_3,
 			relative_angular_velocity: _tmp_vector3_4,
-			penetration_depth: report[idx+14]
+			penetration_depth: report[idx+15]
 		});
 	}
 

@@ -1,6 +1,7 @@
 import MESSAGE_TYPES from '../MESSAGE_TYPES';
 import BODY_TYPES from '../BODY_TYPES';
 import CONSTRAINT_TYPES from '../CONSTRAINT_TYPES';
+import CONTACT_TYPES from '../CONTACT_TYPES';
 
 // trick rollup into including Goblin
 import * as _goblin from '../../lib/goblin.min.js';
@@ -23,7 +24,7 @@ var WORLD_REPORT_CHUNK_SIZE = 100 * WORLD_REPORT_SIZE_RIGIDBODY; // increase buf
 var world_report = new Float32Array( 0 );
 
 var COLLISION_REPORT_SIZE = 15; // 2 body ids + 4 Vector3s + penetration depth
-var COLLISION_REPORT_CHUNK_SIZE = 100 * COLLISION_REPORT_CHUNK_SIZE;
+var COLLISION_REPORT_CHUNK_SIZE = 100 * COLLISION_REPORT_SIZE;
 var collision_report = new Float32Array( 0 );
 
 // global variables for the simulation
@@ -31,7 +32,7 @@ var world;
 var id_body_map = {};
 var body_id_map = {};
 var id_constraint_map = {};
-var new_collisions = [];
+var collision_events = [];
 
 function postMessage( type, parameters ) {
 	self.postMessage({
@@ -105,47 +106,50 @@ function reportWorld() {
 
 function reportCollisions() {
 	// divided by 2 because each new collision triggers two `contact` events and the second is a duplicate
-	// divided by 9 as each entry in `new_collisions` spans nine indices
-	var new_collisions_count = new_collisions.length / 2 / 9;
+	// divided by 10 as each entry in `collision_events` spans ten indices
+	var event_size = 10;
+	var collision_events_count = collision_events.length / 2 / event_size;
 
 	// compute buffer size
-	var report_size = ( COLLISION_REPORT_SIZE * new_collisions_count ); // elements needed to report collisions
+	var report_size = ( COLLISION_REPORT_SIZE * collision_events_count ); // elements needed to report collisions
 	collision_report = ensureReportSize( collision_report, report_size, COLLISION_REPORT_SIZE );
 	collision_report[0] = MESSAGE_TYPES.REPORTS.COLLISIONS;
-	collision_report[1] = new_collisions_count;
+	collision_report[1] = collision_events_count;
 
 	var report_idx = 2;
 
-	for ( var i = 0; i < new_collisions.length; i += 18 ) {
-		var object_a = new_collisions[i+0];
-		var object_b = new_collisions[i+1];
-		var contact = new_collisions[i+2];
+	for ( var i = 0; i < collision_events.length; i += 2 * event_size ) { // multiply by 2 to skip the same contact event for the other object
+		var object_a = collision_events[i+1];
+		var object_b = collision_events[i+2];
+		var contact = collision_events[i+3];
 
-		collision_report[report_idx+0] = body_id_map[ object_a.id ];
-		collision_report[report_idx+1] = body_id_map[ object_b.id ];
+		collision_report[report_idx+0] = collision_events[i+0];
 
-		collision_report[report_idx+2] = contact.contact_point.x;
-		collision_report[report_idx+3] = contact.contact_point.y;
-		collision_report[report_idx+4] = contact.contact_point.z;
+		collision_report[report_idx+1] = body_id_map[ object_a.id ];
+		collision_report[report_idx+2] = body_id_map[ object_b.id ];
 
-		collision_report[report_idx+5] = contact.contact_normal.x;
-		collision_report[report_idx+6] = contact.contact_normal.y;
-		collision_report[report_idx+7] = contact.contact_normal.z;
+		collision_report[report_idx+3] = contact ? contact.contact_point.x : 0;
+		collision_report[report_idx+4] = contact ? contact.contact_point.y : 0;
+		collision_report[report_idx+5] = contact ? contact.contact_point.z : 0;
 
-		collision_report[report_idx+8] = new_collisions[i+3];
-		collision_report[report_idx+9] = new_collisions[i+4];
-		collision_report[report_idx+10] = new_collisions[i+5];
+		collision_report[report_idx+6] = contact ? contact.contact_normal.x : 0;
+		collision_report[report_idx+7] = contact ? contact.contact_normal.y : 0;
+		collision_report[report_idx+8] = contact ? contact.contact_normal.z : 0;
 
-		collision_report[report_idx+11] = new_collisions[i+6];
-		collision_report[report_idx+12] = new_collisions[i+7];
-		collision_report[report_idx+13] = new_collisions[i+8];
+		collision_report[report_idx+9] = collision_events[i+4];
+		collision_report[report_idx+10] = collision_events[i+5];
+		collision_report[report_idx+11] = collision_events[i+6];
 
-		collision_report[report_idx+14] = contact.penetration_depth;
+		collision_report[report_idx+12] = collision_events[i+7];
+		collision_report[report_idx+13] = collision_events[i+8];
+		collision_report[report_idx+14] = collision_events[i+9];
+
+		collision_report[report_idx+15] = contact ? contact.penetration_depth : 0;
 
 		report_idx += COLLISION_REPORT_SIZE;
 	}
 
-	new_collisions.length = 0;
+	collision_events.length = 0;
 
 	postReport( collision_report );
 }
@@ -278,20 +282,67 @@ function getShapeForDefinition( shape_definition ) {
 			body.collision_mask = parameters.collision_mask;
 
 			body.addListener(
-				'contactStart',
+				'contact',
 				function( other_body, contact ) {
-					new_collisions.push( this, other_body, contact );
+					collision_events.push( CONTACT_TYPES.START, this, other_body, contact );
 
 					// find relative velocities
 					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
-					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
 
 					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
-					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
 				}
 			);
 
-			world.addRigidBody( body );
+			body.addListener(
+				'endAllContact',
+				function( other_body ) {
+					collision_events.push( CONTACT_TYPES.END, this, other_body, null );
+
+					// find relative velocities
+					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+
+					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+				}
+			);
+
+			body.addListener(
+				'contactStart',
+				function( other_body, contact ) {
+					collision_events.push( CONTACT_TYPES.START, this, other_body, contact );
+
+					// find relative velocities
+					collision_events.push( other_body.linear_velocity.x, other_body.linear_velocity.y, other_body.linear_velocity.z );
+					collision_events.push( other_body.angular_velocity.x, other_body.angular_velocity.y, other_body.angular_velocity.z );
+				}
+			);
+
+			body.addListener(
+				'contactContinue',
+				function( other_body, contact ) {
+					collision_events.push( CONTACT_TYPES.CONTINUE, this, other_body, contact );
+
+					// find relative velocities
+					collision_events.push( other_body.linear_velocity.x, other_body.linear_velocity.y, other_body.linear_velocity.z );
+					collision_events.push( other_body.angular_velocity.x, other_body.angular_velocity.y, other_body.angular_velocity.z );
+				}
+			);
+
+			body.addListener(
+				'contactEnd',
+				function( other_body ) {
+					collision_events.push( CONTACT_TYPES.END, this, other_body, null );
+
+					// find relative velocities
+					collision_events.push( other_body.linear_velocity.x, other_body.linear_velocity.y, other_body.linear_velocity.z );
+					collision_events.push( other_body.angular_velocity.x, other_body.angular_velocity.y, other_body.angular_velocity.z );
+				}
+			);
+
+			world.addGhostBody( body );
 
 			id_body_map[ parameters.body_id ] = body;
 			body_id_map[ body.id ] = parameters.body_id;
@@ -315,14 +366,61 @@ function getShapeForDefinition( shape_definition ) {
 			body.addListener(
 				'contact',
 				function( other_body, contact ) {
-					new_collisions.push( this, other_body, contact );
+					collision_events.push( CONTACT_TYPES.START, this, other_body, contact );
 
 					// find relative velocities
 					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
-					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
 
 					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
-					new_collisions.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+				}
+			);
+
+			body.addListener(
+				'endAllContact',
+				function( other_body ) {
+					collision_events.push( CONTACT_TYPES.END, this, other_body, null );
+
+					// find relative velocities
+					_tmp_vector3_1.subtractVectors( other_body.linear_velocity, this.linear_velocity );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+
+					_tmp_vector3_1.subtractVectors( other_body.angular_velocity, this.angular_velocity );
+					collision_events.push( _tmp_vector3_1.x, _tmp_vector3_1.y, _tmp_vector3_1.z );
+				}
+			);
+
+			body.addListener(
+				'contactStart',
+				function( other_body, contact ) {
+					collision_events.push( CONTACT_TYPES.START, this, other_body, contact );
+
+					// find relative velocities
+					collision_events.push( this.linear_velocity.x, this.linear_velocity.y, this.linear_velocity.z );
+					collision_events.push( this.angular_velocity.x, this.angular_velocity.y, this.angular_velocity.z );
+				}
+			);
+
+			body.addListener(
+				'contactContinue',
+				function( other_body, contact ) {
+					collision_events.push( CONTACT_TYPES.CONTINUE, this, other_body, contact );
+
+					// find relative velocities
+					collision_events.push( this.linear_velocity.x, this.linear_velocity.y, this.linear_velocity.z );
+					collision_events.push( this.angular_velocity.x, this.angular_velocity.y, this.angular_velocity.z );
+				}
+			);
+
+			body.addListener(
+				'contactEnd',
+				function( other_body ) {
+					collision_events.push( CONTACT_TYPES.END, this, other_body, null );
+
+					// find relative velocities
+					collision_events.push( this.linear_velocity.x, this.linear_velocity.y, this.linear_velocity.z );
+					collision_events.push( this.angular_velocity.x, this.angular_velocity.y, this.angular_velocity.z );
 				}
 			);
 

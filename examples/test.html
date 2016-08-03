@@ -20,23 +20,41 @@
 			var sphere_geometry = new THREE.SphereGeometry( 1, 12, 12 );
 			var normal_material = new THREE.MeshNormalMaterial();
 
-			var sphere = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0 } );
+			var sphere = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0, type: 'RIGID' } );
 			scene.add( sphere );
 
-			var box = new physijs.Box(
-				new THREE.BoxGeometry( 1, 1, 1 ), normal_material
-				, { mass: 2 }
-			);
-			box.position.set( 0.13, 3, 0 );
-			box.physics.linear_velocity.y = -5;
-			scene.add( box );
+			function spawnBox() {
+				var box = new physijs.Box(
+						new THREE.BoxGeometry( 1, 1, 1 ), normal_material
+						, { mass: 2 }
+				);
+				box.position.set( 0.13, 3, 0 );
+				box.physics.linear_velocity.y = -5;
+				scene.add( box );
+			}
 
 			sphere.addEventListener(
-				'physics.newContact',
+				'physics.contactStart',
 				function( event ) {
 					console.log( 'collided at', event.relative_linear_velocity.length() );
 				}
 			);
+
+			sphere.addEventListener(
+				'physics.contactContinue',
+				function( event ) {
+					console.log( 'continued at', event.relative_linear_velocity.length() );
+				}
+			);
+
+			sphere.addEventListener(
+				'physics.contactEnd',
+				function( event ) {
+					console.log( 'ended at', event.relative_linear_velocity.length() );
+				}
+			);
+
+			setInterval(spawnBox, 1000);
 
 			var physics_framerate = 1000 / 60;
 			function onStep() {
