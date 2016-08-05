@@ -23,15 +23,13 @@
 			var sphere = new physijs.Sphere( sphere_geometry, normal_material, { mass: 0, type: 'RIGID' } );
 			scene.add( sphere );
 
-			function spawnBox() {
-				var box = new physijs.Box(
-						new THREE.BoxGeometry( 1, 1, 1 ), normal_material
-						, { mass: 2 }
-				);
-				box.position.set( 0.13, 3, 0 );
-				box.physics.linear_velocity.y = -5;
-				scene.add( box );
-			}
+			var box = new physijs.Box(
+					new THREE.BoxGeometry( 1, 1, 1 ), normal_material
+					, { mass: 2 }
+			);
+			box.position.set( 0.13, 3, 0 );
+			box.physics.linear_velocity.y = -5;
+			scene.add( box );
 
 			sphere.addEventListener(
 				'physics.contactStart',
@@ -53,8 +51,6 @@
 					console.log( 'ended at', event.relative_linear_velocity.length() );
 				}
 			);
-
-			setInterval(spawnBox, 1000);
 
 			var physics_framerate = 1000 / 60;
 			function onStep() {
