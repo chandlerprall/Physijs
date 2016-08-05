@@ -4,7 +4,7 @@ import CONSTRAINT_TYPES from '../CONSTRAINT_TYPES';
 import CONTACT_TYPES from '../CONTACT_TYPES';
 
 // trick rollup into including Goblin
-import {} from '../../lib/goblin';
+import {} from '../../lib/goblin.min';
 var Goblin = self.Goblin || _goblin;
 
 var _tmp_vector3_1 = new Goblin.Vector3();

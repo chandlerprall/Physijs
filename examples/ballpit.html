@@ -17,10 +17,10 @@
 
 			var scene = new physijs.Scene( '../dist/physijs-worker.js' );
 
-			var camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 0.1, 10 );
-			camera.position.set( 0, 2, 5 );
-			camera.lookAt( scene.position );
+			var camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 100 );
+			camera.position.set( 0, 20, 50 );
 			var controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.center.set( 0, 2, 0 );
 
 			var textureLoader = new THREE.TextureLoader();
 			function loadRepeatingTexture( url, repeat ) {
@@ -39,14 +39,14 @@
 			scene.add( ambient );
 
 			var sunlight = new THREE.DirectionalLight( 0xbbbbbb );
-			sunlight.position.set( 1, 3, 2 );
+			sunlight.position.set( 10, 30, 20 );
 			sunlight.castShadow = true;
 			sunlight.shadow.bias = -0.01;
 			sunlight.shadow.mapSize.set( 1024, 1024 );
-			sunlight.shadow.camera.left = sunlight.shadow.camera.top = -5;
-			sunlight.shadow.camera.right = sunlight.shadow.camera.bottom = 5;
-			sunlight.shadow.camera.near = 1;
-			sunlight.shadow.camera.far = 5;
+			sunlight.shadow.camera.left = sunlight.shadow.camera.top = -20;
+			sunlight.shadow.camera.right = sunlight.shadow.camera.bottom = 20;
+			sunlight.shadow.camera.near = 10;
+			sunlight.shadow.camera.far = 50;
 			scene.add( sunlight );
 
 			// build pit
@@ -56,11 +56,11 @@
 				normalScale: new THREE.Vector2( 5, 5 ),
 				specularMap: loadRepeatingTexture( 'textures/cement/specular.png', new THREE.Vector2( 3, 3 ) )
 			});
-			var floor = new physijs.Box( new THREE.BoxGeometry( 2.8, 0.01, 3.2 ), floor_material, { restitution: 0.1 } );
+			var floor = new physijs.Box( new THREE.BoxGeometry( 28, 0.1, 32 ), floor_material, { restitution: 0.1 } );
 			floor.receiveShadow = true;
 			scene.add( floor );
 
-			var wall_geometry = new THREE.BoxGeometry( 2.8, 0.2, 0.2 );
+			var wall_geometry = new THREE.BoxGeometry( 28, 2, 2 );
 			var wall_material = new THREE.MeshPhongMaterial({
 				map: loadRepeatingTexture( 'textures/brick/diffuse.jpg', new THREE.Vector2( 3, 0.2 ) ),
 				normalMap: loadRepeatingTexture( 'textures/brick/normal.png', new THREE.Vector2( 3, 0.2 ) ),
@@ -68,36 +68,36 @@
 				specularMap: loadRepeatingTexture( 'textures/brick/specular.png', new THREE.Vector2( 3, 0.2 ) )
 			});
 			var wall_back = new physijs.Box( wall_geometry, wall_material, { restitution: 0.3 } );
-			wall_back.position.set( 0, 0.1, -1.5 );
+			wall_back.position.set( 0, 1, -15 );
 			wall_back.receiveShadow = wall_back.castShadow = true;
 			scene.add( wall_back );
 
 			var wall_front = new physijs.Box( wall_geometry, wall_material, { restitution: 0.3 } );
-			wall_front.position.set( 0, 0.1, 1.5 );
+			wall_front.position.set( 0, 1, 15 );
 			wall_front.receiveShadow = wall_front.castShadow = true;
 			scene.add( wall_front );
 
 			var wall_left = new physijs.Box( wall_geometry, wall_material, { restitution: 0.3 } );
-			wall_left.position.set( -1.3, 0.1, 0 );
+			wall_left.position.set( -13, 1, 0 );
 			wall_left.quaternion.set( 0, 1, 0, 1 ).normalize();
 			wall_left.receiveShadow = wall_left.castShadow = true;
 			scene.add( wall_left );
 
 			var wall_right = new physijs.Box( wall_geometry, wall_material, { restitution: 0.3 } );
-			wall_right.position.set( 1.3, 0.1, 0 );
+			wall_right.position.set( 13, 1, 0 );
 			wall_right.quaternion.set( 0, 1, 0, 1 ).normalize();
 			wall_right.receiveShadow = wall_right.castShadow = true;
 			scene.add( wall_right );
 
 			// tube
 			var tube_path = new THREE.CatmullRomCurve3([
-				new THREE.Vector3( 0, 1, 0 ),
-				new THREE.Vector3( 0, 0.5, 0 ),
-				new THREE.Vector3( 0.5, 0.2, 0 ),
-				new THREE.Vector3( 0.7, 0.2, 0 ),
+				new THREE.Vector3( 0, 10, 0 ),
+				new THREE.Vector3( 0, 5, 0 ),
+				new THREE.Vector3( 5, 2, 0 ),
+				new THREE.Vector3( 7, 2, 0 ),
 			]);
-			var tube_physics_geometry = new THREE.TubeGeometry( tube_path, 4, 0.16, 6 );
-			var tube_rendered_geometry = new THREE.TubeGeometry( tube_path, 20, 0.16, 24 );
+			var tube_physics_geometry = new THREE.TubeGeometry( tube_path, 4, 1.6, 6 );
+			var tube_rendered_geometry = new THREE.TubeGeometry( tube_path, 20, 1.6, 24 );
 			var tube_material = new THREE.MeshPhongMaterial({
 				map: loadRepeatingTexture( 'textures/copper/diffuse.jpg', new THREE.Vector2( 2, 2 ) ),
 				normalMap: loadRepeatingTexture( 'textures/copper/normal.png', new THREE.Vector2( 2, 2 ) ),
@@ -106,15 +106,14 @@
 			});
 			var tube = new physijs.TriangleMesh(
 				new THREE.Mesh( tube_rendered_geometry, tube_material ),
-				tube_physics_geometry,
-				{ friction: 0 }
+				tube_physics_geometry
 			);
 			tube.receiveShadow = tube.castShadow = true;
-			tube.position.set( -1.8, 0.2, 0 );
+			tube.position.set( -18, 2, 0 );
 			scene.add( tube );
 
 			// balls
-			var ball_geometry = new THREE.SphereGeometry( 0.1, 24, 24 );
+			var ball_geometry = new THREE.SphereGeometry( 1, 24, 24 );
 			var ball_material = new THREE.MeshPhongMaterial({
 				color: 0x882244
 			});
@@ -125,10 +124,10 @@
 			];
 			var ball_index = 0;
 			function makeBall() {
-				var ball = new physijs.Sphere( ball_geometry, ball_materials[ball_index++], { mass: 0.2, friction: 0.1, restitution: 0.3 } );
+				var ball = new physijs.Sphere( ball_geometry, ball_materials[ball_index++], { mass: 2, friction: 0.1, restitution: 0.3 } );
 				ball.receiveShadow = ball.castShadow = true;
-				ball.position.set( -1.8, 2, 0 ); // position over the tube
-				ball.physics.linear_velocity.set( 0, -5, 0 );
+				ball.position.set( -18, 20, 0 ); // position over the tube
+				ball.physics.linear_velocity.set( 0, -30, 3 );
 				scene.add( ball );
 
 				if ( ball_index === ball_materials.length ) {
@@ -138,7 +137,7 @@
 
 			var physics_framerate = 1000 / 60;
 			function onStep(step_index) {
-				if (step_index % 10 === 0) {
+				if (step_index % 7 === 0) {
 					makeBall();
 				}
 
