@@ -13,7 +13,14 @@ export default {
 		 * element [1] is the number of collisions, each collision is represented by:
 		 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
 		 */
-		COLLISIONS: 1
+		COLLISIONS: 1,
+
+		/**
+		 * report containing information about existing constraints
+		 * element [1] is how many constraints are being reported
+		 * elements 2...n elements are the constraints' data
+		 */
+		CONSTRAINTS: 2
 	},
 
 	/**
@@ -65,6 +72,42 @@ export default {
 	 * body_id Integer unique id of the body
 	 */
 	REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
+
+	/**
+	 * sets a constraint's active flag
+	 * constraint_id Integer unique id of the constraint
+	 */
+	SET_CONSTRAINT_ACTIVE: 'SET_CONSTRAINT_ACTIVE',
+
+	/**
+	 * sets a constraint's factor value
+	 * constraint_id Integer unique id of the constraint
+	 */
+	SET_CONSTRAINT_FACTOR: 'SET_CONSTRAINT_FACTOR',
+
+	/**
+	 * sets a constraint's breaking threshold value
+	 * constraint_id Integer unique id of the constraint
+	 */
+	SET_CONSTRAINT_BREAKING_THRESHOLD: 'SET_CONSTRAINT_BREAKING_THRESHOLD',
+
+	/**
+	 * sets a constraint's limit
+	 * constraint_id Integer unique id of the constraint
+	 * enabled Boolean whether or not the constraint is limited
+	 * lower Float lower end of the constraint
+	 * upper Float upper end of the constraint
+	 */
+	SET_CONSTRAINT_LIMIT: 'SET_CONSTRAINT_LIMIT',
+
+	/**
+	 * sets a constraint's motor
+	 * constraint_id Integer unique id of the constraint
+	 * enabled Boolean whether or not the constraint motor is enabled
+	 * torque Float motor's torque
+	 * max_speed Float motor's maximum speed
+	 */
+	SET_CONSTRAINT_MOTOR: 'SET_CONSTRAINT_MOTOR',
 
 	/**
 	 * sets the specified rigid body's mass

@@ -9,23 +9,6 @@ export default function HingeConstraint( body_a, hinge_axis, point_a, body_b, po
     this.point_a = point_a;
     this.body_b = body_b;
     this.point_b = point_b;
-
-    this.physics = {
-        active: true,
-        factor: 1,
-        breaking_threshold: 0,
-        last_impulse: new THREE.Vector3(),
-        limit: {
-            enabled: false,
-            lower: null,
-            upper: null
-        },
-        motor: {
-            enabled: false,
-            torque: null,
-            max_speed: null
-        }
-    };
 }
 
 HingeConstraint.prototype = Object.create( Constraint.prototype );

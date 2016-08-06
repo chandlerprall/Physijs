@@ -23,15 +23,20 @@ var WORLD_REPORT_SIZE_RIGIDBODY = 30; // 1 body id + 16 matrix elements + 3 posi
 var WORLD_REPORT_CHUNK_SIZE = 100 * WORLD_REPORT_SIZE_RIGIDBODY; // increase buffer by enough to hold 100 objects each time
 var world_report = new Float32Array( 0 );
 
-var COLLISION_REPORT_SIZE = 15; // 2 body ids + 4 Vector3s + penetration depth
+var COLLISION_REPORT_SIZE = 16; // 2 body ids + 4 Vector3s + penetration depth
 var COLLISION_REPORT_CHUNK_SIZE = 100 * COLLISION_REPORT_SIZE;
 var collision_report = new Float32Array( 0 );
 
+var CONSTRAINT_REPORT_SIZE = 5; // 1 constraint id + 1 element for active flag + 3 elements for last impulse
+var CONSTRAINT_REPORT_CHUNK_SIZE = 10 * CONSTRAINT_REPORT_SIZE;
+var constraint_report = new Float32Array( 0 );
+
 // global variables for the simulation
 var world;
-var id_body_map = {};
-var body_id_map = {};
-var id_constraint_map = {};
+var id_body_map = {}; // maps scene's body ids (provided from Physijs) to body
+var body_id_map = {}; //  // maps the goblin body id to Physijs' body id
+var id_constraint_map = {}; // maps the constraint ids (provided from Physijs) to body
+var constraint_id_map = {}; // maps the goblin constraint id to Physijs' constraint id
 var collision_events = [];
 
 function postMessage( type, parameters ) {
@@ -112,7 +117,7 @@ function reportCollisions() {
 
 	// compute buffer size
 	var report_size = ( COLLISION_REPORT_SIZE * collision_events_count ); // elements needed to report collisions
-	collision_report = ensureReportSize( collision_report, report_size, COLLISION_REPORT_SIZE );
+	collision_report = ensureReportSize( collision_report, report_size, COLLISION_REPORT_CHUNK_SIZE );
 	collision_report[0] = MESSAGE_TYPES.REPORTS.COLLISIONS;
 	collision_report[1] = collision_events_count;
 
@@ -152,6 +157,35 @@ function reportCollisions() {
 	collision_events.length = 0;
 
 	postReport( collision_report );
+}
+
+function reportConstraints() {
+	// compute necessary buffer size
+	var constraint_ids = Object.keys( id_constraint_map );
+	var constraints_count = constraint_ids.length;
+	var report_size = ( CONSTRAINT_REPORT_SIZE * constraints_count ); // elements needed to report bodies
+	constraint_report = ensureReportSize( constraint_report, report_size, CONSTRAINT_REPORT_CHUNK_SIZE );
+
+	// populate the report
+	var report_idx = 0;
+	constraint_report[report_idx++] = MESSAGE_TYPES.REPORTS.CONSTRAINTS;
+	constraint_report[report_idx++] = constraints_count;
+
+	for ( var i = 0; i < constraints_count; i++ ) {
+		var constraint_id = constraint_ids[ i ];
+		var constraint = id_constraint_map[ constraint_id ];
+		constraint_report[report_idx] = constraint_id;
+
+		constraint_report[report_idx+1] = constraint.active;
+
+		constraint_report[report_idx+2] = constraint.last_impulse.x;
+		constraint_report[report_idx+3] = constraint.last_impulse.y;
+		constraint_report[report_idx+4] = constraint.last_impulse.z;
+
+		report_idx += CONSTRAINT_REPORT_SIZE;
+	}
+
+	postReport( constraint_report );
 }
 
 function getShapeForDefinition( shape_definition ) {
@@ -251,6 +285,13 @@ function getShapeForDefinition( shape_definition ) {
 		MESSAGE_TYPES.REPORTS.COLLISIONS,
 		function( report ) {
 			collision_report = report;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.REPORTS.CONSTRAINTS,
+		function( report ) {
+			constraint_report = report;
 		}
 	);
 
@@ -463,6 +504,49 @@ function getShapeForDefinition( shape_definition ) {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_ACTIVE,
+		function( parameters ) {
+			id_constraint_map[ parameters.constraint_id ].active = parameters.active;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_FACTOR,
+		function( parameters ) {
+			id_constraint_map[ parameters.constraint_id ].factor = parameters.factor;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_BREAKING_THRESHOLD,
+		function( parameters ) {
+			id_constraint_map[ parameters.constraint_id ].breaking_threshold = parameters.breaking_threshold;
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_LIMIT,
+		function( parameters ) {
+			if ( parameters.enabled === false ) {
+				id_constraint_map[ parameters.constraint_id ].limit.set( null, null );
+			} else {
+				id_constraint_map[ parameters.constraint_id ].limit.set( parameters.lower, parameters.upper );
+			}
+		}
+	);
+
+	handleMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_MOTOR,
+		function( parameters ) {
+			if ( parameters.enabled === false ) {
+				id_constraint_map[ parameters.constraint_id ].motor.set( null, null );
+			} else {
+				id_constraint_map[ parameters.constraint_id ].motor.set( parameters.torque, parameters.max_speed );
+			}
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.SET_RIGIDBODY_MASS,
 		function( parameters ) {
 			id_body_map[ parameters.body_id ].mass = parameters.mass;
@@ -581,6 +665,7 @@ function getShapeForDefinition( shape_definition ) {
 			world.step( parameters.time_delta, parameters.max_step );
 			reportWorld();
 			reportCollisions();
+			reportConstraints();
 		}
 	);
 
@@ -634,7 +719,10 @@ function getShapeForDefinition( shape_definition ) {
 					parameters.object_b_id == null ? null : id_body_map[parameters.body_b_id],
 					parameters.object_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
 				);
+
 				constraint.active = parameters.active;
+				constraint.factor = parameters.factor;
+				constraint.breaking_threshold = parameters.breaking_threshold;
 
 				if ( parameters.limit.enabled ) {
 					constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
@@ -645,6 +733,7 @@ function getShapeForDefinition( shape_definition ) {
 				}
 
 				id_constraint_map[ parameters.constraint_id ] = constraint;
+				constraint_id_map[ constraint.id ] = parameters.constraint_id;
 			}
 
 			world.addConstraint( constraint );

@@ -43,8 +43,14 @@ export default function Scene( worker_script_location, world_config ) {
 		initializeWorker: initializeWorker.bind( this ),
 		processWorldReport: processWorldReport.bind( this ),
 		processCollisionReport: processCollisionReport.bind( this ),
+		processConstraintsReport: processConstraintsReport.bind( this ),
 		postMessage: postMessage.bind( this ),
 		postReport: postReport.bind( this ),
+		setConstraintActive: setConstraintActive.bind( this ),
+		setConstraintFactor: setConstraintFactor.bind( this ),
+		setConstraintBreakingThreshold: setConstraintBreakingThreshold.bind( this ),
+		setConstraintLimit: setConstraintLimit.bind( this ),
+		setConstraintMotor: setConstraintMotor.bind( this ),
 		setRigidBodyMass: setRigidBodyMass.bind( this ),
 		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
 		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
@@ -171,6 +177,58 @@ Scene.prototype.step = function( time_delta, max_step, onStep ) {
 		}
 	}
 
+	// check if any constraints have been changed
+	var constraint_ids = Object.keys( this.physijs.id_constraint_map );
+	for ( i = 0; i < constraint_ids.length; i++ ) {
+		var constraint_id = constraint_ids[ i ];
+		var constraint = this.physijs.id_constraint_map[ constraint_id ];
+		if ( constraint == null ) {
+			continue;
+		}
+
+		// check active
+		if (constraint.physics.active !== constraint.physics._.active) {
+			this.physijs.setConstraintActive( constraint );
+			constraint.physics._.active = constraint.physics.active;
+		}
+
+		// check factor
+		if (constraint.physics.factor !== constraint.physics._.factor) {
+			this.physijs.setConstraintFactor( constraint );
+			constraint.physics._.factor = constraint.physics.factor;
+		}
+
+		// check breaking threshold
+		if (constraint.physics.breaking_threshold !== constraint.physics._.breaking_threshold) {
+			this.physijs.setConstraintBreakingThreshold( constraint );
+			constraint.physics._.breaking_threshold = constraint.physics.breaking_threshold;
+		}
+
+		// check limit
+		if (
+			constraint.physics.limit.enabled !== constraint.physics._.limit.enabled ||
+			constraint.physics.limit.lower !== constraint.physics._.limit.lower ||
+			constraint.physics.limit.upper !== constraint.physics._.limit.upper
+		) {
+			this.physijs.setConstraintLimit( constraint );
+			constraint.physics._.limit.enabled = constraint.physics.limit.enabled;
+			constraint.physics._.limit.lower = constraint.physics.limit.lower;
+			constraint.physics._.limit.upper = constraint.physics.limit.upper;
+		}
+
+		// check motor
+		if (
+			constraint.physics.motor.enabled !== constraint.physics._.motor.enabled ||
+			constraint.physics.motor.torque !== constraint.physics._.motor.torque ||
+			constraint.physics.motor.max_speed !== constraint.physics._.motor.max_speed
+		) {
+			this.physijs.setConstraintMotor( constraint );
+			constraint.physics._.motor.enabled = constraint.physics.motor.enabled;
+			constraint.physics._.motor.torque = constraint.physics.motor.torque;
+			constraint.physics._.motor.max_speed = constraint.physics.motor.max_speed;
+		}
+	}
+
 	this.physijs.postMessage(
 		MESSAGE_TYPES.STEP_SIMULATION,
 		{
@@ -257,6 +315,11 @@ function initializeWorker( worker_script_location, world_config ) {
 	this.physijs.handleMessage(
 		MESSAGE_TYPES.REPORTS.COLLISIONS,
 		this.physijs.processCollisionReport
+	);
+
+	this.physijs.handleMessage(
+		MESSAGE_TYPES.REPORTS.CONSTRAINTS,
+		this.physijs.processConstraintsReport
 	);
 
 	this.physijs.handleMessage(
@@ -355,6 +418,25 @@ function processCollisionReport( report ) {
 	this.physijs.postReport( report );
 }
 
+function processConstraintsReport( report ) {
+	var constraints_count = report[1];
+
+	for ( var i = 0; i < constraints_count; i += 5 ) {
+		var idx = i + 2;
+
+		var constraint = this.physijs.id_constraint_map[report[idx]];
+
+		if ( constraint == null ) {
+			continue;
+		}
+
+		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
+		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+	}
+
+	this.physijs.postReport( report );
+}
+
 function postMessage( type, parameters ) {
 	this.physijs.worker.postMessage({
 		type: type,
@@ -364,6 +446,60 @@ function postMessage( type, parameters ) {
 
 function postReport( report ) {
 	this.physijs.worker.postMessage( report, [report.buffer] );
+}
+
+function setConstraintActive( constraint ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_ACTIVE,
+		{
+			constraint_id: constraint.constraint_id,
+			active: constraint.physics.active,
+		}
+	);
+}
+
+function setConstraintFactor( constraint ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_FACTOR,
+		{
+			constraint_id: constraint.constraint_id,
+			factor: constraint.physics.factor,
+		}
+	);
+}
+
+function setConstraintBreakingThreshold( constraint ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_BREAKING_THRESHOLD,
+		{
+			constraint_id: constraint.constraint_id,
+			breaking_threshold: constraint.physics.breaking_threshold,
+		}
+	);
+}
+
+function setConstraintLimit( constraint ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_LIMIT,
+		{
+			constraint_id: constraint.constraint_id,
+			enabled: constraint.physics.limit.enabled,
+			lower: constraint.physics.limit.lower,
+			upper: constraint.physics.limit.upper,
+		}
+	);
+}
+
+function setConstraintMotor( constraint ) {
+	this.physijs.postMessage(
+		MESSAGE_TYPES.SET_CONSTRAINT_MOTOR,
+		{
+			constraint_id: constraint.constraint_id,
+			enabled: constraint.physics.motor.enabled,
+			torque: constraint.physics.motor.torque,
+			max_speed: constraint.physics.motor.max_speed,
+		}
+	);
 }
 
 function setRigidBodyMass( physics_object ) {

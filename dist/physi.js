@@ -19,7 +19,14 @@
     		 * element [1] is the number of collisions, each collision is represented by:
     		 * [object_a_id, object_b_id, world_contact_point{xyz}, contact_normal{xyz}, linear_velocity_delta{xyz}, angular_velocity_delta{xyz}, penetration_depth]
     		 */
-    		COLLISIONS: 1
+    		COLLISIONS: 1,
+
+    		/**
+    		 * report containing information about existing constraints
+    		 * element [1] is how many constraints are being reported
+    		 * elements 2...n elements are the constraints' data
+    		 */
+    		CONSTRAINTS: 2
     	},
 
     	/**
@@ -71,6 +78,42 @@
     	 * body_id Integer unique id of the body
     	 */
     	REMOVE_RIGIDBODY: 'REMOVE_RIGIDBODY',
+
+    	/**
+    	 * sets a constraint's active flag
+    	 * constraint_id Integer unique id of the constraint
+    	 */
+    	SET_CONSTRAINT_ACTIVE: 'SET_CONSTRAINT_ACTIVE',
+
+    	/**
+    	 * sets a constraint's factor value
+    	 * constraint_id Integer unique id of the constraint
+    	 */
+    	SET_CONSTRAINT_FACTOR: 'SET_CONSTRAINT_FACTOR',
+
+    	/**
+    	 * sets a constraint's breaking threshold value
+    	 * constraint_id Integer unique id of the constraint
+    	 */
+    	SET_CONSTRAINT_BREAKING_THRESHOLD: 'SET_CONSTRAINT_BREAKING_THRESHOLD',
+
+    	/**
+    	 * sets a constraint's limit
+    	 * constraint_id Integer unique id of the constraint
+    	 * enabled Boolean whether or not the constraint is limited
+    	 * lower Float lower end of the constraint
+    	 * upper Float upper end of the constraint
+    	 */
+    	SET_CONSTRAINT_LIMIT: 'SET_CONSTRAINT_LIMIT',
+
+    	/**
+    	 * sets a constraint's motor
+    	 * constraint_id Integer unique id of the constraint
+    	 * enabled Boolean whether or not the constraint motor is enabled
+    	 * torque Float motor's torque
+    	 * max_speed Float motor's maximum speed
+    	 */
+    	SET_CONSTRAINT_MOTOR: 'SET_CONSTRAINT_MOTOR',
 
     	/**
     	 * sets the specified rigid body's mass
@@ -354,6 +397,60 @@
     	);
     }
 
+    function setConstraintMotor( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_MOTOR,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			enabled: constraint.physics.motor.enabled,
+    			torque: constraint.physics.motor.torque,
+    			max_speed: constraint.physics.motor.max_speed,
+    		}
+    	);
+    }
+
+    function setConstraintLimit( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_LIMIT,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			enabled: constraint.physics.limit.enabled,
+    			lower: constraint.physics.limit.lower,
+    			upper: constraint.physics.limit.upper,
+    		}
+    	);
+    }
+
+    function setConstraintBreakingThreshold( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_BREAKING_THRESHOLD,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			breaking_threshold: constraint.physics.breaking_threshold,
+    		}
+    	);
+    }
+
+    function setConstraintFactor( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_FACTOR,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			factor: constraint.physics.factor,
+    		}
+    	);
+    }
+
+    function setConstraintActive( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_ACTIVE,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			active: constraint.physics.active,
+    		}
+    	);
+    }
+
     function postReport( report ) {
     	this.physijs.worker.postMessage( report, [report.buffer] );
     }
@@ -363,6 +460,25 @@
     		type: type,
     		parameters: parameters
     	});
+    }
+
+    function processConstraintsReport( report ) {
+    	var constraints_count = report[1];
+
+    	for ( var i = 0; i < constraints_count; i += 5 ) {
+    		var idx = i + 2;
+
+    		var constraint = this.physijs.id_constraint_map[report[idx]];
+
+    		if ( constraint == null ) {
+    			continue;
+    		}
+
+    		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
+    		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+    	}
+
+    	this.physijs.postReport( report );
     }
 
     var _tmp_vector3_4 = new THREE.Vector3();
@@ -504,6 +620,11 @@
     	);
 
     	this.physijs.handleMessage(
+    		MESSAGE_TYPES.REPORTS.CONSTRAINTS,
+    		this.physijs.processConstraintsReport
+    	);
+
+    	this.physijs.handleMessage(
     		MESSAGE_TYPES.RAYTRACE_RESULTS,
     		this.physijs.processRaytraceResults
     	);
@@ -543,8 +664,14 @@
     		initializeWorker: initializeWorker.bind( this ),
     		processWorldReport: processWorldReport.bind( this ),
     		processCollisionReport: processCollisionReport.bind( this ),
+    		processConstraintsReport: processConstraintsReport.bind( this ),
     		postMessage: postMessage.bind( this ),
     		postReport: postReport.bind( this ),
+    		setConstraintActive: setConstraintActive.bind( this ),
+    		setConstraintFactor: setConstraintFactor.bind( this ),
+    		setConstraintBreakingThreshold: setConstraintBreakingThreshold.bind( this ),
+    		setConstraintLimit: setConstraintLimit.bind( this ),
+    		setConstraintMotor: setConstraintMotor.bind( this ),
     		setRigidBodyMass: setRigidBodyMass.bind( this ),
     		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
     		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
@@ -771,6 +898,39 @@
     function Constraint() {
         this.constraint_id = getUniqueId();
         this.scene = null;
+
+    	this.physics = {
+    		active: true,
+    		factor: 1,
+    		breaking_threshold: 0,
+    		last_impulse: new THREE.Vector3(),
+    		limit: {
+    			enabled: false,
+    			lower: null,
+    			upper: null
+    		},
+    		motor: {
+    			enabled: false,
+    			torque: null,
+    			max_speed: null
+    		},
+
+    		_: {
+    			active: true,
+    			factor: 1,
+    			breaking_threshold: 0,
+    			limit: {
+    				enabled: false,
+    				lower: null,
+    				upper: null
+    			},
+    			motor: {
+    				enabled: false,
+    				torque: null,
+    				max_speed: null
+    			},
+    		}
+    	};
     }
 
     Scene.prototype.add = function( object ) {
@@ -869,6 +1029,58 @@
     				this.physijs.applyForce( rigid_body, rigid_body.physics._.applied_forces[ j ], rigid_body.physics._.applied_forces[ j + 1 ] );
     			}
     			rigid_body.physics._.applied_forces.length = 0;
+    		}
+    	}
+
+    	// check if any constraints have been changed
+    	var constraint_ids = Object.keys( this.physijs.id_constraint_map );
+    	for ( i = 0; i < constraint_ids.length; i++ ) {
+    		var constraint_id = constraint_ids[ i ];
+    		var constraint = this.physijs.id_constraint_map[ constraint_id ];
+    		if ( constraint == null ) {
+    			continue;
+    		}
+
+    		// check active
+    		if (constraint.physics.active !== constraint.physics._.active) {
+    			this.physijs.setConstraintActive( constraint );
+    			constraint.physics._.active = constraint.physics.active;
+    		}
+
+    		// check factor
+    		if (constraint.physics.factor !== constraint.physics._.factor) {
+    			this.physijs.setConstraintFactor( constraint );
+    			constraint.physics._.factor = constraint.physics.factor;
+    		}
+
+    		// check breaking threshold
+    		if (constraint.physics.breaking_threshold !== constraint.physics._.breaking_threshold) {
+    			this.physijs.setConstraintBreakingThreshold( constraint );
+    			constraint.physics._.breaking_threshold = constraint.physics.breaking_threshold;
+    		}
+
+    		// check limit
+    		if (
+    			constraint.physics.limit.enabled !== constraint.physics._.limit.enabled ||
+    			constraint.physics.limit.lower !== constraint.physics._.limit.lower ||
+    			constraint.physics.limit.upper !== constraint.physics._.limit.upper
+    		) {
+    			this.physijs.setConstraintLimit( constraint );
+    			constraint.physics._.limit.enabled = constraint.physics.limit.enabled;
+    			constraint.physics._.limit.lower = constraint.physics.limit.lower;
+    			constraint.physics._.limit.upper = constraint.physics.limit.upper;
+    		}
+
+    		// check motor
+    		if (
+    			constraint.physics.motor.enabled !== constraint.physics._.motor.enabled ||
+    			constraint.physics.motor.torque !== constraint.physics._.motor.torque ||
+    			constraint.physics.motor.max_speed !== constraint.physics._.motor.max_speed
+    		) {
+    			this.physijs.setConstraintMotor( constraint );
+    			constraint.physics._.motor.enabled = constraint.physics.motor.enabled;
+    			constraint.physics._.motor.torque = constraint.physics.motor.torque;
+    			constraint.physics._.motor.max_speed = constraint.physics.motor.max_speed;
     		}
     	}
 
@@ -1057,23 +1269,6 @@
         this.point_a = point_a;
         this.body_b = body_b;
         this.point_b = point_b;
-
-        this.physics = {
-            active: true,
-            factor: 1,
-            breaking_threshold: 0,
-            last_impulse: new THREE.Vector3(),
-            limit: {
-                enabled: false,
-                lower: null,
-                upper: null
-            },
-            motor: {
-                enabled: false,
-                torque: null,
-                max_speed: null
-            }
-        };
     }
 
     HingeConstraint.prototype = Object.create( Constraint.prototype );
