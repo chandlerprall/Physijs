@@ -74,6 +74,12 @@
     	APPLY_FORCE: 'APPLY_FORCE',
 
     	/**
+    	 * removes a constraint from the world
+    	 * constraint_id Integer unique id of the constraint
+    	 */
+    	REMOVE_COSNTRAINT: 'REMOVE_COSNTRAINT',
+
+    	/**
     	 * removes a ghost body from the world
     	 * body_id Integer unique id of the body
     	 */
@@ -782,6 +788,16 @@
     			_tmp_vector3_1.set( parameters.force.x, parameters.force.y, parameters.force.z );
     			_tmp_vector3_2.set( parameters.local_location.x, parameters.local_location.y, parameters.local_location.z );
     			body.applyForceAtLocalPoint( _tmp_vector3_1, _tmp_vector3_2 );
+    		}
+    	);
+
+    	handleMessage(
+    		MESSAGE_TYPES.REMOVE_CONSTRAINT,
+    		function( parameters ) {
+    			var constraint_id = parameters.constraint_id;
+    			var constraint = id_constraint_map[ constraint_id ];
+    			world.removeConstraint( constraint );
+    			delete id_constraint_map[ constraint_id ];
     		}
     	);
 

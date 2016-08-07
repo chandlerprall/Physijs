@@ -68,6 +68,12 @@
     	APPLY_FORCE: 'APPLY_FORCE',
 
     	/**
+    	 * removes a constraint from the world
+    	 * constraint_id Integer unique id of the constraint
+    	 */
+    	REMOVE_COSNTRAINT: 'REMOVE_COSNTRAINT',
+
+    	/**
     	 * removes a ghost body from the world
     	 * body_id Integer unique id of the body
     	 */
@@ -966,6 +972,12 @@
     };
 
     Scene.prototype.remove = function( object ) {
+    	if ( object instanceof Constraint ) {
+    		delete this.physijs.id_constraint_map[ object.constraint_id ];
+    		this.physijs.postMessage( MESSAGE_TYPES.REMOVE_CONSTRAINT, { constraint_id: object.constraint_id } );
+    		return;
+    	}
+
     	THREE.Scene.prototype.remove.call( this, object );
 
     	if ( object.physics instanceof _PhysicsObject ) {

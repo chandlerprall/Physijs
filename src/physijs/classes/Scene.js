@@ -111,6 +111,12 @@ Scene.prototype.add = function( object ) {
 };
 
 Scene.prototype.remove = function( object ) {
+	if ( object instanceof Constraint ) {
+		delete this.physijs.id_constraint_map[ object.constraint_id ];
+		this.physijs.postMessage( MESSAGE_TYPES.REMOVE_CONSTRAINT, { constraint_id: object.constraint_id } );
+		return;
+	}
+
 	THREE.Scene.prototype.remove.call( this, object );
 
 	if ( object.physics instanceof _PhysicsObject ) {

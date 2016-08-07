@@ -62,6 +62,12 @@ export default {
 	APPLY_FORCE: 'APPLY_FORCE',
 
 	/**
+	 * removes a constraint from the world
+	 * constraint_id Integer unique id of the constraint
+	 */
+	REMOVE_COSNTRAINT: 'REMOVE_COSNTRAINT',
+
+	/**
 	 * removes a ghost body from the world
 	 * body_id Integer unique id of the body
 	 */

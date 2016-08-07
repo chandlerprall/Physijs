@@ -484,6 +484,16 @@ function getShapeForDefinition( shape_definition ) {
 	);
 
 	handleMessage(
+		MESSAGE_TYPES.REMOVE_CONSTRAINT,
+		function( parameters ) {
+			var constraint_id = parameters.constraint_id;
+			var constraint = id_constraint_map[ constraint_id ];
+			world.removeConstraint( constraint );
+			delete id_constraint_map[ constraint_id ];
+		}
+	);
+
+	handleMessage(
 		MESSAGE_TYPES.REMOVE_GHOSTBODY,
 		function( parameters ) {
 			var body_id = parameters.body_id;
