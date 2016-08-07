@@ -309,6 +309,10 @@ function getShapeForDefinition( shape_definition ) {
 			if ( parameters.hasOwnProperty('gravity') ) {
 				world.gravity.set( parameters.gravity.x, parameters.gravity.y, parameters.gravity.z );
 			}
+
+			if ( parameters.hasOwnProperty('solver_max_iterations') ) {
+				world.solver.max_iterations = parameters.solver_max_iterations;
+			}
 		}
 	);
 
@@ -726,8 +730,8 @@ function getShapeForDefinition( shape_definition ) {
 					id_body_map[ parameters.body_a_id ],
 					new Goblin.Vector3( parameters.hinge_axis.x, parameters.hinge_axis.y, parameters.hinge_axis.z ),
 					new Goblin.Vector3( parameters.point_a.x, parameters.point_a.y, parameters.point_a.z ),
-					parameters.object_b_id == null ? null : id_body_map[parameters.body_b_id],
-					parameters.object_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
+					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
+					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
 				);
 
 				constraint.active = parameters.active;

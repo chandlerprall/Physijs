@@ -33,6 +33,7 @@
     	 * initializes the physics world
     	 * [broadphase] String either 'sap' or 'naive' [default 'sap']
     	 * [gravity] Object with float properties `x`, `y`, `z` [default {x:0, y:-9.8, z:0} ]
+    	 * [solver_max_iterations] Integer maximum iterations for the constraint solver [default 10]
     	 */
     	INITIALIZE: 'INITIALIZE',
 
@@ -1119,7 +1120,7 @@
 
     /*
     IF
-    geometry is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
+    first  is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
     ELSE
     	the first argument is assumed to be an object Three.js can understand AND
     	IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape

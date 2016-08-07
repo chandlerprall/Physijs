@@ -2,7 +2,7 @@ import {getUniqueId} from './util/UniqueId';
 
 /*
 IF
-geometry is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
+first  is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
 ELSE
 	the first argument is assumed to be an object Three.js can understand AND
 	IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape

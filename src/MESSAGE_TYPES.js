@@ -27,6 +27,7 @@ export default {
 	 * initializes the physics world
 	 * [broadphase] String either 'sap' or 'naive' [default 'sap']
 	 * [gravity] Object with float properties `x`, `y`, `z` [default {x:0, y:-9.8, z:0} ]
+	 * [solver_max_iterations] Integer maximum iterations for the constraint solver [default 10]
 	 */
 	INITIALIZE: 'INITIALIZE',
 

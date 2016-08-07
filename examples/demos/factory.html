@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Ballpit | Physijs</title>
+		<script type="text/javascript" src="../lib/three.min.js"></script>
+		<script type="text/javascript" src="../lib/OrbitControls.js"></script>
+		<script type="text/javascript" src="../..//dist/physi.js"></script>
+		<link rel="stylesheet" type="text/css" href="../styles.css"/>
+	</head>
+	<body>
+		<script type="text/javascript">
+			var renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setClearColor( new THREE.Color( 0xffffff ) );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+			document.body.appendChild( renderer.domElement );
+
+			var scene = new physijs.Scene( '../../dist/physijs-worker.js' );
+
+			var camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 0.1, 100 );
+			camera.position.set( -8, 7, 0 );
+			var controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.center.set( 0, 3, 3 );
+
+			var textureLoader = new THREE.TextureLoader();
+			function loadRepeatingTexture( url, repeat ) {
+				return textureLoader.load(
+					url,
+					function( texture ) {
+						texture.anisotropy = renderer.getMaxAnisotropy();
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat = repeat;
+					}
+				);
+			}
+
+			// light
+			var ambient = new THREE.AmbientLight( 0x444444 );
+			scene.add( ambient );
+
+			var overhead_light = new THREE.DirectionalLight( 0xbbbbbb );
+			overhead_light.position.set( 10, 30, 20 );
+			overhead_light.castShadow = true;
+			overhead_light.shadow.bias = -0.01;
+			overhead_light.shadow.mapSize.set( 1024, 1024 );
+			overhead_light.shadow.camera.left = overhead_light.shadow.camera.top = -20;
+			overhead_light.shadow.camera.right = overhead_light.shadow.camera.bottom = 20;
+			overhead_light.shadow.camera.near = 10;
+			overhead_light.shadow.camera.far = 50;
+			scene.add( overhead_light );
+
+			// floor
+			var floor_material = new THREE.MeshPhongMaterial({
+				map: loadRepeatingTexture( '../textures/cement/diffuse.jpg', new THREE.Vector2( 3, 3 ) ),
+				normalMap: loadRepeatingTexture( '../textures/cement/normal.png', new THREE.Vector2( 3, 3 ) ),
+				normalScale: new THREE.Vector2( 5, 5 ),
+				specularMap: loadRepeatingTexture( '../textures/cement/specular.png', new THREE.Vector2( 3, 3 ) )
+			});
+			var floor = new physijs.Box( new THREE.BoxGeometry( 28, 0.1, 32 ), floor_material, { restitution: 0.1 } );
+			floor.receiveShadow = true;
+			scene.add( floor );
+
+			var CONVEYOR_SPEED = 2;
+
+			var SLAT_WIDTH = 0.9;
+			var SLAT_GAP = 0;
+			var SLAT_FACTOR = 0.7;
+			var SLAT_OFFSET = SLAT_WIDTH + SLAT_GAP;
+			var SLAT_OFFSET_HALF = SLAT_OFFSET * 0.5;
+			var slat_geometry = new THREE.BoxGeometry( 2, 0.02, SLAT_WIDTH );
+			var slat_material = new THREE.MeshPhongMaterial({
+				map: loadRepeatingTexture( '../textures/copper/diffuse.jpg', new THREE.Vector2( 1, 1 ) ),
+				normalMap: loadRepeatingTexture( '../textures/copper/normal.png', new THREE.Vector2( 1, 1 ) ),
+				normalScale: new THREE.Vector2( 5, 5 ),
+				specularMap: loadRepeatingTexture( '../textures/copper/specular.png', new THREE.Vector2( 1, 1 ) )
+			});
+			var slat_descriptor = { mass: 1, friction: 10 };
+			var slat_hinge_axis = new THREE.Vector3( 1, 0, 0 );
+
+			var roller_geometry = new THREE.CylinderGeometry( SLAT_WIDTH * 1.5, SLAT_WIDTH * 1.5, 2.6, 16, 1, false );
+			var roller_descriptor = { mass: 100, friction: 1 };
+			function createSlat( position, orientation ) {
+				var slat = new physijs.Box( slat_geometry, slat_material, slat_descriptor );
+				slat.physics.angular_factor.copy( slat_hinge_axis ); // keep the slats on the conveyor
+				slat.receiveShadow = slat.castShadow = true;
+				slat.position.copy( position );
+				slat.quaternion.copy( orientation );
+				scene.add( slat );
+				return slat;
+			}
+
+			var QUATERNION_RIGHT_ANGLE_X = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeRotationX( Math.PI / 2 ));
+			var QUATERNION_RIGHT_ANGLE_Z = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeRotationZ( Math.PI / 2 ));
+			function createConveyor( belt_length, position, orientation ) {
+				// CREATE BELT
+				var slat, constraint;
+				var bottom_belt = [];
+				var top_belt = [];
+				for ( var i = 0; i < belt_length; i++ ) {
+					slat = createSlat( new THREE.Vector3( 0, 0, SLAT_OFFSET * i ).add( position ), orientation );
+					bottom_belt.push( slat );
+
+					if ( bottom_belt.length > 1 ) {
+						constraint = new physijs.HingeConstraint(
+							bottom_belt[bottom_belt.length - 1],
+							slat_hinge_axis,
+							new THREE.Vector3( 0, 0, -SLAT_OFFSET_HALF ),
+							// new THREE.Vector3( 0, 0, -SLAT_WIDTH * 0.5 ),
+							bottom_belt[bottom_belt.length - 2],
+							new THREE.Vector3( 0, 0, SLAT_OFFSET_HALF )
+							// new THREE.Vector3( 0, 0, SLAT_WIDTH * 0.5 )
+						);
+						constraint.physics.factor = SLAT_FACTOR;
+						scene.add( constraint );
+					}
+				}
+
+				for ( i = 0; i < belt_length; i++ ) {
+					slat = createSlat( new THREE.Vector3( 0, SLAT_OFFSET, SLAT_OFFSET * i ).add( position ), orientation );
+					top_belt.push( slat );
+
+					if ( top_belt.length > 1 ) {
+						constraint = new physijs.HingeConstraint(
+							top_belt[top_belt.length - 1],
+							slat_hinge_axis,
+							new THREE.Vector3(0, 0, -SLAT_OFFSET_HALF),
+							top_belt[top_belt.length - 2],
+							new THREE.Vector3(0, 0, SLAT_OFFSET_HALF)
+						);
+						constraint.physics.factor = SLAT_FACTOR;
+						scene.add( constraint );
+					}
+				}
+
+				// end slat 1
+				slat = createSlat( new THREE.Vector3( 0, SLAT_OFFSET_HALF, SLAT_OFFSET * (i-1) + SLAT_OFFSET_HALF + SLAT_GAP ).add( position ), new THREE.Quaternion().copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_X ) );
+				constraint = new physijs.HingeConstraint(
+					slat,
+					slat_hinge_axis,
+					new THREE.Vector3( 0, 0, SLAT_OFFSET_HALF ),
+					bottom_belt[belt_length - 1],
+					new THREE.Vector3( 0, 0, SLAT_OFFSET_HALF )
+				);
+				constraint.physics.factor = SLAT_FACTOR;
+				scene.add( constraint );
+				constraint = new physijs.HingeConstraint(
+					slat,
+					slat_hinge_axis,
+					new THREE.Vector3( 0, 0, -SLAT_OFFSET_HALF ),
+					top_belt[belt_length - 1],
+					new THREE.Vector3( 0, 0, SLAT_OFFSET_HALF )
+				);
+				constraint.physics.factor = SLAT_FACTOR;
+				scene.add( constraint );
+
+				// end slat 2
+				slat = createSlat( new THREE.Vector3( 0, SLAT_OFFSET_HALF, -SLAT_OFFSET_HALF - SLAT_GAP ).add( position ), new THREE.Quaternion().copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_X ) );
+				constraint = new physijs.HingeConstraint(
+					slat,
+					slat_hinge_axis,
+					new THREE.Vector3( 0, 0, SLAT_OFFSET_HALF ),
+					bottom_belt[0],
+					new THREE.Vector3( 0, 0, -SLAT_OFFSET_HALF )
+				);
+				constraint.physics.factor = SLAT_FACTOR;
+				scene.add( constraint );
+				constraint = new physijs.HingeConstraint(
+					slat,
+					slat_hinge_axis,
+					new THREE.Vector3( 0, 0, -SLAT_OFFSET_HALF ),
+					top_belt[0],
+					new THREE.Vector3( 0, 0, -SLAT_OFFSET_HALF )
+				);
+				constraint.physics.factor = SLAT_FACTOR;
+				scene.add( constraint );
+
+				// CREATE ROLLERS
+				var ROLLER_RATIO = 4;
+				for ( i = 0; i < belt_length / ROLLER_RATIO; i++ ) {
+					var roller = new physijs.Cylinder( roller_geometry, slat_material, roller_descriptor );
+					roller.position.set( 0, SLAT_OFFSET * 0.5, SLAT_OFFSET * i * ROLLER_RATIO ).add( position );
+					roller.quaternion.copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_Z );
+					scene.add( roller );
+					constraint = new physijs.HingeConstraint( roller, new THREE.Vector3( 0, 1, 0 ), new THREE.Vector3() );
+					constraint.setMotor( 1000, CONVEYOR_SPEED );
+					scene.add( constraint );
+				}
+				/*var roller_one = new physijs.Cylinder( roller_geometry, slat_material, roller_descriptor );
+				roller_one.position.set( 0, SLAT_OFFSET * 0.5, 0 ).add( position );
+				roller_one.quaternion.copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_Z );
+				scene.add( roller_one );
+				constraint = new physijs.HingeConstraint( roller_one, new THREE.Vector3( 0, 1, 0 ), new THREE.Vector3() );
+				constraint.setMotor( 1000, CONVEYOR_SPEED );
+				scene.add( constraint );
+
+				var roller_three = new physijs.Cylinder( roller_geometry, slat_material, roller_descriptor );
+				roller_three.position.set( 0, SLAT_OFFSET * 0.5, ( ( belt_length - 1 ) / 2 ) * SLAT_OFFSET ).add( position );
+				roller_three.quaternion.copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_Z );
+				scene.add( roller_three );
+				constraint = new physijs.HingeConstraint( roller_three, new THREE.Vector3( 0, 1, 0 ), new THREE.Vector3() );
+				constraint.setMotor( 1000, CONVEYOR_SPEED );
+				scene.add( constraint );
+
+				var roller_two = new physijs.Cylinder( roller_geometry, slat_material, roller_descriptor );
+				roller_two.position.set( 0, SLAT_OFFSET * 0.5, ( belt_length - 1 ) * SLAT_OFFSET ).add( position );
+				roller_two.quaternion.copy( orientation ).multiply( QUATERNION_RIGHT_ANGLE_Z );
+				scene.add( roller_two );
+				constraint = new physijs.HingeConstraint( roller_two, new THREE.Vector3( 0, 1, 0 ), new THREE.Vector3() );
+				constraint.setMotor( 1000, CONVEYOR_SPEED );
+				scene.add( constraint );*/
+			}
+			createConveyor( 16, new THREE.Vector3( 0, 3, 0 ), new THREE.Quaternion( 0, 0, 0, 1 ) );
+
+			var physics_framerate = 1000 / 60;
+			function onStep(step_index) {
+				/*if (step_index % 7 === 0) {
+					makeBall();
+				}*/
+
+				controls.update();
+				renderer.render( scene, camera );
+				setTimeout( scene.step.bind( scene, physics_framerate / 1000, undefined, onStep ), physics_framerate );
+			}
+			scene.step( physics_framerate / 1000, undefined, onStep );
+
+		</script>
+	</body>
+</html>
