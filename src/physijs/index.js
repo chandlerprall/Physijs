@@ -10,6 +10,8 @@ import TriangleMesh from './classes/shapes/TriangleMesh';
 
 import HingeConstraint from './classes/constraints/HingeConstraint';
 import PointConstraint from './classes/constraints/PointConstraint';
+import SliderConstraint from './classes/constraints/SliderConstraint';
+import WeldConstraint from './classes/constraints/WeldConstraint';
 
 import CompoundObject from './classes/CompoundObject';
 import Scene from './classes/Scene';
@@ -26,6 +28,8 @@ export default {
 
 	HingeConstraint: HingeConstraint,
 	PointConstraint: PointConstraint,
+	SliderConstraint: SliderConstraint,
+	WeldConstraint: WeldConstraint,
 
 	CompoundObject: CompoundObject,
 	Scene: Scene

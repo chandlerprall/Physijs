@@ -906,7 +906,6 @@
 
     function Constraint() {
         this.constraint_id = getUniqueId();
-        this.scene = null;
 
     	this.physics = {
     		active: true,
@@ -1280,7 +1279,7 @@
     }
 
 
-    function PointConstraint( body_a, point_a, body_b, point_b ) {
+    function WeldConstraint( body_a, point_a, body_b, point_b ) {
         Constraint.call( this );
 
         this.body_a = body_a;
@@ -1289,8 +1288,8 @@
         this.point_b = point_b;
     }
 
-    PointConstraint.prototype = Object.create( Constraint.prototype );
-    PointConstraint.prototype.constructor = PointConstraint;
+    WeldConstraint.prototype = Object.create( Constraint.prototype );
+    WeldConstraint.prototype.constructor = WeldConstraint;
 
     var CONSTRAINT_TYPES = {
         /**
@@ -1325,7 +1324,84 @@
     	 * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
     	 */
         POINT: 'POINT',
+
+    	/**
+    	 * constraint_type String type of constraint
+    	 * constraint_id Number id of the constraint
+    	 * body_a_id Number id of body_a
+    	 * hinge_a Object axis in body_a the constraint allows linear translation {x:x, y:y, z:z}
+    	 * body_b_id [optional] Number id of body_b
+    	 * active Boolean whether or not the constraint is enabled
+    	 * factor: Number factor applied to constraint, 0-1
+    	 * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
+    	 */
+    	SLIDER: 'SLIDER',
+
+    	/**
+    	 * constraint_type String type of constraint
+    	 * constraint_id Number id of the constraint
+    	 * body_a_id Number id of body_a
+    	 * point_a Object point in body_a the constraint is welded at {x:x, y:y, z:z}
+    	 * body_b_id [optional] Number id of body_b
+    	 * point_b [optional] Object point in body_b the constraint is welded at {x:x, y:y, z:z}
+    	 * active Boolean whether or not the constraint is enabled
+    	 * factor: Number factor applied to constraint, 0-1
+    	 * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
+    	 */
+    	WELD: 'WELD',
     }
+
+    WeldConstraint.prototype.getConstraintDefinition = function() {
+        return {
+            constraint_type: CONSTRAINT_TYPES.WELD,
+            constraint_id: this.constraint_id,
+            body_a_id: this.body_a.physics._.id,
+            point_a: { x: this.point_a.x, y: this.point_a.y, z: this.point_a.z },
+            body_b_id: this.body_b == null ? null : this.body_b.physics._.id,
+            point_b: this.body_b == null ? null : { x: this.point_b.x, y: this.point_b.y, z: this.point_b.z },
+
+            active: this.physics.active,
+            factor: this.physics.factor,
+            breaking_threshold: this.physics.breaking_threshold,
+        };
+    };
+
+    function SliderConstraint( body_a, axis_a, body_b ) {
+        Constraint.call( this );
+
+        this.body_a = body_a;
+        this.axis_a = axis_a;
+        this.body_b = body_b;
+    }
+
+    SliderConstraint.prototype = Object.create( Constraint.prototype );
+    SliderConstraint.prototype.constructor = SliderConstraint;
+
+    SliderConstraint.prototype.getConstraintDefinition = function() {
+        return {
+            constraint_type: CONSTRAINT_TYPES.SLIDER,
+            constraint_id: this.constraint_id,
+            body_a_id: this.body_a.physics._.id,
+    		axis_a: { x: this.axis_a.x, y: this.axis_a.y, z: this.axis_a.z },
+            body_b_id: this.body_b == null ? null : this.body_b.physics._.id,
+
+            active: this.physics.active,
+            factor: this.physics.factor,
+            breaking_threshold: this.physics.breaking_threshold,
+        };
+    };
+
+    function PointConstraint( body_a, point_a, body_b, point_b ) {
+        Constraint.call( this );
+
+        this.body_a = body_a;
+        this.point_a = point_a;
+        this.body_b = body_b;
+        this.point_b = point_b;
+    }
+
+    PointConstraint.prototype = Object.create( Constraint.prototype );
+    PointConstraint.prototype.constructor = PointConstraint;
 
     PointConstraint.prototype.getConstraintDefinition = function() {
         return {
@@ -1522,6 +1598,8 @@
 
     	HingeConstraint: HingeConstraint,
     	PointConstraint: PointConstraint,
+    	SliderConstraint: SliderConstraint,
+    	WeldConstraint: WeldConstraint,
 
     	CompoundObject: CompoundObject,
     	Scene: Scene

@@ -740,6 +740,19 @@ function getShapeForDefinition( shape_definition ) {
 					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
 					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
 				);
+			} else if ( parameters.constraint_type === CONSTRAINT_TYPES.SLIDER ) {
+				constraint = new Goblin.SliderConstraint(
+					id_body_map[ parameters.body_a_id ],
+					new Goblin.Vector3( parameters.axis_a.x, parameters.axis_a.y, parameters.axis_a.z ),
+					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id]
+				);
+			} else if ( parameters.constraint_type === CONSTRAINT_TYPES.WELD ) {
+				constraint = new Goblin.WeldConstraint(
+					id_body_map[ parameters.body_a_id ],
+					new Goblin.Vector3( parameters.point_a.x, parameters.point_a.y, parameters.point_a.z ),
+					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
+					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
+				);
 			} else {
 				// don't add this constraint to the world of the id maps
 				return;
