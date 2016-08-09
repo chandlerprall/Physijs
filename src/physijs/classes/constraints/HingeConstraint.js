@@ -40,10 +40,6 @@ HingeConstraint.prototype.getConstraintDefinition = function() {
     };
 };
 
-HingeConstraint.prototype.setActive = function( active ) {
-    this.physics.active = active;
-};
-
 HingeConstraint.prototype.setLimit = function( lower, upper ) {
     this.physics.limit.enabled = lower != null || upper != null;
     this.physics.limit.lower = lower;

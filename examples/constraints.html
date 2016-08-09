@@ -63,25 +63,47 @@
 			// build plank
 			var plank_material = new THREE.MeshPhongMaterial({
 				map: loadRepeatingTexture( 'textures/brick/diffuse.jpg', new THREE.Vector2( 2, 1 ) ),
-				normalMap: loadRepeatingTexture( 'textures/brick/normal.png', new THREE.Vector2( 3, 3 ) ),
+				normalMap: loadRepeatingTexture( 'textures/brick/normal.png', new THREE.Vector2( 2, 1 ) ),
 				normalScale: new THREE.Vector2( 5, 5 ),
-				specularMap: loadRepeatingTexture( 'textures/brick/specular.png', new THREE.Vector2( 3, 3 ) )
+				specularMap: loadRepeatingTexture( 'textures/brick/specular.png', new THREE.Vector2( 2, 1 ) )
 			});
 			var plank = new physijs.Box( new THREE.BoxGeometry( 4, 0.3, 8 ), plank_material, { mass: 10, restitution: 0.1 } );
 			plank.receiveShadow = plank.castShadow = true;
-			plank.position.set( -5, 3, 0 );
+			plank.position.set( -6, 3, 0 );
 			scene.add( plank );
 
-			var plank_constraint = new physijs.HingeConstraint(
+			var hinge_constraint = new physijs.HingeConstraint(
 				plank,
-				new THREE.Vector3( -1, 0, 0 ).normalize(), // hinge axis
+				new THREE.Vector3( -1, 0, 0 ), // hinge axis
 				new THREE.Vector3( 0, 0, -1 ) // point in plank rotating around hinge
 			);
-			plank_constraint.setLimit( -Math.PI / 8, 0 ); // lower limit, upper limit
+			hinge_constraint.setLimit( -Math.PI / 8, 0 ); // lower limit, upper limit
+			hinge_constraint.setMotor( 100, 5 ); // torque, max_speed
+			scene.add( hinge_constraint );
 
-			plank_constraint.setMotor( 100, 5 ); // torque, max_speed
+		// POINT
+			var point_material = new THREE.MeshPhongMaterial({
+				map: loadRepeatingTexture( 'textures/brick/diffuse.jpg', new THREE.Vector2( 1, 1 ) ),
+				normalMap: loadRepeatingTexture( 'textures/brick/normal.png', new THREE.Vector2( 1, 1 ) ),
+				normalScale: new THREE.Vector2( 5, 5 ),
+				specularMap: loadRepeatingTexture( 'textures/brick/specular.png', new THREE.Vector2( 1, 1 ) )
+			});
+			var point_top = new physijs.Sphere( new THREE.SphereGeometry( 1, 16, 16 ), point_material );
+			point_top.position.set( 0, 4, 0 );
+			point_top.receiveShadow = point_top.castShadow = true;
+			scene.add( point_top );
+			var point_bottom = new physijs.Box( new THREE.BoxGeometry( 1, 1, 1 ), point_material, { mass: 1 } );
+			point_bottom.receiveShadow = point_bottom.castShadow = true;
+			point_bottom.position.set( 0.5, 2.5, 0.5 );
+			scene.add( point_bottom );
 
-			scene.add( plank_constraint );
+			var point_constraint = new physijs.PointConstraint(
+				point_top,
+				new THREE.Vector3( 0, -1, 0 ), // point sphere
+				point_bottom,
+				new THREE.Vector3( -0.5, 0.5, -0.5 ) // point in box
+			);
+			scene.add( point_constraint );
 
 			// balls
 			var ball_geometry = new THREE.SphereGeometry( 0.5, 24, 24 );
@@ -97,7 +119,7 @@
 			function makeBall() {
 				var ball = new physijs.Sphere( ball_geometry, ball_materials[ball_index++], { mass: 2, friction: 0.1, restitution: 0.3 } );
 				ball.receiveShadow = ball.castShadow = true;
-				ball.position.set( -5, 5, 0 );
+				ball.position.set( -6, 5, 0 );
 				ball.physics.linear_velocity.set( 0, -5, 0 );
 				scene.add( ball );
 

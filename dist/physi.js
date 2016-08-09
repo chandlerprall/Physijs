@@ -472,8 +472,8 @@
     function processConstraintsReport( report ) {
     	var constraints_count = report[1];
 
-    	for ( var i = 0; i < constraints_count; i += 5 ) {
-    		var idx = i + 2;
+    	for ( var i = 0; i < constraints_count; i++ ) {
+    		var idx = 2 + i * 5;
 
     		var constraint = this.physijs.id_constraint_map[report[idx]];
 
@@ -483,6 +483,8 @@
 
     		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
     		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+
+    		idx += 5;
     	}
 
     	this.physijs.postReport( report );
@@ -505,8 +507,8 @@
     function processCollisionReport( report ) {
     	var new_contacts = report[1];
 
-    	for ( var i = 0; i < new_contacts; i += 16 ) {
-    		var idx = i + 2;
+    	for ( var i = 0; i < new_contacts; i++ ) {
+    		var idx = 2 + i * 16;
 
     		var contactType = report[idx+0];
     		if (contactType === CONTACT_TYPES.START) {
@@ -940,6 +942,10 @@
     	};
     }
 
+    Constraint.prototype.setActive = function( active ) {
+    	this.physics.active = active;
+    };
+
     Scene.prototype.add = function( object ) {
     	if ( object instanceof Constraint ) {
     		object.scene = this;
@@ -1274,18 +1280,17 @@
     }
 
 
-    function HingeConstraint( body_a, hinge_axis, point_a, body_b, point_b ) {
+    function PointConstraint( body_a, point_a, body_b, point_b ) {
         Constraint.call( this );
 
         this.body_a = body_a;
-        this.hinge_axis = hinge_axis;
         this.point_a = point_a;
         this.body_b = body_b;
         this.point_b = point_b;
     }
 
-    HingeConstraint.prototype = Object.create( Constraint.prototype );
-    HingeConstraint.prototype.constructor = HingeConstraint;
+    PointConstraint.prototype = Object.create( Constraint.prototype );
+    PointConstraint.prototype.constructor = PointConstraint;
 
     var CONSTRAINT_TYPES = {
         /**
@@ -1306,8 +1311,49 @@
          * motor.torque Number maximum torque the motor can apply
          * motor.max_speed Number maximum speed the motor can reach under its own power
          */
-        HINGE: 'HINGE'
+        HINGE: 'HINGE',
+
+    	/**
+    	 * constraint_type String type of constraint
+    	 * constraint_id Number id of the constraint
+    	 * body_a_id Number id of body_a
+    	 * point_a Object point in body_a the constraint revolves around {x:x, y:y, z:z}
+    	 * body_b_id [optional] Number id of body_b
+    	 * point_b [optional] Object point in body_b the constraint revolves around {x:x, y:y, z:z}
+    	 * active Boolean whether or not the constraint is enabled
+    	 * factor: Number factor applied to constraint, 0-1
+    	 * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
+    	 */
+        POINT: 'POINT',
     }
+
+    PointConstraint.prototype.getConstraintDefinition = function() {
+        return {
+            constraint_type: CONSTRAINT_TYPES.POINT,
+            constraint_id: this.constraint_id,
+            body_a_id: this.body_a.physics._.id,
+            point_a: { x: this.point_a.x, y: this.point_a.y, z: this.point_a.z },
+            body_b_id: this.body_b == null ? null : this.body_b.physics._.id,
+            point_b: this.body_b == null ? null : { x: this.point_b.x, y: this.point_b.y, z: this.point_b.z },
+
+            active: this.physics.active,
+            factor: this.physics.factor,
+            breaking_threshold: this.physics.breaking_threshold,
+        };
+    };
+
+    function HingeConstraint( body_a, hinge_axis, point_a, body_b, point_b ) {
+        Constraint.call( this );
+
+        this.body_a = body_a;
+        this.hinge_axis = hinge_axis;
+        this.point_a = point_a;
+        this.body_b = body_b;
+        this.point_b = point_b;
+    }
+
+    HingeConstraint.prototype = Object.create( Constraint.prototype );
+    HingeConstraint.prototype.constructor = HingeConstraint;
 
     HingeConstraint.prototype.getConstraintDefinition = function() {
         return {
@@ -1333,10 +1379,6 @@
                 max_speed: this.physics.motor.max_speed
             }
         };
-    };
-
-    HingeConstraint.prototype.setActive = function( active ) {
-        this.physics.active = active;
     };
 
     HingeConstraint.prototype.setLimit = function( lower, upper ) {
@@ -1479,6 +1521,7 @@
     	TriangleMesh: TriangleMesh,
 
     	HingeConstraint: HingeConstraint,
+    	PointConstraint: PointConstraint,
 
     	CompoundObject: CompoundObject,
     	Scene: Scene

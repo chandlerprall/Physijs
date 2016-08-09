@@ -9,6 +9,7 @@ import Sphere from './classes/shapes/Sphere';
 import TriangleMesh from './classes/shapes/TriangleMesh';
 
 import HingeConstraint from './classes/constraints/HingeConstraint';
+import PointConstraint from './classes/constraints/PointConstraint';
 
 import CompoundObject from './classes/CompoundObject';
 import Scene from './classes/Scene';
@@ -24,6 +25,7 @@ export default {
 	TriangleMesh: TriangleMesh,
 
 	HingeConstraint: HingeConstraint,
+	PointConstraint: PointConstraint,
 
 	CompoundObject: CompoundObject,
 	Scene: Scene

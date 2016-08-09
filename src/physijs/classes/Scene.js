@@ -376,8 +376,8 @@ function processWorldReport( report ) {
 function processCollisionReport( report ) {
 	var new_contacts = report[1];
 
-	for ( var i = 0; i < new_contacts; i += 16 ) {
-		var idx = i + 2;
+	for ( var i = 0; i < new_contacts; i++ ) {
+		var idx = 2 + i * 16;
 
 		var contactType = report[idx+0];
 		if (contactType === CONTACT_TYPES.START) {
@@ -427,8 +427,8 @@ function processCollisionReport( report ) {
 function processConstraintsReport( report ) {
 	var constraints_count = report[1];
 
-	for ( var i = 0; i < constraints_count; i += 5 ) {
-		var idx = i + 2;
+	for ( var i = 0; i < constraints_count; i++ ) {
+		var idx = 2 + i * 5;
 
 		var constraint = this.physijs.id_constraint_map[report[idx]];
 
@@ -438,6 +438,8 @@ function processConstraintsReport( report ) {
 
 		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
 		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+
+		idx += 5;
 	}
 
 	this.physijs.postReport( report );

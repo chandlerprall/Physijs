@@ -733,23 +733,32 @@ function getShapeForDefinition( shape_definition ) {
 					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
 					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
 				);
-
-				constraint.active = parameters.active;
-				constraint.factor = parameters.factor;
-				constraint.breaking_threshold = parameters.breaking_threshold;
-
-				if ( parameters.limit.enabled ) {
-					constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
-				}
-
-				if ( parameters.motor.enabled ) {
-					constraint.motor.set( parameters.motor.torque, parameters.motor.max_speed );
-				}
-
-				id_constraint_map[ parameters.constraint_id ] = constraint;
-				constraint_id_map[ constraint.id ] = parameters.constraint_id;
+			} else if ( parameters.constraint_type === CONSTRAINT_TYPES.POINT ) {
+				constraint = new Goblin.PointConstraint(
+					id_body_map[ parameters.body_a_id ],
+					new Goblin.Vector3( parameters.point_a.x, parameters.point_a.y, parameters.point_a.z ),
+					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
+					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
+				);
+			} else {
+				// don't add this constraint to the world of the id maps
+				return;
 			}
 
+			constraint.active = parameters.active;
+			constraint.factor = parameters.factor;
+			constraint.breaking_threshold = parameters.breaking_threshold;
+
+			if ( parameters.limit && parameters.limit.enabled ) {
+				constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
+			}
+
+			if ( parameters.motor && parameters.motor.enabled ) {
+				constraint.motor.set( parameters.motor.torque, parameters.motor.max_speed );
+			}
+
+			id_constraint_map[ parameters.constraint_id ] = constraint;
+			constraint_id_map[ constraint.id ] = parameters.constraint_id;
 			world.addConstraint( constraint );
 		}
 	);

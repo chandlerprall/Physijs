@@ -260,7 +260,20 @@
          * motor.torque Number maximum torque the motor can apply
          * motor.max_speed Number maximum speed the motor can reach under its own power
          */
-        HINGE: 'HINGE'
+        HINGE: 'HINGE',
+
+    	/**
+    	 * constraint_type String type of constraint
+    	 * constraint_id Number id of the constraint
+    	 * body_a_id Number id of body_a
+    	 * point_a Object point in body_a the constraint revolves around {x:x, y:y, z:z}
+    	 * body_b_id [optional] Number id of body_b
+    	 * point_b [optional] Object point in body_b the constraint revolves around {x:x, y:y, z:z}
+    	 * active Boolean whether or not the constraint is enabled
+    	 * factor: Number factor applied to constraint, 0-1
+    	 * breaking_threshold: Number amount of force which, if exceeded, de-activates the constraint
+    	 */
+        POINT: 'POINT',
     }
 
     var CONTACT_TYPES = {
@@ -1042,23 +1055,32 @@
     					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
     					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
     				);
-
-    				constraint.active = parameters.active;
-    				constraint.factor = parameters.factor;
-    				constraint.breaking_threshold = parameters.breaking_threshold;
-
-    				if ( parameters.limit.enabled ) {
-    					constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
-    				}
-
-    				if ( parameters.motor.enabled ) {
-    					constraint.motor.set( parameters.motor.torque, parameters.motor.max_speed );
-    				}
-
-    				id_constraint_map[ parameters.constraint_id ] = constraint;
-    				constraint_id_map[ constraint.id ] = parameters.constraint_id;
+    			} else if ( parameters.constraint_type === CONSTRAINT_TYPES.POINT ) {
+    				constraint = new Goblin.PointConstraint(
+    					id_body_map[ parameters.body_a_id ],
+    					new Goblin.Vector3( parameters.point_a.x, parameters.point_a.y, parameters.point_a.z ),
+    					parameters.body_b_id == null ? null : id_body_map[parameters.body_b_id],
+    					parameters.body_b_id == null ? null : new Goblin.Vector3( parameters.point_b.x, parameters.point_b.y, parameters.point_b.z )
+    				);
+    			} else {
+    				// don't add this constraint to the world of the id maps
+    				return;
     			}
 
+    			constraint.active = parameters.active;
+    			constraint.factor = parameters.factor;
+    			constraint.breaking_threshold = parameters.breaking_threshold;
+
+    			if ( parameters.limit && parameters.limit.enabled ) {
+    				constraint.limit.set( parameters.limit.lower, parameters.limit.upper );
+    			}
+
+    			if ( parameters.motor && parameters.motor.enabled ) {
+    				constraint.motor.set( parameters.motor.torque, parameters.motor.max_speed );
+    			}
+
+    			id_constraint_map[ parameters.constraint_id ] = constraint;
+    			constraint_id_map[ constraint.id ] = parameters.constraint_id;
     			world.addConstraint( constraint );
     		}
     	);
