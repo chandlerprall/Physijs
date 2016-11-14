@@ -35,7 +35,9 @@ export default function Constraint() {
 			},
 		}
 	};
-};
+}
+
+Constraint.prototype = Object.create( THREE.EventDispatcher.prototype );
 
 Constraint.prototype.setActive = function( active ) {
 	this.physics.active = active;

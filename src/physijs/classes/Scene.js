@@ -436,8 +436,16 @@ function processConstraintsReport( report ) {
 			continue;
 		}
 
-		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
 		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+
+		if ( report[idx+1] !== 1 && constraint.physics._.active === true ) {
+			// constraint is not active in the simulation but it was active last we knew, report it was broken
+			constraint.dispatchEvent({
+				type: 'physics.constraintDeactivate',
+				last_impulse: constraint.physics.last_impulse
+			});
+		}
+		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
 
 		idx += 5;
 	}

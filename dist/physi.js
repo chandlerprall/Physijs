@@ -235,268 +235,53 @@
     	ADD_CONSTRAINT: 'ADD_CONSTRAINT'
     };
 
-    var nextId = 0;
-    function getUniqueId() {
-    	return nextId++;
+    var BODY_TYPES = {
+    	/**
+    	 * width Float box extent on x axis
+    	 * height Float box extent on y axis
+    	 * depth Float box extent on z axis
+    	 */
+    	BOX: 'BOX',
+
+    	/**
+    	 * shapes Array list of shape definitions composing the compound shape
+    	 */
+    	COMPOUND: 'COMPOUND',
+
+    	/**
+    	 * radius Float cylinder radius
+    	 * height Float cylinder extent on y axis
+    	 */
+    	CONE: 'CONE',
+
+    	/**
+    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+    	 */
+    	CONVEX: 'CONVEX',
+
+    	/**
+    	 * radius Float cylinder radius
+    	 * height Float cylinder extent on y axis
+    	 */
+    	CYLINDER: 'CYLINDER',
+
+    	/**
+    	 * width Float plane extent on x axis
+    	 * height Float plane extent on y axis
+    	 */
+    	PLANE: 'PLANE',
+
+    	/**
+    	 * radius Float radius of the sphere
+    	 */
+    	SPHERE: 'SPHERE',
+
+    	/**
+    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
+    	 * faces Array list of vertex indexes composing the faces
+    	 */
+    	TRIANGLE: 'TRIANGLE'
     }
-
-    function raytrace( rays, callback ) {
-    	var raytrace_id = getUniqueId();
-
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.RAYTRACE,
-    		{
-    			raytrace_id: raytrace_id,
-    			rays: rays.map(function(ray) {
-    				return {
-    					start: {
-    						x: ray.start.x,
-    						y: ray.start.y,
-    						z: ray.start.z
-    					},
-    					end: {
-    						x: ray.end.x,
-    						y: ray.end.y,
-    						z: ray.end.z
-    					}
-    				};
-    			})
-    		}
-    	);
-
-    	this.physijs.inflight_raytraces[ raytrace_id ] = callback;
-    }
-
-    function processRaytraceResults( response ) {
-    	var callback = this.physijs.inflight_raytraces[ response.raytrace_id ];
-    	var scene = this;
-    	callback(
-    		response.results.map(function( ray ) {
-    			return ray.map(function( intersection ) {
-    				return {
-    					body: scene.physijs.id_body_map[ intersection.body_id ],
-    					point: new THREE.Vector3( intersection.point.x, intersection.point.y, intersection.point.z ),
-    					normal: new THREE.Vector3( intersection.normal.x, intersection.normal.y, intersection.normal.z )
-    				}
-    			});
-    		}, scene)
-    	);
-    }
-
-    function setRigidBodyAngularFactor( body ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
-    		{
-    			body_id: body.physics._.id,
-    			factor: { x: body.physics.angular_factor.x, y: body.physics.angular_factor.y, z: body.physics.angular_factor.z }
-    		}
-    	);
-    }
-
-    function setRigidBodyLinearFactor( body ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
-    		{
-    			body_id: body.physics._.id,
-    			factor: { x: body.physics.linear_factor.x, y: body.physics.linear_factor.y, z: body.physics.linear_factor.z }
-    		}
-    	);
-    }
-
-    function setRigidBodyAngularVelocity( body ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
-    		{
-    			body_id: body.physics._.id,
-    			velocity: { x: body.physics.angular_velocity.x, y: body.physics.angular_velocity.y, z: body.physics.angular_velocity.z }
-    		}
-    	);
-    }
-
-    function setRigidBodyLinearVelocity( body ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
-    		{
-    			body_id: body.physics._.id,
-    			velocity: { x: body.physics.linear_velocity.x, y: body.physics.linear_velocity.y, z: body.physics.linear_velocity.z }
-    		}
-    	);
-    }
-
-    function setRigidBodyTransform( body ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
-    		{
-    			body_id: body.physics._.id,
-    			position: { x: body.position.x, y: body.position.y, z: body.position.z },
-    			rotation: { x: body.quaternion.x, y: body.quaternion.y, z: body.quaternion.z, w: body.quaternion.w }
-    		}
-    	);
-    }
-
-    function setRigidBodyCollisionMask( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
-    		{
-    			body_id: physics_object._.id,
-    			collision_mask: physics_object._.collision_mask
-    		}
-    	);
-    }
-
-    function setRigidBodyCollisionGroups( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
-    		{
-    			body_id: physics_object._.id,
-    			collision_groups: physics_object._.collision_groups
-    		}
-    	);
-    }
-
-    function setRigidBodyAngularDamping( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
-    		{
-    			body_id: physics_object._.id,
-    			damping: physics_object._.angular_damping
-    		}
-    	);
-    }
-
-    function setRigidBodyLinearDamping( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
-    		{
-    			body_id: physics_object._.id,
-    			damping: physics_object._.linear_damping
-    		}
-    	);
-    }
-
-    function setRigidBodyFriction( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
-    		{
-    			body_id: physics_object._.id,
-    			friction: physics_object._.friction
-    		}
-    	);
-    }
-
-    function setRigidBodyRestitution( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
-    		{
-    			body_id: physics_object._.id,
-    			restitution: physics_object._.restitution
-    		}
-    	);
-    }
-
-    function setRigidBodyMass( physics_object ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_RIGIDBODY_MASS,
-    		{
-    			body_id: physics_object._.id,
-    			mass: physics_object._.mass
-    		}
-    	);
-    }
-
-    function setConstraintMotor( constraint ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_CONSTRAINT_MOTOR,
-    		{
-    			constraint_id: constraint.constraint_id,
-    			enabled: constraint.physics.motor.enabled,
-    			torque: constraint.physics.motor.torque,
-    			max_speed: constraint.physics.motor.max_speed,
-    		}
-    	);
-    }
-
-    function setConstraintLimit( constraint ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_CONSTRAINT_LIMIT,
-    		{
-    			constraint_id: constraint.constraint_id,
-    			enabled: constraint.physics.limit.enabled,
-    			lower: constraint.physics.limit.lower,
-    			upper: constraint.physics.limit.upper,
-    		}
-    	);
-    }
-
-    function setConstraintBreakingThreshold( constraint ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_CONSTRAINT_BREAKING_THRESHOLD,
-    		{
-    			constraint_id: constraint.constraint_id,
-    			breaking_threshold: constraint.physics.breaking_threshold,
-    		}
-    	);
-    }
-
-    function setConstraintFactor( constraint ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_CONSTRAINT_FACTOR,
-    		{
-    			constraint_id: constraint.constraint_id,
-    			factor: constraint.physics.factor,
-    		}
-    	);
-    }
-
-    function setConstraintActive( constraint ) {
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.SET_CONSTRAINT_ACTIVE,
-    		{
-    			constraint_id: constraint.constraint_id,
-    			active: constraint.physics.active,
-    		}
-    	);
-    }
-
-    function postReport( report ) {
-    	this.physijs.worker.postMessage( report, [report.buffer] );
-    }
-
-    function postMessage( type, parameters ) {
-    	this.physijs.worker.postMessage({
-    		type: type,
-    		parameters: parameters
-    	});
-    }
-
-    function processConstraintsReport( report ) {
-    	var constraints_count = report[1];
-
-    	for ( var i = 0; i < constraints_count; i++ ) {
-    		var idx = 2 + i * 5;
-
-    		var constraint = this.physijs.id_constraint_map[report[idx]];
-
-    		if ( constraint == null ) {
-    			continue;
-    		}
-
-    		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
-    		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
-
-    		idx += 5;
-    	}
-
-    	this.physijs.postReport( report );
-    }
-
-    var _tmp_vector3_4 = new THREE.Vector3();
-
-    var _tmp_vector3_3 = new THREE.Vector3();
-
-    var _tmp_vector3_2 = new THREE.Vector3();
-
-    var _tmp_vector3_1 = new THREE.Vector3();
 
     var CONTACT_TYPES = {
     	START: 0,
@@ -504,224 +289,49 @@
     	END: 2
     };
 
-    function processCollisionReport( report ) {
-    	var new_contacts = report[1];
+    var nextId = 0;
+    function getUniqueId() {
+    	return nextId++;
+    }
 
-    	for ( var i = 0; i < new_contacts; i++ ) {
-    		var idx = 2 + i * 16;
+    /*
+    IF
+    first  is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
+    ELSE
+    	the first argument is assumed to be an object Three.js can understand AND
+    	IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape
+    	ELSE the object passed as the first argument is assumed to have a `geometry` property
 
-    		var contactType = report[idx+0];
-    		if (contactType === CONTACT_TYPES.START) {
-    			contactType = 'physics.contactStart';
-    		} else if (contactType === CONTACT_TYPES.CONTINUE) {
-    			contactType = 'physics.contactContinue';
-    		} if (contactType === CONTACT_TYPES.END) {
-    			contactType = 'physics.contactEnd';
+    The next argument in all cases is optional and allows for the object's physical properties to be changed
+    The fourth argument in all cases is the getShapeDefinition function
+     */
+    function PhysicsObject( first, second, third, getShapeDefinition ) {
+    	var three_object;
+    	var geometry;
+    	var physics_descriptor;
+
+    	if ( first instanceof THREE.Geometry ) {
+    		geometry = first;
+    		three_object = new THREE.Mesh( geometry, second );
+    		physics_descriptor = third;
+    	} else {
+    		three_object = first;
+    		if ( second instanceof THREE.Geometry ) {
+    			geometry = second;
+    			physics_descriptor = third;
+    		} else {
+    			geometry = three_object.geometry;
+    			physics_descriptor = second;
     		}
-
-    		var object_a = this.physijs.id_body_map[report[idx+1]];
-    		var object_b = this.physijs.id_body_map[report[idx+2]];
-
-    		if ( object_a == null || object_b == null ) {
-    			continue;
-    		}
-
-    		_tmp_vector3_1.set( report[idx+3], report[idx+4], report[idx+5] );
-    		_tmp_vector3_2.set( report[idx+6], report[idx+7], report[idx+8] );
-    		_tmp_vector3_3.set( report[idx+9], report[idx+10], report[idx+11] );
-    		_tmp_vector3_4.set( report[idx+12], report[idx+13], report[idx+14] );
-
-    		object_a.dispatchEvent({
-    			type: contactType,
-    			other_body: object_b,
-    			contact_point: _tmp_vector3_1,
-    			contact_normal: _tmp_vector3_2,
-    			relative_linear_velocity: _tmp_vector3_3,
-    			relative_angular_velocity: _tmp_vector3_4,
-    			penetration_depth: report[idx+15]
-    		});
-
-    		object_b.dispatchEvent({
-    			type: contactType,
-    			other_body: object_a,
-    			contact_point: _tmp_vector3_1,
-    			contact_normal: _tmp_vector3_2,
-    			relative_linear_velocity: _tmp_vector3_3,
-    			relative_angular_velocity: _tmp_vector3_4,
-    			penetration_depth: report[idx+15]
-    		});
     	}
 
-    	this.physijs.postReport( report );
-    }
+    	three_object.rotationAutoUpdate = false;
+    	three_object.matrixAutoUpdate = false;
 
-    function processWorldReport( report ) {
-    	var simulation_ticks = report[1];
-    	var rigid_body_count = report[2];
+    	three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
+    	three_object.clone = clone.bind( three_object, three_object.clone );
 
-    	for ( var i = 0; i < rigid_body_count; i++ ) {
-    		var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
-    		var rigid_body_id = report[idx++];
-    		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
-    		if ( rigid_body == null ) {
-    			continue;
-    		}
-
-    		rigid_body.matrix.set(
-    			report[idx++], report[idx++], report[idx++], report[idx++],
-    			report[idx++], report[idx++], report[idx++], report[idx++],
-    			report[idx++], report[idx++], report[idx++], report[idx++],
-    			report[idx++], report[idx++], report[idx++], report[idx++]
-    		);
-
-    		rigid_body.position.copy( rigid_body.physics._.position.set( report[idx++], report[idx++], report[idx++] ) );
-    		rigid_body.quaternion.copy( rigid_body.physics._.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
-    		rigid_body.physics.linear_velocity.copy( rigid_body.physics._.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
-    		rigid_body.physics.angular_velocity.copy( rigid_body.physics._.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
-    	}
-
-    	// send the buffer back for re-use
-    	this.physijs.postReport( report );
-
-    	// world report is over, we're no longer stepping
-    	this.physijs.is_stepping = false;
-    	if ( this.physijs.onStep instanceof Function ) {
-    		var onStep = this.physijs.onStep;
-    		this.physijs.onStep = null;
-    		onStep.call( this, simulation_ticks );
-    	}
-    }
-
-    function initializeWorker( worker_script_location, world_config ) {
-    	this.physijs.worker = new Worker( worker_script_location );
-    	this.physijs.worker.addEventListener(
-    		'message',
-    		function(e) {
-    			var data = e.data;
-    			var type;
-    			var parameters;
-
-    			if ( data instanceof Float32Array ) {
-    				type = data[0];
-    				parameters = data;
-    			} else {
-    				data = data || {};
-    				type = data.type;
-    				parameters = data.parameters;
-    			}
-
-    			if ( this.physijs.handlers.hasOwnProperty( type ) ) {
-    				this.physijs.handlers[type]( parameters );
-    			} else {
-    				throw new Error( 'Physijs scene received unknown message type: ' + type );
-    			}
-    		}.bind( this )
-    	);
-
-    	this.physijs.handleMessage(
-    		MESSAGE_TYPES.REPORTS.WORLD,
-    		this.physijs.processWorldReport
-    	);
-
-    	this.physijs.handleMessage(
-    		MESSAGE_TYPES.REPORTS.COLLISIONS,
-    		this.physijs.processCollisionReport
-    	);
-
-    	this.physijs.handleMessage(
-    		MESSAGE_TYPES.REPORTS.CONSTRAINTS,
-    		this.physijs.processConstraintsReport
-    	);
-
-    	this.physijs.handleMessage(
-    		MESSAGE_TYPES.RAYTRACE_RESULTS,
-    		this.physijs.processRaytraceResults
-    	);
-
-    	this.physijs.postMessage( MESSAGE_TYPES.INITIALIZE, world_config || {} );
-    }
-
-    function applyForce( three_body, force, local_location ) {
-    	if ( local_location == null ) local_location = { x: 0, y: 0, z: 0 };
-    	this.physijs.postMessage(
-    		MESSAGE_TYPES.APPLY_FORCE,
-    		{
-    			body_id: three_body.physics._.id,
-    			force: {x: force.x, y: force.y, z: force.z},
-    			local_location: {x: local_location.x, y: local_location.y, z: local_location.z}
-    		}
-    	);
-    }
-
-    function handleMessage( message, handler ) {
-    	this.physijs.handlers[message] = handler;
-    }
-
-    function Scene( worker_script_location, world_config ) {
-    	THREE.Scene.call( this );
-
-    	this.physijs = {
-    		handlers: {},
-    		handleMessage: handleMessage.bind( this ),
-
-    		is_stepping: false,
-    		id_body_map: {},
-    		id_constraint_map: {},
-    		onStep: null,
-
-    		applyForce: applyForce.bind( this ),
-    		initializeWorker: initializeWorker.bind( this ),
-    		processWorldReport: processWorldReport.bind( this ),
-    		processCollisionReport: processCollisionReport.bind( this ),
-    		processConstraintsReport: processConstraintsReport.bind( this ),
-    		postMessage: postMessage.bind( this ),
-    		postReport: postReport.bind( this ),
-    		setConstraintActive: setConstraintActive.bind( this ),
-    		setConstraintFactor: setConstraintFactor.bind( this ),
-    		setConstraintBreakingThreshold: setConstraintBreakingThreshold.bind( this ),
-    		setConstraintLimit: setConstraintLimit.bind( this ),
-    		setConstraintMotor: setConstraintMotor.bind( this ),
-    		setRigidBodyMass: setRigidBodyMass.bind( this ),
-    		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
-    		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
-    		setRigidBodyLinearDamping: setRigidBodyLinearDamping.bind( this ),
-    		setRigidBodyAngularDamping: setRigidBodyAngularDamping.bind( this ),
-    		setRigidBodyCollisionGroups: setRigidBodyCollisionGroups.bind( this ),
-    		setRigidBodyCollisionMask: setRigidBodyCollisionMask.bind( this ),
-    		setRigidBodyTransform: setRigidBodyTransform.bind( this ),
-    		setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
-    		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
-    		setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
-    		setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this ),
-
-    		inflight_raytraces: {},
-    		processRaytraceResults: processRaytraceResults.bind( this )
-    	};
-
-    	this.physics = {
-    		raytrace: raytrace.bind( this )
-    	};
-
-    	this.physijs.initializeWorker( worker_script_location, world_config );
-    }
-
-    Scene.prototype = Object.create( THREE.Scene.prototype );
-    Scene.prototype.constructor = Scene;
-
-    function getRigidBodyDefinition( object ) {
-    	var shape_definition = object.physics.getShapeDefinition( object.physics.geometry );
-
-    	return {
-    		body_id: object.physics._.id,
-    		shape_definition: shape_definition,
-    		mass: object.physics._.mass,
-    		restitution: object.physics._.restitution,
-    		friction: object.physics._.friction,
-    		linear_damping: object.physics._.linear_damping,
-    		angular_damping: object.physics._.angular_damping,
-    		collision_groups: object.physics._.collision_groups,
-    		collision_mask: object.physics._.collision_mask
-    	};
+    	return three_object;
     }
 
     function _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition ) {
@@ -904,6 +514,84 @@
     	this._.applied_forces.push( force, local_location );
     };
 
+    function clone() {
+    	var args = Array.prototype.slice.call( arguments );
+    	var original_clone = args.shift();
+
+    	var cloned = original_clone.apply( this, args );
+
+    	cloned.physics = this.physics.clone( cloned );
+
+    	return cloned;
+    }
+
+    function CompoundObject( object, physics_descriptor ) {
+    	if ( physics_descriptor == null ) {
+    		throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
+    	}
+
+    	if ( object.physics instanceof _PhysicsObject ) {
+    		object.physics.getShapeDefinition = getShapeDefinition$7.bind( null, object, object.physics.getShapeDefinition );
+    	} else {
+    		object.physics = new _PhysicsObject( object, null, physics_descriptor, getShapeDefinition$7.bind( null, object ) );
+    	}
+
+    	object.rotationAutoUpdate = false;
+    	object.matrixAutoUpdate = false;
+
+    	object.clone = clone.bind( object, object.clone );
+
+    	return object;
+    }
+
+
+    function getShapeDefinition$7( object, originalShapeDefinition ) {
+    	var shapes = [];
+
+    	var position_offset = new THREE.Vector3();
+    	var quaternion_offset = new THREE.Quaternion();
+
+    	object.updateMatrix();
+    	object.updateMatrixWorld( true );
+    	var parent_inverse_world = new THREE.Matrix4().getInverse( object.matrixWorld );
+    	var childMatrix = new THREE.Matrix4();
+
+    	object.traverse(function( child ) {
+    		child.updateMatrix();
+    		child.updateMatrixWorld( true );
+
+    		if ( child.physics instanceof _PhysicsObject ) {
+    			var shapeDefinition;
+    			if ( originalShapeDefinition != null ) {
+    				shapeDefinition = originalShapeDefinition( child.physics.geometry );
+    			} else if ( object !== child ) {
+    				shapeDefinition = child.physics.getShapeDefinition( child.physics.geometry );
+    			}
+
+    			if ( shapeDefinition != null ) {
+    				childMatrix.copy( child.matrixWorld ).multiply( parent_inverse_world );
+    				position_offset.setFromMatrixPosition( childMatrix );
+    				quaternion_offset.setFromRotationMatrix( childMatrix );
+    				shapes.push({
+    					position: {x: position_offset.x, y: position_offset.y, z: position_offset.z},
+    					quaternion: {
+    						x: quaternion_offset._x,
+    						y: quaternion_offset._y,
+    						z: quaternion_offset._z,
+    						w: quaternion_offset._w
+    					},
+    					shape_definition: shapeDefinition
+    				});
+    			}
+    		}
+    	});
+
+    	return {
+    		body_type: BODY_TYPES.COMPOUND,
+    		shapes: shapes
+    	};
+    }
+
     function Constraint() {
         this.constraint_id = getUniqueId();
 
@@ -941,9 +629,83 @@
     	};
     }
 
+    Constraint.prototype = Object.create( THREE.EventDispatcher.prototype );
+
     Constraint.prototype.setActive = function( active ) {
     	this.physics.active = active;
     };
+
+    var _tmp_vector3_1 = new THREE.Vector3();
+    var _tmp_vector3_2 = new THREE.Vector3();
+    var _tmp_vector3_3 = new THREE.Vector3();
+    var _tmp_vector3_4 = new THREE.Vector3();
+
+    function getRigidBodyDefinition( object ) {
+    	var shape_definition = object.physics.getShapeDefinition( object.physics.geometry );
+
+    	return {
+    		body_id: object.physics._.id,
+    		shape_definition: shape_definition,
+    		mass: object.physics._.mass,
+    		restitution: object.physics._.restitution,
+    		friction: object.physics._.friction,
+    		linear_damping: object.physics._.linear_damping,
+    		angular_damping: object.physics._.angular_damping,
+    		collision_groups: object.physics._.collision_groups,
+    		collision_mask: object.physics._.collision_mask
+    	};
+    }
+
+    function Scene( worker_script_location, world_config ) {
+    	THREE.Scene.call( this );
+
+    	this.physijs = {
+    		handlers: {},
+    		handleMessage: handleMessage.bind( this ),
+
+    		is_stepping: false,
+    		id_body_map: {},
+    		id_constraint_map: {},
+    		onStep: null,
+
+    		applyForce: applyForce.bind( this ),
+    		initializeWorker: initializeWorker.bind( this ),
+    		processWorldReport: processWorldReport.bind( this ),
+    		processCollisionReport: processCollisionReport.bind( this ),
+    		processConstraintsReport: processConstraintsReport.bind( this ),
+    		postMessage: postMessage.bind( this ),
+    		postReport: postReport.bind( this ),
+    		setConstraintActive: setConstraintActive.bind( this ),
+    		setConstraintFactor: setConstraintFactor.bind( this ),
+    		setConstraintBreakingThreshold: setConstraintBreakingThreshold.bind( this ),
+    		setConstraintLimit: setConstraintLimit.bind( this ),
+    		setConstraintMotor: setConstraintMotor.bind( this ),
+    		setRigidBodyMass: setRigidBodyMass.bind( this ),
+    		setRigidBodyRestitution: setRigidBodyRestitution.bind( this ),
+    		setRigidBodyFriction: setRigidBodyFriction.bind( this ),
+    		setRigidBodyLinearDamping: setRigidBodyLinearDamping.bind( this ),
+    		setRigidBodyAngularDamping: setRigidBodyAngularDamping.bind( this ),
+    		setRigidBodyCollisionGroups: setRigidBodyCollisionGroups.bind( this ),
+    		setRigidBodyCollisionMask: setRigidBodyCollisionMask.bind( this ),
+    		setRigidBodyTransform: setRigidBodyTransform.bind( this ),
+    		setRigidBodyLinearVelocity: setRigidBodyLinearVelocity.bind( this ),
+    		setRigidBodyAngularVelocity: setRigidBodyAngularVelocity.bind( this ),
+    		setRigidBodyLinearFactor: setRigidBodyLinearFactor.bind( this ),
+    		setRigidBodyAngularFactor: setRigidBodyAngularFactor.bind( this ),
+
+    		inflight_raytraces: {},
+    		processRaytraceResults: processRaytraceResults.bind( this )
+    	};
+
+    	this.physics = {
+    		raytrace: raytrace.bind( this )
+    	};
+
+    	this.physijs.initializeWorker( worker_script_location, world_config );
+    }
+
+    Scene.prototype = Object.create( THREE.Scene.prototype );
+    Scene.prototype.constructor = Scene;
 
     Scene.prototype.add = function( object ) {
     	if ( object instanceof Constraint ) {
@@ -1111,185 +873,416 @@
     	);
     };
 
-    function clone() {
-    	var args = Array.prototype.slice.call( arguments );
-    	var original_clone = args.shift();
+    function raytrace( rays, callback ) {
+    	var raytrace_id = getUniqueId();
 
-    	var cloned = original_clone.apply( this, args );
-
-    	cloned.physics = this.physics.clone( cloned );
-
-    	return cloned;
-    }
-
-
-    /*
-    IF
-    first  is instanceof THREE.Geometry, the three arguments are geometry, material, physics_descriptor
-    ELSE
-    	the first argument is assumed to be an object Three.js can understand AND
-    	IF the second argument is an instanceof THREE.Geometry that geometry is used to determine the physics shape
-    	ELSE the object passed as the first argument is assumed to have a `geometry` property
-
-    The next argument in all cases is optional and allows for the object's physical properties to be changed
-    The fourth argument in all cases is the getShapeDefinition function
-     */
-    function PhysicsObject( first, second, third, getShapeDefinition ) {
-    	var three_object;
-    	var geometry;
-    	var physics_descriptor;
-
-    	if ( first instanceof THREE.Geometry ) {
-    		geometry = first;
-    		three_object = new THREE.Mesh( geometry, second );
-    		physics_descriptor = third;
-    	} else {
-    		three_object = first;
-    		if ( second instanceof THREE.Geometry ) {
-    			geometry = second;
-    			physics_descriptor = third;
-    		} else {
-    			geometry = three_object.geometry;
-    			physics_descriptor = second;
-    		}
-    	}
-
-    	three_object.rotationAutoUpdate = false;
-    	three_object.matrixAutoUpdate = false;
-
-    	three_object.physics = new _PhysicsObject( three_object, geometry, physics_descriptor, getShapeDefinition );
-    	three_object.clone = clone.bind( three_object, three_object.clone );
-
-    	return three_object;
-    }
-
-    var BODY_TYPES = {
-    	/**
-    	 * width Float box extent on x axis
-    	 * height Float box extent on y axis
-    	 * depth Float box extent on z axis
-    	 */
-    	BOX: 'BOX',
-
-    	/**
-    	 * shapes Array list of shape definitions composing the compound shape
-    	 */
-    	COMPOUND: 'COMPOUND',
-
-    	/**
-    	 * radius Float cylinder radius
-    	 * height Float cylinder extent on y axis
-    	 */
-    	CONE: 'CONE',
-
-    	/**
-    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-    	 */
-    	CONVEX: 'CONVEX',
-
-    	/**
-    	 * radius Float cylinder radius
-    	 * height Float cylinder extent on y axis
-    	 */
-    	CYLINDER: 'CYLINDER',
-
-    	/**
-    	 * width Float plane extent on x axis
-    	 * height Float plane extent on y axis
-    	 */
-    	PLANE: 'PLANE',
-
-    	/**
-    	 * radius Float radius of the sphere
-    	 */
-    	SPHERE: 'SPHERE',
-
-    	/**
-    	 * vertices Array list of vertex components for all vertices, where list is [x1, y1, z1, x2, y2, z2 ... xN, yN, zN]
-    	 * faces Array list of vertex indexes composing the faces
-    	 */
-    	TRIANGLE: 'TRIANGLE'
-    }
-
-
-    function _getShapeDefinition( object, originalShapeDefinition ) {
-    	var shapes = [];
-
-    	var position_offset = new THREE.Vector3();
-    	var quaternion_offset = new THREE.Quaternion();
-
-    	object.updateMatrix();
-    	object.updateMatrixWorld( true );
-    	var parent_inverse_world = new THREE.Matrix4().getInverse( object.matrixWorld );
-    	var childMatrix = new THREE.Matrix4();
-
-    	object.traverse(function( child ) {
-    		child.updateMatrix();
-    		child.updateMatrixWorld( true );
-
-    		if ( child.physics instanceof _PhysicsObject ) {
-    			var shapeDefinition;
-    			if ( originalShapeDefinition != null ) {
-    				shapeDefinition = originalShapeDefinition( child.physics.geometry );
-    			} else if ( object !== child ) {
-    				shapeDefinition = child.physics.getShapeDefinition( child.physics.geometry );
-    			}
-
-    			if ( shapeDefinition != null ) {
-    				childMatrix.copy( child.matrixWorld ).multiply( parent_inverse_world );
-    				position_offset.setFromMatrixPosition( childMatrix );
-    				quaternion_offset.setFromRotationMatrix( childMatrix );
-    				shapes.push({
-    					position: {x: position_offset.x, y: position_offset.y, z: position_offset.z},
-    					quaternion: {
-    						x: quaternion_offset._x,
-    						y: quaternion_offset._y,
-    						z: quaternion_offset._z,
-    						w: quaternion_offset._w
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.RAYTRACE,
+    		{
+    			raytrace_id: raytrace_id,
+    			rays: rays.map(function(ray) {
+    				return {
+    					start: {
+    						x: ray.start.x,
+    						y: ray.start.y,
+    						z: ray.start.z
     					},
-    					shape_definition: shapeDefinition
-    				});
-    			}
+    					end: {
+    						x: ray.end.x,
+    						y: ray.end.y,
+    						z: ray.end.z
+    					}
+    				};
+    			})
     		}
+    	);
+
+    	this.physijs.inflight_raytraces[ raytrace_id ] = callback;
+    }
+
+    function handleMessage( message, handler ) {
+    	this.physijs.handlers[message] = handler;
+    }
+
+    function applyForce( three_body, force, local_location ) {
+    	if ( local_location == null ) local_location = { x: 0, y: 0, z: 0 };
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.APPLY_FORCE,
+    		{
+    			body_id: three_body.physics._.id,
+    			force: {x: force.x, y: force.y, z: force.z},
+    			local_location: {x: local_location.x, y: local_location.y, z: local_location.z}
+    		}
+    	);
+    }
+
+    function initializeWorker( worker_script_location, world_config ) {
+    	this.physijs.worker = new Worker( worker_script_location );
+    	this.physijs.worker.addEventListener(
+    		'message',
+    		function(e) {
+    			var data = e.data;
+    			var type;
+    			var parameters;
+
+    			if ( data instanceof Float32Array ) {
+    				type = data[0];
+    				parameters = data;
+    			} else {
+    				data = data || {};
+    				type = data.type;
+    				parameters = data.parameters;
+    			}
+
+    			if ( this.physijs.handlers.hasOwnProperty( type ) ) {
+    				this.physijs.handlers[type]( parameters );
+    			} else {
+    				throw new Error( 'Physijs scene received unknown message type: ' + type );
+    			}
+    		}.bind( this )
+    	);
+
+    	this.physijs.handleMessage(
+    		MESSAGE_TYPES.REPORTS.WORLD,
+    		this.physijs.processWorldReport
+    	);
+
+    	this.physijs.handleMessage(
+    		MESSAGE_TYPES.REPORTS.COLLISIONS,
+    		this.physijs.processCollisionReport
+    	);
+
+    	this.physijs.handleMessage(
+    		MESSAGE_TYPES.REPORTS.CONSTRAINTS,
+    		this.physijs.processConstraintsReport
+    	);
+
+    	this.physijs.handleMessage(
+    		MESSAGE_TYPES.RAYTRACE_RESULTS,
+    		this.physijs.processRaytraceResults
+    	);
+
+    	this.physijs.postMessage( MESSAGE_TYPES.INITIALIZE, world_config || {} );
+    }
+
+    function processWorldReport( report ) {
+    	var simulation_ticks = report[1];
+    	var rigid_body_count = report[2];
+
+    	for ( var i = 0; i < rigid_body_count; i++ ) {
+    		var idx = 3 + i * 30; // [WORLD, # TICKS, # BODIES, n*30 elements ...]
+    		var rigid_body_id = report[idx++];
+    		var rigid_body = this.physijs.id_body_map[ rigid_body_id ];
+    		if ( rigid_body == null ) {
+    			continue;
+    		}
+
+    		rigid_body.matrix.set(
+    			report[idx++], report[idx++], report[idx++], report[idx++],
+    			report[idx++], report[idx++], report[idx++], report[idx++],
+    			report[idx++], report[idx++], report[idx++], report[idx++],
+    			report[idx++], report[idx++], report[idx++], report[idx++]
+    		);
+
+    		rigid_body.position.copy( rigid_body.physics._.position.set( report[idx++], report[idx++], report[idx++] ) );
+    		rigid_body.quaternion.copy( rigid_body.physics._.quaternion.set( report[idx++], report[idx++], report[idx++], report[idx++] ) );
+    		rigid_body.physics.linear_velocity.copy( rigid_body.physics._.linear_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+    		rigid_body.physics.angular_velocity.copy( rigid_body.physics._.angular_velocity.set( report[idx++], report[idx++], report[idx++] ) );
+    	}
+
+    	// send the buffer back for re-use
+    	this.physijs.postReport( report );
+
+    	// world report is over, we're no longer stepping
+    	this.physijs.is_stepping = false;
+    	if ( this.physijs.onStep instanceof Function ) {
+    		var onStep = this.physijs.onStep;
+    		this.physijs.onStep = null;
+    		onStep.call( this, simulation_ticks );
+    	}
+    }
+
+    function processCollisionReport( report ) {
+    	var new_contacts = report[1];
+
+    	for ( var i = 0; i < new_contacts; i++ ) {
+    		var idx = 2 + i * 16;
+
+    		var contactType = report[idx+0];
+    		if (contactType === CONTACT_TYPES.START) {
+    			contactType = 'physics.contactStart';
+    		} else if (contactType === CONTACT_TYPES.CONTINUE) {
+    			contactType = 'physics.contactContinue';
+    		} if (contactType === CONTACT_TYPES.END) {
+    			contactType = 'physics.contactEnd';
+    		}
+
+    		var object_a = this.physijs.id_body_map[report[idx+1]];
+    		var object_b = this.physijs.id_body_map[report[idx+2]];
+
+    		if ( object_a == null || object_b == null ) {
+    			continue;
+    		}
+
+    		_tmp_vector3_1.set( report[idx+3], report[idx+4], report[idx+5] );
+    		_tmp_vector3_2.set( report[idx+6], report[idx+7], report[idx+8] );
+    		_tmp_vector3_3.set( report[idx+9], report[idx+10], report[idx+11] );
+    		_tmp_vector3_4.set( report[idx+12], report[idx+13], report[idx+14] );
+
+    		object_a.dispatchEvent({
+    			type: contactType,
+    			other_body: object_b,
+    			contact_point: _tmp_vector3_1,
+    			contact_normal: _tmp_vector3_2,
+    			relative_linear_velocity: _tmp_vector3_3,
+    			relative_angular_velocity: _tmp_vector3_4,
+    			penetration_depth: report[idx+15]
+    		});
+
+    		object_b.dispatchEvent({
+    			type: contactType,
+    			other_body: object_a,
+    			contact_point: _tmp_vector3_1,
+    			contact_normal: _tmp_vector3_2,
+    			relative_linear_velocity: _tmp_vector3_3,
+    			relative_angular_velocity: _tmp_vector3_4,
+    			penetration_depth: report[idx+15]
+    		});
+    	}
+
+    	this.physijs.postReport( report );
+    }
+
+    function processConstraintsReport( report ) {
+    	var constraints_count = report[1];
+
+    	for ( var i = 0; i < constraints_count; i++ ) {
+    		var idx = 2 + i * 5;
+
+    		var constraint = this.physijs.id_constraint_map[report[idx]];
+
+    		if ( constraint == null ) {
+    			continue;
+    		}
+
+    		constraint.physics.last_impulse.set(report[idx+2], report[idx+3], report[idx+4]);
+
+    		if ( report[idx+1] !== 1 && constraint.physics._.active === true ) {
+    			// constraint is not active in the simulation but it was active last we knew, report it was broken
+    			constraint.dispatchEvent({
+    				type: 'physics.constraintDeactivate',
+    				last_impulse: constraint.physics.last_impulse
+    			});
+    		}
+    		constraint.physics.active = constraint.physics._.active = report[idx+1] === 1;
+
+    		idx += 5;
+    	}
+
+    	this.physijs.postReport( report );
+    }
+
+    function postMessage( type, parameters ) {
+    	this.physijs.worker.postMessage({
+    		type: type,
+    		parameters: parameters
     	});
-
-    	return {
-    		body_type: BODY_TYPES.COMPOUND,
-    		shapes: shapes
-    	};
     }
 
-    function CompoundObject( object, physics_descriptor ) {
-    	if ( physics_descriptor == null ) {
-    		throw new Error( 'Physijs: attempted to create rigid body without specifying physics details' );
-    	}
-
-    	if ( object.physics instanceof _PhysicsObject ) {
-    		object.physics.getShapeDefinition = _getShapeDefinition.bind( null, object, object.physics.getShapeDefinition );
-    	} else {
-    		object.physics = new _PhysicsObject( object, null, physics_descriptor, _getShapeDefinition.bind( null, object ) );
-    	}
-
-    	object.rotationAutoUpdate = false;
-    	object.matrixAutoUpdate = false;
-
-    	object.clone = clone.bind( object, object.clone );
-
-    	return object;
+    function postReport( report ) {
+    	this.physijs.worker.postMessage( report, [report.buffer] );
     }
 
-
-    function WeldConstraint( body_a, point_a, body_b, point_b ) {
-        Constraint.call( this );
-
-        this.body_a = body_a;
-        this.point_a = point_a;
-        this.body_b = body_b;
-        this.point_b = point_b;
+    function setConstraintActive( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_ACTIVE,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			active: constraint.physics.active,
+    		}
+    	);
     }
 
-    WeldConstraint.prototype = Object.create( Constraint.prototype );
-    WeldConstraint.prototype.constructor = WeldConstraint;
+    function setConstraintFactor( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_FACTOR,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			factor: constraint.physics.factor,
+    		}
+    	);
+    }
+
+    function setConstraintBreakingThreshold( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_BREAKING_THRESHOLD,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			breaking_threshold: constraint.physics.breaking_threshold,
+    		}
+    	);
+    }
+
+    function setConstraintLimit( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_LIMIT,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			enabled: constraint.physics.limit.enabled,
+    			lower: constraint.physics.limit.lower,
+    			upper: constraint.physics.limit.upper,
+    		}
+    	);
+    }
+
+    function setConstraintMotor( constraint ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_CONSTRAINT_MOTOR,
+    		{
+    			constraint_id: constraint.constraint_id,
+    			enabled: constraint.physics.motor.enabled,
+    			torque: constraint.physics.motor.torque,
+    			max_speed: constraint.physics.motor.max_speed,
+    		}
+    	);
+    }
+
+    function setRigidBodyMass( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_MASS,
+    		{
+    			body_id: physics_object._.id,
+    			mass: physics_object._.mass
+    		}
+    	);
+    }
+
+    function setRigidBodyRestitution( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_RESTITUTION,
+    		{
+    			body_id: physics_object._.id,
+    			restitution: physics_object._.restitution
+    		}
+    	);
+    }
+
+    function setRigidBodyFriction( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_FRICTION,
+    		{
+    			body_id: physics_object._.id,
+    			friction: physics_object._.friction
+    		}
+    	);
+    }
+
+    function setRigidBodyLinearDamping( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_DAMPING,
+    		{
+    			body_id: physics_object._.id,
+    			damping: physics_object._.linear_damping
+    		}
+    	);
+    }
+
+    function setRigidBodyAngularDamping( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_DAMPING,
+    		{
+    			body_id: physics_object._.id,
+    			damping: physics_object._.angular_damping
+    		}
+    	);
+    }
+
+    function setRigidBodyCollisionGroups( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_GROUPS,
+    		{
+    			body_id: physics_object._.id,
+    			collision_groups: physics_object._.collision_groups
+    		}
+    	);
+    }
+
+    function setRigidBodyCollisionMask( physics_object ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_COLLISION_MASK,
+    		{
+    			body_id: physics_object._.id,
+    			collision_mask: physics_object._.collision_mask
+    		}
+    	);
+    }
+
+    function setRigidBodyTransform( body ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_TRANSFORM,
+    		{
+    			body_id: body.physics._.id,
+    			position: { x: body.position.x, y: body.position.y, z: body.position.z },
+    			rotation: { x: body.quaternion.x, y: body.quaternion.y, z: body.quaternion.z, w: body.quaternion.w }
+    		}
+    	);
+    }
+
+    function setRigidBodyLinearVelocity( body ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_VELOCITY,
+    		{
+    			body_id: body.physics._.id,
+    			velocity: { x: body.physics.linear_velocity.x, y: body.physics.linear_velocity.y, z: body.physics.linear_velocity.z }
+    		}
+    	);
+    }
+
+    function setRigidBodyAngularVelocity( body ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_VELOCITY,
+    		{
+    			body_id: body.physics._.id,
+    			velocity: { x: body.physics.angular_velocity.x, y: body.physics.angular_velocity.y, z: body.physics.angular_velocity.z }
+    		}
+    	);
+    }
+
+    function setRigidBodyLinearFactor( body ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_LINEAR_FACTOR,
+    		{
+    			body_id: body.physics._.id,
+    			factor: { x: body.physics.linear_factor.x, y: body.physics.linear_factor.y, z: body.physics.linear_factor.z }
+    		}
+    	);
+    }
+
+    function setRigidBodyAngularFactor( body ) {
+    	this.physijs.postMessage(
+    		MESSAGE_TYPES.SET_RIGIDBODY_ANGULAR_FACTOR,
+    		{
+    			body_id: body.physics._.id,
+    			factor: { x: body.physics.angular_factor.x, y: body.physics.angular_factor.y, z: body.physics.angular_factor.z }
+    		}
+    	);
+    }
+
+    function processRaytraceResults( response ) {
+    	var callback = this.physijs.inflight_raytraces[ response.raytrace_id ];
+    	var scene = this;
+    	callback(
+    		response.results.map(function( ray ) {
+    			return ray.map(function( intersection ) {
+    				return {
+    					body: scene.physijs.id_body_map[ intersection.body_id ],
+    					point: new THREE.Vector3( intersection.point.x, intersection.point.y, intersection.point.z ),
+    					normal: new THREE.Vector3( intersection.normal.x, intersection.normal.y, intersection.normal.z )
+    				}
+    			});
+    		}, scene)
+    	);
+    }
 
     var CONSTRAINT_TYPES = {
         /**
@@ -1350,6 +1343,18 @@
     	 */
     	WELD: 'WELD',
     }
+
+    function WeldConstraint( body_a, point_a, body_b, point_b ) {
+        Constraint.call( this );
+
+        this.body_a = body_a;
+        this.point_a = point_a;
+        this.body_b = body_b;
+        this.point_b = point_b;
+    }
+
+    WeldConstraint.prototype = Object.create( Constraint.prototype );
+    WeldConstraint.prototype.constructor = WeldConstraint;
 
     WeldConstraint.prototype.getConstraintDefinition = function() {
         return {
@@ -1469,7 +1474,11 @@
         this.physics.motor.max_speed = max_speed;
     };
 
-    function __getShapeDefinition( geometry ) {
+    function TriangleMesh( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$6 );
+    }
+
+    function getShapeDefinition$6( geometry ) {
     	var vertices = geometry.vertices.reduce(
     		function( vertices, vertex ) {
     			vertices.push( vertex.x, vertex.y, vertex.z );
@@ -1493,11 +1502,11 @@
     	};
     }
 
-    function TriangleMesh( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, __getShapeDefinition );
+    function Sphere( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$5 );
     }
 
-    function ___getShapeDefinition( geometry ) {
+    function getShapeDefinition$5( geometry ) {
     	geometry.computeBoundingSphere(); // make sure bounding radius has been calculated
 
     	return {
@@ -1506,11 +1515,11 @@
     	};
     }
 
-    function Sphere( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, ___getShapeDefinition );
+    function Plane( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$4 );
     }
 
-    function ____getShapeDefinition( geometry ) {
+    function getShapeDefinition$4( geometry ) {
     	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
     	return {
@@ -1520,11 +1529,11 @@
     	};
     }
 
-    function Plane( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, ____getShapeDefinition );
+    function Cylinder( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$3 );
     }
 
-    function _____getShapeDefinition( geometry ) {
+    function getShapeDefinition$3( geometry ) {
     	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
     	return {
@@ -1534,11 +1543,11 @@
     	};
     }
 
-    function Cylinder( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, _____getShapeDefinition );
+    function Convex( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$2 );
     }
 
-    function ______getShapeDefinition( geometry ) {
+    function getShapeDefinition$2( geometry ) {
     	var vertices = geometry.vertices.reduce(
     		function( vertices, vertex ) {
     			vertices.push( vertex.x, vertex.y, vertex.z );
@@ -1553,11 +1562,11 @@
     	};
     }
 
-    function Convex( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, ______getShapeDefinition );
+    function Cone( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition$1 );
     }
 
-    function _______getShapeDefinition( geometry ) {
+    function getShapeDefinition$1( geometry ) {
     	geometry.computeBoundingBox(); // make sure bounding radius has been calculated
 
     	return {
@@ -1567,8 +1576,8 @@
     	};
     }
 
-    function Cone( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, _______getShapeDefinition );
+    function Box( first, second, third ) {
+    	return PhysicsObject.call( this, first, second, third, getShapeDefinition );
     }
 
     function getShapeDefinition( geometry ) {
@@ -1580,10 +1589,6 @@
     		height: geometry.boundingBox.max.y,
     		depth: geometry.boundingBox.max.z
     	};
-    }
-
-    function Box( first, second, third ) {
-    	return PhysicsObject.call( this, first, second, third, getShapeDefinition );
     }
 
     var index = {
