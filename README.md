@@ -15,13 +15,13 @@ You, hopefully. If you are familiar with [three.js](https://github.com/mrdoob/th
 If you need (or want) a feature not already included then add it to the [issue tracker](https://github.com/chandlerprall/Physijs/issues) or implement it yourself and send over a pull request.
 
 ### Examples
-[![rigid bodies](http://chandlerprall.github.com/Physijs/examples/body.jpg)](http://chandlerprall.github.com/Physijs/examples/body.html)
-[![collisions](http://chandlerprall.github.com/Physijs/examples/collisions.jpg)](http://chandlerprall.github.com/Physijs/examples/collisions.html)
-[![compound shapes](http://chandlerprall.github.com/Physijs/examples/compound.jpg)](http://chandlerprall.github.com/Physijs/examples/compound.html)
-[![all shapes](http://chandlerprall.github.com/Physijs/examples/shapes.jpg)](http://chandlerprall.github.com/Physijs/examples/shapes.html)
-[![jenga](http://chandlerprall.github.com/Physijs/examples/jenga.jpg)](http://chandlerprall.github.com/Physijs/examples/jenga.html)
-[![car constraints](http://chandlerprall.github.com/Physijs/examples/constraints_car.jpg)](http://chandlerprall.github.com/Physijs/examples/constraints_car.html)
-[![vehicle](http://chandlerprall.github.com/Physijs/examples/vehicle.jpg)](http://chandlerprall.github.com/Physijs/examples/vehicle.html)
+[![rigid bodies](http://chandlerprall.github.io/Physijs/examples/body.jpg)](http://chandlerprall.github.io/Physijs/examples/body.html)
+[![collisions](http://chandlerprall.github.io/Physijs/examples/collisions.jpg)](http://chandlerprall.github.io/Physijs/examples/collisions.html)
+[![compound shapes](http://chandlerprall.github.io/Physijs/examples/compound.jpg)](http://chandlerprall.github.io/Physijs/examples/compound.html)
+[![all shapes](http://chandlerprall.github.io/Physijs/examples/shapes.jpg)](http://chandlerprall.github.io/Physijs/examples/shapes.html)
+[![jenga](http://chandlerprall.github.io/Physijs/examples/jenga.jpg)](http://chandlerprall.github.io/Physijs/examples/jenga.html)
+[![car constraints](http://chandlerprall.github.io/Physijs/examples/constraints_car.jpg)](http://chandlerprall.github.io/Physijs/examples/constraints_car.html)
+[![vehicle](http://chandlerprall.github.io/Physijs/examples/vehicle.jpg)](http://chandlerprall.github.io/Physijs/examples/vehicle.html)
 
 ### Features
 * Support for [multiple object shapes](https://github.com/chandlerprall/Physijs/wiki/Basic-Shapes), including custom convex or concave objects as well as heightmaps
