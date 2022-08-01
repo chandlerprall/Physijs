@@ -5,7 +5,6 @@ window.Physijs = (function() {
 		_is_simulating = false,
 		_Physijs = Physijs, // used for noConflict method
 		Physijs = {}, // object assigned to window.Physijs
-		Eventable, // class to provide simple event methods
 		getObjectId, // returns a unique ID for a Physijs mesh object
 		getEulerXYZFromQuaternion, getQuatertionFromEuler,
 		convertWorldPositionToObject, // Converts a world-space position to object-space
@@ -31,8 +30,10 @@ window.Physijs = (function() {
 
 	Physijs.scripts = {};
 
-	class Eventable {
+	const Eventable = (superclass) => class extends superclass {
+
 		constructor() {
+			super(...arguments);
 			this._eventListeners = {};
 		}
 
@@ -66,13 +67,7 @@ window.Physijs = (function() {
 				}
 			}
 		}
-
-		make( obj ) {
-			obj.prototype.addEventListener = Eventable.prototype.addEventListener;
-			obj.prototype.removeEventListener = Eventable.prototype.removeEventListener;
-			obj.prototype.dispatchEvent = Eventable.prototype.dispatchEvent;
-		};
-	}
+	};
 
 	getObjectId = (function() {
 		var _id = 1;
@@ -436,12 +431,10 @@ window.Physijs = (function() {
 	Physijs.DOFConstraint = DOFConstraint;
 
 	// Physijs.Scene
-	class Scene extends THREE.Scene {
+	class Scene extends Eventable(THREE.Scene) {
 		constructor( params ) {
 			super(params);
 			var self = this;
-
-			Eventable.call( this );
 
 			this._worker = new Worker( Physijs.scripts.worker || 'physijs_worker.js' );
 			this._worker.transferableMessage = this._worker.webkitPostMessage || this._worker.postMessage;
@@ -905,7 +898,7 @@ window.Physijs = (function() {
 				this.remove( object.mesh );
 				delete this._vehicles[ object._physijs.id ];
 			} else {
-				super.remove( this, object );
+				super.remove( object );
 				if ( object._physijs ) {
 					delete this._objects[object._physijs.id];
 					this.execute( 'removeObject', { id: object._physijs.id } );
@@ -970,7 +963,6 @@ window.Physijs = (function() {
 	}
 	
 	Physijs.Scene = Scene;
-	Eventable.make( Physijs.Scene );
 
 	addObjectChildren = function( parent, object ) {
 		var i;
@@ -1004,7 +996,7 @@ window.Physijs = (function() {
 	};
 
 	// Phsijs.Mesh
-	class Mesh extends THREE.Mesh {
+	class Mesh extends Eventable(THREE.Mesh) {
 		constructor( geometry, material, mass ) {
 			var index;
 
@@ -1012,8 +1004,7 @@ window.Physijs = (function() {
 				return;
 			}
 
-			Eventable.call( this );
-			THREE.Mesh.call( this, geometry, material );
+			super(geometry, material);
 
 			if ( !geometry.boundingBox ) {
 				geometry.computeBoundingBox();
@@ -1137,7 +1128,6 @@ window.Physijs = (function() {
 	}
 
 	Physijs.Mesh = Mesh;
-	Eventable.make( Physijs.Mesh );
 
 	// Physijs.PlaneMesh
 	class PlaneMesh extends Physijs.Mesh {
