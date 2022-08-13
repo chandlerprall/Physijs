@@ -75,7 +75,12 @@ var
 
 var ab = new ArrayBuffer( 1 );
 
-transferableMessage( ab, [ab] );
+try{
+ 	transferableMessage( ab, [ab] );
+}catch(e){
+ 	console.warn('could not call transferableMessage', e);
+}
+
 var SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
 
 getShapeFromCache = function ( cache_key ) {
