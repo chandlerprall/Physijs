@@ -1,4 +1,13 @@
-window.Physijs = (function() {
+(function(definition) {
+	if(typeof module === 'object' && typeof module.exports === 'object') {
+        	module.exports = definition();
+    	} else if(typeof define === 'function' && define.amd) {
+        	define([], definition);
+    	} else {
+        	var exports = definition();
+        	window.Physijs = exports;
+    	}
+})(function() {
 	'use strict';
 
 	var SUPPORT_TRANSFERABLE,
@@ -1400,4 +1409,4 @@ window.Physijs = (function() {
 	};
 
 	return Physijs;
-})();
+});
